@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuka Log Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: #2d2d30;
+            padding: 15px 20px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        h1 {
+            font-size: 20px;
+            color: #569cd6;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            background-color: #3c3c3c;
+            color: #d4d4d4;
+            border: 1px solid #555;
+            padding: 6px 10px;
+            border-radius: 3px;
+            font-size: 13px;
+            min-width: 250px;
+        }
+
+        button {
+            background-color: #0e639c;
+            color: #ffffff;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1177bb;
+        }
+
+        button:disabled {
+            background-color: #3c3c3c;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        button.danger {
+            background-color: #c5282c;
+        }
+
+        button.danger:hover {
+            background-color: #d9363a;
+        }
+
+        button.success {
+            background-color: #0e7d0e;
+        }
+
+        button.success:hover {
+            background-color: #12941a;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        label {
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background-color: #252526;
+            border-right: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .devices-section, .files-section {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-header {
+            background-color: #2d2d30;
+            padding: 8px 12px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #888;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .list-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .list-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid #2d2d30;
+            transition: background-color 0.1s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .list-item:hover {
+            background-color: #2a2d2e;
+        }
+
+        .list-item.active {
+            background-color: #094771;
+            color: #ffffff;
+        }
+
+        .list-item.device {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .device-status {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background-color: #0e7d0e;
+            color: white;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-header {
+            background-color: #2d2d30;
+            padding: 10px 15px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-info {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .log-viewer {
+            flex: 1;
+            overflow: auto;
+            background-color: #1e1e1e;
+            padding: 10px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .log-table th {
+            background-color: #2d2d30;
+            color: #888;
+            padding: 8px;
+            text-align: left;
+            font-size: 11px;
+            position: sticky;
+            top: 0;
+            border-bottom: 1px solid #3e3e42;
+            font-weight: 600;
+        }
+
+        .log-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #2d2d30;
+            font-size: 11px;
+        }
+
+        .log-table tr:hover {
+            background-color: #2a2d2e;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #888;
+            font-size: 14px;
+            gap: 10px;
+        }
+
+        .status-bar {
+            background-color: #007acc;
+            color: white;
+            padding: 4px 15px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .error-message {
+            background-color: #5a1d1d;
+            color: #f48771;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 3px;
+            border-left: 3px solid #c5282c;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #888;
+            border-top: 2px solid #007acc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .scan-progress {
+            margin-left: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Kuka Log Viewer</h1>
+        <div class="controls">
+            <div class="input-group">
+                <input type="text" id="ipAddress" placeholder="Device name (e.g., Robot01)" value="">
+                <button onclick="loadDevice()">📁 Open Folder</button>
+            </div>
+            <div class="input-group">
+                <button onclick="scanNetwork()" id="scanBtn">ℹ️ Help</button>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="autoRefresh">
+                <label for="autoRefresh">Auto-refresh (1s)</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="autoScroll">
+                <label for="autoScroll">Auto-scroll</label>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="devices-section">
+                <div class="section-header">Devices</div>
+                <div class="list-container" id="devicesList">
+                    <div class="empty-state">
+                        <div>No devices loaded</div>
+                        <div style="font-size: 12px;">Enter IP and click "Load Device" or "Scan Network"</div>
+                    </div>
+                </div>
+            </div>
+            <div class="files-section">
+                <div class="section-header">Files</div>
+                <div class="list-container" id="filesList">
+                    <div class="empty-state">Select a device first</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="content-header">
+                <div class="file-info" id="fileInfo">No file selected</div>
+                <div>
+                    <button onclick="refreshCurrentFile()" id="refreshBtn" disabled>Refresh</button>
+                </div>
+            </div>
+            <div class="log-viewer" id="logViewer">
+                <div class="empty-state">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <div>Select a file to view its contents</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="statusText">Ready</span>
+        <span id="statsText"></span>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            devices: new Map(),
+            currentDevice: null,
+            currentFile: null,
+            currentFileHandle: null,
+            directoryHandles: new Map(),
+            autoRefreshInterval: null,
+            scanInProgress: false
+        };
+
+        // CSV column definitions for Kuka logs
+        const BASE_COLUMNS = ['Date', 'Time', 'Milliseconds', 'Station', 'Job', 'Part', 'Place', 'Step', 'Rsv', 'Override'];
+
+        // Check if File System Access API is supported
+        function isFileSystemAccessSupported() {
+            return 'showDirectoryPicker' in window;
+        }
+
+        // Load files from directory using File System Access API
+        async function loadFilesFromDevice(deviceName) {
+            try {
+                updateStatus(`Opening directory picker for ${deviceName}...`);
+                
+                // Show directory picker - user selects the network folder
+                const dirHandle = await window.showDirectoryPicker({
+                    mode: 'read',
+                    startIn: 'documents'
+                });
+
+                // Store the directory handle
+                state.directoryHandles.set(deviceName, dirHandle);
+
+                // Read all files from the directory
+                const files = [];
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'file') {
+                        files.push(entry.name);
+                    }
+                }
+
+                return {
+                    success: true,
+                    files: files.sort(),
+                    dirHandle: dirHandle,
+                    message: `Connected to ${dirHandle.name} (${files.length} files found)`
+                };
+            } catch (error) {
+                console.error('Error accessing directory:', error);
+                return {
+                    success: false,
+                    files: [],
+                    message: error.name === 'AbortError' ? 'Selection cancelled' : `Error: ${error.message}`
+                };
+            }
+        }
+
+        async function loadFileContent(deviceName, filename) {
+            try {
+                updateStatus(`Loading ${filename} from ${deviceName}...`);
+                
+                const dirHandle = state.directoryHandles.get(deviceName);
+                if (!dirHandle) {
+                    throw new Error('Directory handle not found');
+                }
+
+                // Get file handle
+                const fileHandle = await dirHandle.getFileHandle(filename);
+                state.currentFileHandle = fileHandle;
+
+                // Read file content
+                const file = await fileHandle.getFile();
+                const content = await file.text();
+
+                return {
+                    success: true,
+                    content: content,
+                    size: file.size,
+                    lastModified: new Date(file.lastModified)
+                };
+            } catch (error) {
+                console.error('Error reading file:', error);
+                return {
+                    success: false,
+                    content: '',
+                    message: `Error reading file: ${error.message}`
+                };
+            }
+        }
+
+        function parseCSVLine(line) {
+            return line.split(';').map(col => col.trim());
+        }
+
+        function displayLogContent(content, filename, fileInfo = {}) {
+            const logViewer = document.getElementById('logViewer');
+            
+            if (!content || content.trim() === '') {
+                logViewer.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 14px; color: #f48771;">File is empty or could not be read</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const lines = content.trim().split('\n').filter(line => line.trim() !== '');
+            const rows = lines.map(line => parseCSVLine(line));
+            
+            // Determine columns based on first row
+            const maxCols = Math.max(...rows.map(r => r.length));
+            const extraCols = maxCols - BASE_COLUMNS.length;
+            const columns = [...BASE_COLUMNS];
+            for (let i = 0; i < extraCols; i++) {
+                columns.push(`Extra${i + 1}`);
+            }
+
+            // Build table
+            let html = '<table class="log-table"><thead><tr>';
+            html += '<th>#</th>'; // Row number column
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            rows.forEach((row, index) => {
+                html += '<tr>';
+                html += `<td style="color: #888; font-weight: bold;">${index + 1}</td>`;
+                for (let i = 0; i < columns.length; i++) {
+                    html += `<td>${row[i] || ''}</td>`;
+                }
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            logViewer.innerHTML = html;
+
+            // Auto-scroll if enabled
+            if (document.getElementById('autoScroll').checked) {
+                logViewer.scrollTop = logViewer.scrollHeight;
+            }
+
+            // Update stats with file info
+            let statsText = `${rows.length} rows`;
+            if (fileInfo.size) {
+                statsText += ` | ${formatFileSize(fileInfo.size)}`;
+            }
+            if (fileInfo.lastModified) {
+                statsText += ` | Modified: ${fileInfo.lastModified.toLocaleString()}`;
+            }
+            updateStats(statsText);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function loadDevice() {
+            if (!isFileSystemAccessSupported()) {
+                alert('File System Access API is not supported in this browser. Please use Chrome, Edge, or another Chromium-based browser.');
+                return;
+            }
+
+            const deviceName = document.getElementById('ipAddress').value.trim();
+            if (!deviceName) {
+                alert('Please enter a device name or identifier');
+                return;
+            }
+
+            addDevice(deviceName);
+        }
+
+        async function addDevice(deviceName) {
+            if (state.devices.has(deviceName)) {
+                selectDevice(deviceName);
+                return;
+            }
+
+            const result = await loadFilesFromDevice(deviceName);
+            
+            if (result.success) {
+                state.devices.set(deviceName, {
+                    name: deviceName,
+                    files: result.files,
+                    status: 'online',
+                    dirHandle: result.dirHandle
+                });
+                renderDevicesList();
+                selectDevice(deviceName);
+                updateStatus(result.message);
+            } else {
+                updateStatus(result.message, true);
+            }
+        }
+
+        function selectDevice(deviceName) {
+            state.currentDevice = deviceName;
+            state.currentFile = null;
+            renderDevicesList();
+            renderFilesList();
+            document.getElementById('fileInfo').textContent = 'Select a file';
+            document.getElementById('logViewer').innerHTML = `
+                <div class="empty-state">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <div>Select a file to view its contents</div>
+                </div>
+            `;
+            document.getElementById('refreshBtn').disabled = true;
+        }
+
+        async function selectFile(filename) {
+            if (!state.currentDevice) return;
+
+            state.currentFile = filename;
+            renderFilesList();
+            
+            const device = state.devices.get(state.currentDevice);
+            const dirName = device.dirHandle ? device.dirHandle.name : state.currentDevice;
+            document.getElementById('fileInfo').textContent = `${dirName} > ${filename}`;
+            document.getElementById('refreshBtn').disabled = false;
+
+            const result = await loadFileContent(state.currentDevice, filename);
+            if (result.success) {
+                displayLogContent(result.content, filename, {
+                    size: result.size,
+                    lastModified: result.lastModified
+                });
+                updateStatus(`Loaded ${filename} successfully`);
+            } else {
+                displayLogContent('', filename);
+                updateStatus(result.message || 'Failed to load file', true);
+            }
+        }
+
+        function renderDevicesList() {
+            const devicesList = document.getElementById('devicesList');
+            
+            if (state.devices.size === 0) {
+                devicesList.innerHTML = `
+                    <div class="empty-state">
+                        <div>No devices loaded</div>
+                        <div style="font-size: 12px;">Click "Load Device" to open a folder</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            state.devices.forEach((device, name) => {
+                const active = name === state.currentDevice ? 'active' : '';
+                const displayName = device.dirHandle ? device.dirHandle.name : name;
+                html += `
+                    <div class="list-item device ${active}" onclick="selectDevice('${name}')">
+                        <span title="${displayName}">${displayName}</span>
+                        <span class="device-status">${device.files.length} files</span>
+                    </div>
+                `;
+            });
+
+            devicesList.innerHTML = html;
+        }
+
+        function renderFilesList() {
+            const filesList = document.getElementById('filesList');
+            
+            if (!state.currentDevice) {
+                filesList.innerHTML = '<div class="empty-state">Select a device first</div>';
+                return;
+            }
+
+            const device = state.devices.get(state.currentDevice);
+            if (!device || !device.files || device.files.length === 0) {
+                filesList.innerHTML = '<div class="empty-state">No files found</div>';
+                return;
+            }
+
+            let html = '';
+            device.files.forEach(file => {
+                const active = file === state.currentFile ? 'active' : '';
+                html += `<div class="list-item ${active}" onclick="selectFile('${file}')">${file}</div>`;
+            });
+
+            filesList.innerHTML = html;
+        }
+
+        async function refreshCurrentFile() {
+            if (!state.currentDevice || !state.currentFile) return;
+            await selectFile(state.currentFile);
+        }
+
+        async function scanNetwork() {
+            alert('Network scanning is not available in standalone mode.\n\nTo add multiple devices:\n1. Click "Load Device" for each network folder\n2. The folder picker will let you navigate to network paths like \\\\192.168.2.60\\krc\\ROBOTER\\UserFiles\n3. Each folder will be added as a separate device');
+        }
+
+        function updateStatus(message, isError = false) {
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = message;
+            if (isError) {
+                statusText.style.color = '#f48771';
+            } else {
+                statusText.style.color = 'white';
+            }
+        }
+
+        function updateStats(text) {
+            const statsText = document.getElementById('statsText');
+            statsText.textContent = text || '';
+        }
+
+        // Auto-refresh functionality
+        document.getElementById('autoRefresh').addEventListener('change', function() {
+            if (this.checked) {
+                state.autoRefreshInterval = setInterval(() => {
+                    if (state.currentFile) {
+                        refreshCurrentFile();
+                    }
+                }, 1000);
+                updateStatus('Auto-refresh enabled');
+            } else {
+                if (state.autoRefreshInterval) {
+                    clearInterval(state.autoRefreshInterval);
+                    state.autoRefreshInterval = null;
+                }
+                updateStatus('Auto-refresh disabled');
+            }
+        });
+
+        // Initialize
+        if (!isFileSystemAccessSupported()) {
+            updateStatus('⚠️ File System Access API not supported. Please use Chrome, Edge, or another Chromium-based browser.', true);
+            document.getElementById('ipAddress').disabled = true;
+            document.querySelector('button[onclick="loadDevice()"]').disabled = true;
+        } else {
+            updateStatus('Ready - Click "Load Device" to select a network folder (e.g., \\\\192.168.2.60\\krc\\ROBOTER\\UserFiles)');
+        }
+    </script>
+</body>
+</html>
