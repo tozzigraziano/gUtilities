@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolo Forza Attuatore Pneumatico</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #4da6ff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #66b3ff;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #404040;
+            padding-bottom: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b3b3b3;
+            font-weight: 500;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            background-color: #3d3d3d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 16px;
+        }
+
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: #4da6ff;
+            box-shadow: 0 0 5px rgba(77, 166, 255, 0.5);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 8px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 12px 25px;
+            background-color: #4da6ff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #3d8dd9;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #3d3d3d;
+            border-radius: 8px;
+            border-left: 4px solid #4da6ff;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #505050;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #b3b3b3;
+            font-weight: 500;
+        }
+
+        .result-value {
+            color: #4da6ff;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: #3d3d3d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #4da6ff;
+            color: #fff;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #505050;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #454545;
+        }
+
+        .info-box {
+            background-color: #3d3d3d;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #66b3ff;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .warning {
+            color: #ffaa00;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ Calcolo Forza Attuatore Pneumatico</h1>
+        
+        <div class="info-box">
+            <p><strong>Formula Spinta:</strong> F<sub>s</sub> = (π × D² / 4) × P × η</p>
+            <p><strong>Formula Trazione:</strong> F<sub>t</sub> = ((D² - d²) × π / 4) × P × η</p>
+            <p>Dove: D = diametro pistone, d = diametro stelo, P = pressione, η = coefficiente rendimento (0.9)</p>
+        </div>
+
+        <h2>Parametri Attuatore</h2>
+        
+        <div class="input-group">
+            <label for="pistonDiameter">Diametro Pistone (mm):</label>
+            <input type="number" id="pistonDiameter" step="0.1" min="0.1" value="50" placeholder="Es: 50">
+        </div>
+
+        <div class="input-group">
+            <label for="rodDiameter">Diametro Stelo (mm):</label>
+            <input type="number" id="rodDiameter" step="0.1" min="0" value="16" placeholder="Es: 16 (0 se doppio effetto senza stelo)">
+        </div>
+
+        <div class="input-group">
+            <label for="efficiency">Coefficiente Rendimento (η):</label>
+            <input type="number" id="efficiency" step="0.01" min="0.01" max="1" value="0.9" placeholder="Es: 0.9">
+            <small style="color: #999; display: block; margin-top: 5px;">Tipicamente 0.9 (90%)</small>
+        </div>
+
+        <div class="input-group">
+            <label for="weight">Peso Applicato (kg):</label>
+            <input type="number" id="weight" step="0.1" min="0" value="10" placeholder="Es: 10">
+        </div>
+
+        <div class="input-group">
+            <label>Il peso si oppone a:</label>
+            <div class="radio-group">
+                <div class="radio-option">
+                    <input type="radio" id="weightOnPush" name="weightDirection" value="push" checked>
+                    <label for="weightOnPush" style="margin-bottom: 0;">Spinta (sottrae dalla spinta)</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="weightOnPull" name="weightDirection" value="pull">
+                    <label for="weightOnPull" style="margin-bottom: 0;">Trazione (sottrae dalla trazione)</label>
+                </div>
+            </div>
+        </div>
+
+        <h2>Calcolo Singolo</h2>
+        
+        <div class="input-group">
+            <label for="pressure">Pressione (bar):</label>
+            <input type="number" id="pressure" step="0.1" min="0" value="6" placeholder="Es: 6">
+        </div>
+
+        <button onclick="calculateSingle()">Calcola Forza</button>
+
+        <div id="singleResult" class="results hidden"></div>
+
+        <h2>Calcolo Tabella</h2>
+        
+        <div class="grid-2col">
+            <div class="input-group">
+                <label for="pressureMin">Pressione Minima (bar):</label>
+                <input type="number" id="pressureMin" step="0.1" min="0" value="1" placeholder="Es: 1">
+            </div>
+
+            <div class="input-group">
+                <label for="pressureMax">Pressione Massima (bar):</label>
+                <input type="number" id="pressureMax" step="0.1" min="0" value="10" placeholder="Es: 10">
+            </div>
+
+            <div class="input-group">
+                <label for="pressureStep">Intervallo (bar):</label>
+                <input type="number" id="pressureStep" step="0.1" min="0.1" value="1" placeholder="Es: 1">
+            </div>
+
+            <div class="input-group">
+                <label for="tableUnit">Unità di Misura:</label>
+                <select id="tableUnit">
+                    <option value="newton">Newton (N)</option>
+                    <option value="kilogram" selected>Kilogrammi forza (kgf)</option>
+                    <option value="pound">Libbre forza (lbf)</option>
+                    <option value="ton">Tonnellate forza (tf)</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="calculateTable()">Genera Tabella</button>
+
+        <div id="tableResult"></div>
+    </div>
+
+    <script>
+        // Costanti di conversione
+        const CONVERSIONS = {
+            newton: 1,
+            kilogram: 9.80665,
+            pound: 4.44822,
+            ton: 9806.65
+        };
+
+        function getInputValues() {
+            const pistonDiameter = parseFloat(document.getElementById('pistonDiameter').value);
+            const rodDiameter = parseFloat(document.getElementById('rodDiameter').value);
+            const efficiency = parseFloat(document.getElementById('efficiency').value);
+            const weight = parseFloat(document.getElementById('weight').value);
+            const weightDirection = document.querySelector('input[name="weightDirection"]:checked').value;
+
+            if (isNaN(pistonDiameter) || pistonDiameter <= 0) {
+                alert('Inserire un diametro pistone valido');
+                return null;
+            }
+
+            if (isNaN(rodDiameter) || rodDiameter < 0) {
+                alert('Inserire un diametro stelo valido (0 se non presente)');
+                return null;
+            }
+
+            if (isNaN(efficiency) || efficiency <= 0 || efficiency > 1) {
+                alert('Inserire un coefficiente di rendimento valido (0.01 - 1.0)');
+                return null;
+            }
+
+            if (isNaN(weight) || weight < 0) {
+                alert('Inserire un peso valido');
+                return null;
+            }
+
+            return { pistonDiameter, rodDiameter, efficiency, weight, weightDirection };
+        }
+
+        function calculateForce(pressure, pistonDiameter, rodDiameter, efficiency, weight, weightDirection) {
+            // Calcolo aree in mm²
+            const pistonArea = Math.PI * Math.pow(pistonDiameter / 2, 2);
+            const rodArea = Math.PI * Math.pow(rodDiameter / 2, 2);
+            
+            // Pressione in Pascal (1 bar = 100000 Pa)
+            const pressurePa = pressure * 100000;
+
+            // SPINTA: Forza con area pistone piena
+            const pushArea = pistonArea / 1000000; // mm² to m²
+            const pushForceTheoretical = pressurePa * pushArea;
+            const pushForce = pushForceTheoretical * efficiency;
+
+            // TRAZIONE: Forza con area ridotta (pistone - stelo)
+            const pullArea = (pistonArea - rodArea) / 1000000; // mm² to m²
+            const pullForceTheoretical = pressurePa * pullArea;
+            const pullForce = pullForceTheoretical * efficiency;
+
+            // Peso in Newton
+            const weightForce = weight * 9.80665;
+
+            // Forza disponibile considerando il peso
+            let pushAvailable, pullAvailable;
+            if (weightDirection === 'push') {
+                // Il peso si oppone alla spinta
+                pushAvailable = pushForce - weightForce;
+                pullAvailable = pullForce; // il peso aiuta la trazione
+            } else {
+                // Il peso si oppone alla trazione
+                pushAvailable = pushForce; // il peso aiuta la spinta
+                pullAvailable = pullForce - weightForce;
+            }
+
+            return {
+                pushForce: pushForce,
+                pullForce: pullForce,
+                pushAvailable: pushAvailable,
+                pullAvailable: pullAvailable,
+                weightForce: weightForce,
+                pushArea: pushArea * 1000000, // riporto in mm² per display
+                pullArea: pullArea * 1000000
+            };
+        }
+
+        function formatResults(forceNewton) {
+            return {
+                newton: forceNewton.toFixed(2),
+                kilogram: (forceNewton / CONVERSIONS.kilogram).toFixed(2),
+                pound: (forceNewton / CONVERSIONS.pound).toFixed(2),
+                ton: (forceNewton / CONVERSIONS.ton).toFixed(4)
+            };
+        }
+
+        function calculateSingle() {
+            const inputs = getInputValues();
+            if (!inputs) return;
+
+            const pressure = parseFloat(document.getElementById('pressure').value);
+            if (isNaN(pressure) || pressure <= 0) {
+                alert('Inserire una pressione valida');
+                return;
+            }
+
+            const forceData = calculateForce(
+                pressure,
+                inputs.pistonDiameter,
+                inputs.rodDiameter,
+                inputs.efficiency,
+                inputs.weight,
+                inputs.weightDirection
+            );
+
+            const pushResults = formatResults(forceData.pushAvailable);
+            const pullResults = formatResults(forceData.pullAvailable);
+            const weightDirection = inputs.weightDirection === 'push' ? 'Spinta' : 'Trazione';
+
+            const resultDiv = document.getElementById('singleResult');
+            resultDiv.className = 'results';
+            resultDiv.innerHTML = `
+                <h3 style="color: #66b3ff; margin-bottom: 15px;">Risultati a ${pressure} bar (η = ${inputs.efficiency})</h3>
+                
+                <div style="background-color: #454545; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                    <h4 style="color: #4da6ff; margin-bottom: 10px;">🔵 SPINTA (Estensione)</h4>
+                    <div class="result-item">
+                        <span class="result-label">Area Pistone:</span>
+                        <span class="result-value">${forceData.pushArea.toFixed(2)} mm²</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Forza Teorica:</span>
+                        <span class="result-value">${(forceData.pushForce / inputs.efficiency).toFixed(2)} N</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Forza Effettiva (con η):</span>
+                        <span class="result-value">${forceData.pushForce.toFixed(2)} N</span>
+                    </div>
+                    ${inputs.weightDirection === 'push' ? `
+                        <div class="result-item">
+                            <span class="result-label">Peso (opposto):</span>
+                            <span class="result-value">-${forceData.weightForce.toFixed(2)} N</span>
+                        </div>
+                    ` : ''}
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #505050;">
+                        <h5 style="color: #66b3ff; margin-bottom: 10px;">Forza Disponibile:</h5>
+                        <div class="result-item">
+                            <span class="result-label">Newton (N):</span>
+                            <span class="result-value" style="color: ${forceData.pushAvailable < 0 ? '#ff6666' : '#4da6ff'};">${pushResults.newton} N</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Kilogrammi (kgf):</span>
+                            <span class="result-value">${pushResults.kilogram} kgf</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Libbre (lbf):</span>
+                            <span class="result-value">${pushResults.pound} lbf</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Tonnellate (tf):</span>
+                            <span class="result-value">${pushResults.ton} tf</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background-color: #454545; padding: 15px; border-radius: 5px;">
+                    <h4 style="color: #ff9966; margin-bottom: 10px;">🔶 TRAZIONE (Ritrazione)</h4>
+                    <div class="result-item">
+                        <span class="result-label">Area Effettiva (Pistone - Stelo):</span>
+                        <span class="result-value">${forceData.pullArea.toFixed(2)} mm²</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Forza Teorica:</span>
+                        <span class="result-value">${(forceData.pullForce / inputs.efficiency).toFixed(2)} N</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Forza Effettiva (con η):</span>
+                        <span class="result-value">${forceData.pullForce.toFixed(2)} N</span>
+                    </div>
+                    ${inputs.weightDirection === 'pull' ? `
+                        <div class="result-item">
+                            <span class="result-label">Peso (opposto):</span>
+                            <span class="result-value">-${forceData.weightForce.toFixed(2)} N</span>
+                        </div>
+                    ` : ''}
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #505050;">
+                        <h5 style="color: #ff9966; margin-bottom: 10px;">Forza Disponibile:</h5>
+                        <div class="result-item">
+                            <span class="result-label">Newton (N):</span>
+                            <span class="result-value" style="color: ${forceData.pullAvailable < 0 ? '#ff6666' : '#ff9966'};">${pullResults.newton} N</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Kilogrammi (kgf):</span>
+                            <span class="result-value">${pullResults.kilogram} kgf</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Libbre (lbf):</span>
+                            <span class="result-value">${pullResults.pound} lbf</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Tonnellate (tf):</span>
+                            <span class="result-value">${pullResults.ton} tf</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${forceData.pushAvailable < 0 || forceData.pullAvailable < 0 ? `
+                    <p class="warning" style="margin-top: 15px;">⚠️ Attenzione: ${forceData.pushAvailable < 0 ? 'La spinta' : 'La trazione'} ha forza negativa! Il peso supera la forza pneumatica disponibile.</p>
+                ` : ''}
+                
+                <p style="margin-top: 15px; color: #999; font-size: 14px;">
+                    <strong>Nota:</strong> Il peso (${inputs.weight} kg = ${forceData.weightForce.toFixed(2)} N) si oppone alla ${weightDirection.toLowerCase()}.
+                </p>
+            `;
+        }
+
+        function calculateTable() {
+            const inputs = getInputValues();
+            if (!inputs) return;
+
+            const pressureMin = parseFloat(document.getElementById('pressureMin').value);
+            const pressureMax = parseFloat(document.getElementById('pressureMax').value);
+            const pressureStep = parseFloat(document.getElementById('pressureStep').value);
+            const selectedUnit = document.getElementById('tableUnit').value;
+
+            if (isNaN(pressureMin) || pressureMin < 0) {
+                alert('Inserire una pressione minima valida');
+                return;
+            }
+
+            if (isNaN(pressureMax) || pressureMax <= 0) {
+                alert('Inserire una pressione massima valida');
+                return;
+            }
+
+            if (isNaN(pressureStep) || pressureStep <= 0) {
+                alert('Inserire un intervallo valido');
+                return;
+            }
+
+            if (pressureMin >= pressureMax) {
+                alert('La pressione minima deve essere inferiore alla pressione massima');
+                return;
+            }
+
+            // Mappatura unità di misura per visualizzazione
+            const unitLabels = {
+                newton: 'N',
+                kilogram: 'kgf',
+                pound: 'lbf',
+                ton: 'tf'
+            };
+
+            const unitLabel = unitLabels[selectedUnit];
+            const weightDirection = inputs.weightDirection === 'push' ? 'Spinta' : 'Trazione';
+            
+            let tableHTML = `
+                <h3 style="color: #66b3ff; margin-top: 25px; margin-bottom: 15px;">Tabella Forze in ${unitLabel} (Peso opposto a: ${weightDirection})</h3>
+                <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;">Pressione (bar)</th>
+                            <th style="text-align: center; background-color: #4da6ff;">SPINTA (${unitLabel})</th>
+                            <th style="text-align: center; background-color: #ff9966;">TRAZIONE (${unitLabel})</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let hasNegativeValues = false;
+
+            for (let pressure = pressureMin; pressure <= pressureMax; pressure += pressureStep) {
+                // Arrotondo per evitare problemi di precisione floating point
+                pressure = Math.round(pressure * 10) / 10;
+
+                const forceData = calculateForce(
+                    pressure,
+                    inputs.pistonDiameter,
+                    inputs.rodDiameter,
+                    inputs.efficiency,
+                    inputs.weight,
+                    inputs.weightDirection
+                );
+
+                const pushResults = formatResults(forceData.pushAvailable);
+                const pullResults = formatResults(forceData.pullAvailable);
+                
+                const pushNegative = forceData.pushAvailable < 0;
+                const pullNegative = forceData.pullAvailable < 0;
+
+                if (pushNegative || pullNegative) {
+                    hasNegativeValues = true;
+                }
+
+                // Seleziona il valore in base all'unità scelta
+                const pushValue = pushResults[selectedUnit];
+                const pullValue = pullResults[selectedUnit];
+
+                tableHTML += `
+                    <tr>
+                        <td style="font-weight: bold; text-align: center;">${pressure.toFixed(1)}</td>
+                        <td style="text-align: right; ${pushNegative ? 'background-color: #5a3030;' : ''}">${pushValue}</td>
+                        <td style="text-align: right; ${pullNegative ? 'background-color: #5a3030;' : ''}">${pullValue}</td>
+                    </tr>
+                `;
+            }
+
+            tableHTML += `
+                    </tbody>
+                </table>
+                </div>
+                <p style="margin-top: 15px; color: #999; font-size: 14px;">
+                    <strong>Nota:</strong> I valori mostrano la forza disponibile dopo aver considerato il peso di ${inputs.weight} kg che si oppone alla ${weightDirection.toLowerCase()}.
+                    ${hasNegativeValues ? '<br><span style="color: #ffaa00;">Le celle rosse indicano forza insufficiente (negativa).</span>' : ''}
+                </p>
+            `;
+
+            document.getElementById('tableResult').innerHTML = tableHTML;
+        }
+
+        // Calcolo iniziale al caricamento
+        window.addEventListener('load', function() {
+            calculateSingle();
+        });
+    </script>
+</body>
+</html>
