@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curve Fitting</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #4da6ff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #66b3ff;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #404040;
+            padding-bottom: 8px;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .input-section {
+            background-color: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .info-box {
+            background-color: #3d3d3d;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #66b3ff;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b3b3b3;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            background-color: #2d2d2d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4da6ff;
+            box-shadow: 0 0 5px rgba(77, 166, 255, 0.5);
+        }
+
+        button {
+            padding: 12px 25px;
+            background-color: #4da6ff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #3d8dd9;
+        }
+
+        button.secondary {
+            background-color: #666;
+        }
+
+        button.secondary:hover {
+            background-color: #555;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 500px;
+            background-color: #2d2d2d;
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+
+        .results-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: #3d3d3d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .results-table th {
+            background-color: #4da6ff;
+            color: #fff;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .results-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #505050;
+        }
+
+        .results-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .results-table tr:hover {
+            background-color: #454545;
+            cursor: pointer;
+        }
+
+        .results-table tr.selected {
+            background-color: #4a5a6a;
+        }
+
+        .best-fit {
+            background-color: #2a4a2a !important;
+        }
+
+        .r-squared {
+            font-weight: bold;
+            color: #66ff66;
+        }
+
+        .equation {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #ffcc66;
+        }
+
+        .stats-box {
+            background-color: #3d3d3d;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #505050;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #b3b3b3;
+        }
+
+        .stat-value {
+            color: #4da6ff;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        small {
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Curve Fitting</h1>
+        
+        <div class="info-box">
+            <p><strong>Utilizzo:</strong> Inserisci i dati di calibrazione con valori X (lettura strumento) e Y (valore reale/noto).</p>
+            <p>Il tool testerà diverse funzioni matematiche e calcolerà il coefficiente R² per trovare la migliore correlazione.</p>
+            <p><strong>Zoom:</strong> Usa la rotellina del mouse sul grafico per ingrandire/ridurre la scala.</p>
+        </div>
+
+        <div class="grid-2col">
+            <div class="input-section">
+                <h2>Inserimento Dati</h2>
+                <label for="dataInput">Inserisci coppie di valori X, Y (uno per riga):</label>
+                <textarea id="dataInput" placeholder="Esempi di formato accettato:
+10, 9.8
+20, 19.5
+30, 29.2
+40, 38.8
+
+oppure con tab:
+10	9.8
+20	19.5
+
+oppure con punto e virgola:
+10; 9.8
+20; 19.5"></textarea>
+                <small>Formati supportati: virgola, tab, punto e virgola, spazio</small>
+                <br>
+                <button onclick="analyzeData()">Analizza Dati</button>
+                <button class="secondary" onclick="clearData()">Cancella</button>
+                <button class="secondary" onclick="loadExample()">Carica Esempio</button>
+
+                <div id="dataStats" class="stats-box hidden">
+                    <h3 style="color: #66b3ff; margin-bottom: 10px;">Statistiche Dati</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Numero Punti:</span>
+                        <span class="stat-value" id="numPoints">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">X Min - Max:</span>
+                        <span class="stat-value" id="xRange">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Y Min - Max:</span>
+                        <span class="stat-value" id="yRange">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <h2>Grafico</h2>
+                <canvas id="canvas"></canvas>
+            </div>
+        </div>
+
+        <div id="resultsSection" class="hidden">
+            <h2>Risultati Analisi Curve Fitting</h2>
+            <p style="color: #b3b3b3; margin-bottom: 10px;">Clicca su una riga per visualizzare la curva sul grafico. La funzione con R² migliore è evidenziata in verde.</p>
+            <table class="results-table" id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Tipo Funzione</th>
+                        <th>R² (Bontà di adattamento)</th>
+                        <th>Equazione</th>
+                        <th>RMSE</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let dataPoints = [];
+        let fitResults = [];
+        let selectedFit = null;
+        let canvas, ctx;
+        let scale = 1.0;
+        let offsetX = 0, offsetY = 0;
+        let viewBounds = { xMin: 0, xMax: 100, yMin: 0, yMax: 100 };
+        let initialViewBounds = null;
+        let mousePos = { x: null, y: null, dataX: null, dataY: null };
+
+        window.addEventListener('load', function() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            canvas.addEventListener('wheel', handleZoom);
+            canvas.addEventListener('contextmenu', handleRightClick);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseleave', handleMouseLeave);
+        });
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            drawGraph();
+        }
+
+        function handleRightClick(event) {
+            event.preventDefault();
+            
+            if (initialViewBounds && dataPoints.length > 0) {
+                // Reset alla vista iniziale
+                viewBounds = { ...initialViewBounds };
+                drawGraph();
+            }
+        }
+
+        function handleMouseMove(event) {
+            if (dataPoints.length === 0) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = event.clientX - rect.left;
+            mousePos.y = event.clientY - rect.top;
+            
+            // Calcola le coordinate dati
+            const padding = 60;
+            const xRange = viewBounds.xMax - viewBounds.xMin;
+            const yRange = viewBounds.yMax - viewBounds.yMin;
+            
+            mousePos.dataX = viewBounds.xMin + (mousePos.x - padding) / (canvas.width - 2 * padding) * xRange;
+            mousePos.dataY = viewBounds.yMax - (mousePos.y - padding) / (canvas.height - 2 * padding) * yRange;
+            
+            // Calcola il valore previsto se c'è una funzione selezionata
+            if (selectedFit && selectedFit.predict && mousePos.x >= padding && mousePos.x <= canvas.width - padding) {
+                mousePos.predictedY = selectedFit.predict(mousePos.dataX);
+            } else {
+                mousePos.predictedY = null;
+            }
+            
+            drawGraph();
+        }
+
+        function handleMouseLeave() {
+            mousePos.x = null;
+            mousePos.y = null;
+            mousePos.dataX = null;
+            mousePos.dataY = null;
+            mousePos.predictedY = null;
+            drawGraph();
+        }
+
+        function handleZoom(event) {
+            event.preventDefault();
+            
+            if (dataPoints.length === 0) return;
+            
+            // Ottieni la posizione del mouse rispetto al canvas
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            
+            // Calcola la posizione del mouse in coordinate dati prima dello zoom
+            const padding = 60;
+            const xRange = viewBounds.xMax - viewBounds.xMin;
+            const yRange = viewBounds.yMax - viewBounds.yMin;
+            
+            const dataX = viewBounds.xMin + (mouseX - padding) / (canvas.width - 2 * padding) * xRange;
+            const dataY = viewBounds.yMax - (mouseY - padding) / (canvas.height - 2 * padding) * yRange;
+            
+            // Calcola il nuovo scale
+            const zoomFactor = event.deltaY > 0 ? 1.15 : 0.87;
+            
+            // Espandi/riduci i bounds mantenendo il punto del mouse fisso
+            const newXRange = xRange * zoomFactor;
+            const newYRange = yRange * zoomFactor;
+            
+            const mouseXRatio = (dataX - viewBounds.xMin) / xRange;
+            const mouseYRatio = (dataY - viewBounds.yMin) / yRange;
+            
+            viewBounds.xMin = dataX - newXRange * mouseXRatio;
+            viewBounds.xMax = dataX + newXRange * (1 - mouseXRatio);
+            viewBounds.yMin = dataY - newYRange * mouseYRatio;
+            viewBounds.yMax = dataY + newYRange * (1 - mouseYRatio);
+            
+            drawGraph();
+        }
+
+        function parseData() {
+            const input = document.getElementById('dataInput').value.trim();
+            if (!input) {
+                alert('Inserire dei dati');
+                return false;
+            }
+
+            dataPoints = [];
+            const lines = input.split('\n');
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                // Prova diversi separatori
+                let parts = line.split(/[,;\t]/).map(s => s.trim());
+                
+                // Se non ha funzionato, prova con spazi multipli
+                if (parts.length < 2) {
+                    parts = line.split(/\s+/);
+                }
+
+                if (parts.length >= 2) {
+                    const x = parseFloat(parts[0]);
+                    const y = parseFloat(parts[1]);
+                    
+                    if (!isNaN(x) && !isNaN(y)) {
+                        dataPoints.push({ x, y });
+                    }
+                }
+            }
+
+            if (dataPoints.length < 3) {
+                alert('Sono necessari almeno 3 punti validi per l\'analisi');
+                return false;
+            }
+
+            return true;
+        }
+
+        function analyzeData() {
+            if (!parseData()) return;
+
+            updateDataStats();
+            
+            // Imposta i bounds iniziali con margine per vedere la curva fuori dai punti
+            const xValues = dataPoints.map(p => p.x);
+            const yValues = dataPoints.map(p => p.y);
+            const xMin = Math.min(...xValues);
+            const xMax = Math.max(...xValues);
+            const yMin = Math.min(...yValues);
+            const yMax = Math.max(...yValues);
+            
+            const xRange = xMax - xMin;
+            const yRange = yMax - yMin;
+            const margin = 0.2; // 20% margine
+            
+            viewBounds = {
+                xMin: xMin - xRange * margin,
+                xMax: xMax + xRange * margin,
+                yMin: yMin - yRange * margin,
+                yMax: yMax + yRange * margin
+            };
+            
+            // Salva i bounds iniziali per il reset
+            initialViewBounds = { ...viewBounds };
+            
+            fitResults = [];
+
+            // Calcola tutte le regressioni
+            fitResults.push(fitLinear());
+            fitResults.push(fitQuadratic());
+            fitResults.push(fitCubic());
+            fitResults.push(fitExponential());
+            fitResults.push(fitLogarithmic());
+            fitResults.push(fitPower());
+            fitResults.push(fitHyperbolic());
+            fitResults.push(fitSigmoidal());
+
+            // Ordina per R² decrescente
+            fitResults.sort((a, b) => b.r2 - a.r2);
+
+            displayResults();
+            drawGraph();
+        }
+
+        function updateDataStats() {
+            const xValues = dataPoints.map(p => p.x);
+            const yValues = dataPoints.map(p => p.y);
+            
+            document.getElementById('numPoints').textContent = dataPoints.length;
+            document.getElementById('xRange').textContent = 
+                `${Math.min(...xValues).toFixed(2)} - ${Math.max(...xValues).toFixed(2)}`;
+            document.getElementById('yRange').textContent = 
+                `${Math.min(...yValues).toFixed(2)} - ${Math.max(...yValues).toFixed(2)}`;
+            
+            document.getElementById('dataStats').classList.remove('hidden');
+        }
+
+        function calculateR2(predicted, actual) {
+            const mean = actual.reduce((a, b) => a + b, 0) / actual.length;
+            const ssRes = actual.reduce((sum, y, i) => sum + Math.pow(y - predicted[i], 2), 0);
+            const ssTot = actual.reduce((sum, y) => sum + Math.pow(y - mean, 2), 0);
+            return 1 - (ssRes / ssTot);
+        }
+
+        function calculateRMSE(predicted, actual) {
+            const mse = actual.reduce((sum, y, i) => sum + Math.pow(y - predicted[i], 2), 0) / actual.length;
+            return Math.sqrt(mse);
+        }
+
+        // REGRESSIONE LINEARE: y = a + bx
+        function fitLinear() {
+            const n = dataPoints.length;
+            const sumX = dataPoints.reduce((sum, p) => sum + p.x, 0);
+            const sumY = dataPoints.reduce((sum, p) => sum + p.y, 0);
+            const sumXY = dataPoints.reduce((sum, p) => sum + p.x * p.y, 0);
+            const sumX2 = dataPoints.reduce((sum, p) => sum + p.x * p.x, 0);
+
+            const b = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const a = (sumY - b * sumX) / n;
+
+            const predicted = dataPoints.map(p => a + b * p.x);
+            const actual = dataPoints.map(p => p.y);
+            const r2 = calculateR2(predicted, actual);
+            const rmse = calculateRMSE(predicted, actual);
+
+            return {
+                type: 'Lineare',
+                equation: `y = ${a.toFixed(4)} + ${b.toFixed(4)}x`,
+                r2: r2,
+                rmse: rmse,
+                predict: (x) => a + b * x,
+                params: { a, b }
+            };
+        }
+
+        // REGRESSIONE QUADRATICA: y = a + bx + cx²
+        function fitQuadratic() {
+            const n = dataPoints.length;
+            
+            // Costruzione della matrice per il metodo dei minimi quadrati
+            let sumX = 0, sumX2 = 0, sumX3 = 0, sumX4 = 0;
+            let sumY = 0, sumXY = 0, sumX2Y = 0;
+            
+            for (let p of dataPoints) {
+                sumX += p.x;
+                sumX2 += p.x * p.x;
+                sumX3 += p.x * p.x * p.x;
+                sumX4 += p.x * p.x * p.x * p.x;
+                sumY += p.y;
+                sumXY += p.x * p.y;
+                sumX2Y += p.x * p.x * p.y;
+            }
+
+            // Risoluzione sistema lineare 3x3
+            const matrix = [
+                [n, sumX, sumX2, sumY],
+                [sumX, sumX2, sumX3, sumXY],
+                [sumX2, sumX3, sumX4, sumX2Y]
+            ];
+
+            const [a, b, c] = solveLinearSystem(matrix);
+
+            const predicted = dataPoints.map(p => a + b * p.x + c * p.x * p.x);
+            const actual = dataPoints.map(p => p.y);
+            const r2 = calculateR2(predicted, actual);
+            const rmse = calculateRMSE(predicted, actual);
+
+            return {
+                type: 'Polinomiale (2° grado)',
+                equation: `y = ${a.toFixed(4)} + ${b.toFixed(4)}x + ${c.toFixed(4)}x²`,
+                r2: r2,
+                rmse: rmse,
+                predict: (x) => a + b * x + c * x * x,
+                params: { a, b, c }
+            };
+        }
+
+        // REGRESSIONE CUBICA: y = a + bx + cx² + dx³
+        function fitCubic() {
+            const n = dataPoints.length;
+            
+            let sumX = 0, sumX2 = 0, sumX3 = 0, sumX4 = 0, sumX5 = 0, sumX6 = 0;
+            let sumY = 0, sumXY = 0, sumX2Y = 0, sumX3Y = 0;
+            
+            for (let p of dataPoints) {
+                const x = p.x, x2 = x*x, x3 = x2*x;
+                sumX += x;
+                sumX2 += x2;
+                sumX3 += x3;
+                sumX4 += x2 * x2;
+                sumX5 += x2 * x3;
+                sumX6 += x3 * x3;
+                sumY += p.y;
+                sumXY += x * p.y;
+                sumX2Y += x2 * p.y;
+                sumX3Y += x3 * p.y;
+            }
+
+            const matrix = [
+                [n, sumX, sumX2, sumX3, sumY],
+                [sumX, sumX2, sumX3, sumX4, sumXY],
+                [sumX2, sumX3, sumX4, sumX5, sumX2Y],
+                [sumX3, sumX4, sumX5, sumX6, sumX3Y]
+            ];
+
+            const [a, b, c, d] = solveLinearSystem(matrix);
+
+            const predicted = dataPoints.map(p => a + b * p.x + c * p.x * p.x + d * p.x * p.x * p.x);
+            const actual = dataPoints.map(p => p.y);
+            const r2 = calculateR2(predicted, actual);
+            const rmse = calculateRMSE(predicted, actual);
+
+            return {
+                type: 'Polinomiale (3° grado)',
+                equation: `y = ${a.toFixed(4)} + ${b.toFixed(4)}x + ${c.toFixed(4)}x² + ${d.toFixed(4)}x³`,
+                r2: r2,
+                rmse: rmse,
+                predict: (x) => a + b * x + c * x * x + d * x * x * x,
+                params: { a, b, c, d }
+            };
+        }
+
+        // REGRESSIONE ESPONENZIALE: y = a * e^(bx)
+        function fitExponential() {
+            // Trasformo in lineare: ln(y) = ln(a) + bx
+            const validPoints = dataPoints.filter(p => p.y > 0);
+            if (validPoints.length < 3) {
+                return {
+                    type: 'Esponenziale',
+                    equation: 'N/A (valori Y non positivi)',
+                    r2: -Infinity,
+                    rmse: Infinity,
+                    predict: (x) => 0
+                };
+            }
+
+            const n = validPoints.length;
+            const sumX = validPoints.reduce((sum, p) => sum + p.x, 0);
+            const sumLnY = validPoints.reduce((sum, p) => sum + Math.log(p.y), 0);
+            const sumXLnY = validPoints.reduce((sum, p) => sum + p.x * Math.log(p.y), 0);
+            const sumX2 = validPoints.reduce((sum, p) => sum + p.x * p.x, 0);
+
+            const b = (n * sumXLnY - sumX * sumLnY) / (n * sumX2 - sumX * sumX);
+            const lnA = (sumLnY - b * sumX) / n;
+            const a = Math.exp(lnA);
+
+            const predicted = validPoints.map(p => a * Math.exp(b * p.x));
+            const actual = validPoints.map(p => p.y);
+            const r2 = calculateR2(predicted, actual);
+            const rmse = calculateRMSE(predicted, actual);
+
+            return {
+                type: 'Esponenziale',
+                equation: `y = ${a.toFixed(4)} × e^(${b.toFixed(4)}x)`,
+                r2: r2,
+                rmse: rmse,
+                predict: (x) => a * Math.exp(b * x),
+                params: { a, b }
+            };
+        }
+
+        // REGRESSIONE LOGARITMICA: y = a + b*ln(x)
+        function fitLogarithmic() {
+            const validPoints = dataPoints.filter(p => p.x > 0);
+            if (validPoints.length < 3) {
+                return {
+                    type: 'Logaritmica',
+                    equation: 'N/A (valori X non positivi)',
+                    r2: -Infinity,
+                    rmse: Infinity,
+                    predict: (x) => 0
+                };
+            }
+
+            const n = validPoints.length;
+            const sumLnX = validPoints.reduce((sum, p) => sum + Math.log(p.x), 0);
+            const sumY = validPoints.reduce((sum, p) => sum + p.y, 0);
+            const sumLnXY = validPoints.reduce((sum, p) => sum + Math.log(p.x) * p.y, 0);
+            const sumLnX2 = validPoints.reduce((sum, p) => sum + Math.log(p.x) * Math.log(p.x), 0);
+
+            const b = (n * sumLnXY - sumLnX * sumY) / (n * sumLnX2 - sumLnX * sumLnX);
+            const a = (sumY - b * sumLnX) / n;
+
+            const predicted = validPoints.map(p => a + b * Math.log(p.x));
+            const actual = validPoints.map(p => p.y);
+            const r2 = calculateR2(predicted, actual);
+            const rmse = calculateRMSE(predicted, actual);
+
+            return {
+                type: 'Logaritmica',
+                equation: `y = ${a.toFixed(4)} + ${b.toFixed(4)} × ln(x)`,
+                r2: r2,
+                rmse: rmse,
+                predict: (x) => x > 0 ? a + b * Math.log(x) : 0,
+                params: { a, b }
+            };
+        }
+
+        // REGRESSIONE POTENZA: y = a * x^b
+        function fitPower() {
+            const validPoints = dataPoints.filter(p => p.x > 0 && p.y > 0);
+            if (validPoints.length < 3) {
+                return {
+                    type: 'Potenza',
+                    equation: 'N/A (valori non positivi)',
+                    r2: -Infinity,
+                    rmse: Infinity,
+                    predict: (x) => 0
+                };
+            }
+
+            // Trasformo in lineare: ln(y) = ln(a) + b*ln(x)
+            const n = validPoints.length;
+            const sumLnX = validPoints.reduce((sum, p) => sum + Math.log(p.x), 0);
+            const sumLnY = validPoints.reduce((sum, p) => sum + Math.log(p.y), 0);
+            const sumLnXLnY = validPoints.reduce((sum, p) => sum + Math.log(p.x) * Math.log(p.y), 0);
+            const sumLnX2 = validPoints.reduce((sum, p) => sum + Math.log(p.x) * Math.log(p.x), 0);
+
+            const b = (n * sumLnXLnY - sumLnX * sumLnY) / (n * sumLnX2 - sumLnX * sumLnX);
+            const lnA = (sumLnY - b * sumLnX) / n;
+            const a = Math.exp(lnA);
+
+            const predicted = validPoints.map(p => a * Math.pow(p.x, b));
+            const actual = validPoints.map(p => p.y);
+            const r2 = calculateR2(predicted, actual);
+            const rmse = calculateRMSE(predicted, actual);
+
+            return {
+                type: 'Potenza',
+                equation: `y = ${a.toFixed(4)} × x^${b.toFixed(4)}`,
+                r2: r2,
+                rmse: rmse,
+                predict: (x) => x > 0 ? a * Math.pow(x, b) : 0,
+                params: { a, b }
+            };
+        }
+
+        // REGRESSIONE IPERBOLICA: y = a + b/x
+        function fitHyperbolic() {
+            const validPoints = dataPoints.filter(p => p.x !== 0);
+            if (validPoints.length < 3) {
+                return {
+                    type: 'Iperbolica',
+                    equation: 'N/A (presenza di X = 0)',
+                    r2: -Infinity,
+                    rmse: Infinity,
+                    predict: (x) => 0
+                };
+            }
+
+            const n = validPoints.length;
+            const sumInvX = validPoints.reduce((sum, p) => sum + 1/p.x, 0);
+            const sumY = validPoints.reduce((sum, p) => sum + p.y, 0);
+            const sumInvXY = validPoints.reduce((sum, p) => sum + (1/p.x) * p.y, 0);
+            const sumInvX2 = validPoints.reduce((sum, p) => sum + 1/(p.x * p.x), 0);
+
+            const b = (n * sumInvXY - sumInvX * sumY) / (n * sumInvX2 - sumInvX * sumInvX);
+            const a = (sumY - b * sumInvX) / n;
+
+            const predicted = validPoints.map(p => a + b / p.x);
+            const actual = validPoints.map(p => p.y);
+            const r2 = calculateR2(predicted, actual);
+            const rmse = calculateRMSE(predicted, actual);
+
+            return {
+                type: 'Iperbolica',
+                equation: `y = ${a.toFixed(4)} + ${b.toFixed(4)}/x`,
+                r2: r2,
+                rmse: rmse,
+                predict: (x) => x !== 0 ? a + b / x : 0,
+                params: { a, b }
+            };
+        }
+
+        // REGRESSIONE SIGMOIDALE: y = a / (1 + e^(-b(x-c)))
+        // Semplificata usando approssimazione logistica
+        function fitSigmoidal() {
+            // Approssimazione: usa i parametri da una trasformazione logit
+            const yValues = dataPoints.map(p => p.y);
+            const yMin = Math.min(...yValues);
+            const yMax = Math.max(...yValues);
+            
+            if (yMax - yMin < 0.001) {
+                return {
+                    type: 'Sigmoidale',
+                    equation: 'N/A (range Y insufficiente)',
+                    r2: -Infinity,
+                    rmse: Infinity,
+                    predict: (x) => yMin
+                };
+            }
+
+            // Normalizza Y tra 0.01 e 0.99 per evitare log(0)
+            const normalizedPoints = dataPoints.map(p => ({
+                x: p.x,
+                y: 0.01 + 0.98 * (p.y - yMin) / (yMax - yMin)
+            }));
+
+            // Trasforma in lineare: ln(y/(1-y)) = a + bx
+            const n = normalizedPoints.length;
+            const sumX = normalizedPoints.reduce((sum, p) => sum + p.x, 0);
+            const sumLogit = normalizedPoints.reduce((sum, p) => sum + Math.log(p.y / (1 - p.y)), 0);
+            const sumXLogit = normalizedPoints.reduce((sum, p) => sum + p.x * Math.log(p.y / (1 - p.y)), 0);
+            const sumX2 = normalizedPoints.reduce((sum, p) => sum + p.x * p.x, 0);
+
+            const b = (n * sumXLogit - sumX * sumLogit) / (n * sumX2 - sumX * sumX);
+            const a = (sumLogit - b * sumX) / n;
+
+            // Parametri della sigmoide
+            const L = yMax - yMin;
+            const k = b;
+            const x0 = -a / b;
+
+            const predicted = dataPoints.map(p => yMin + L / (1 + Math.exp(-k * (p.x - x0))));
+            const actual = dataPoints.map(p => p.y);
+            const r2 = calculateR2(predicted, actual);
+            const rmse = calculateRMSE(predicted, actual);
+
+            return {
+                type: 'Sigmoidale',
+                equation: `y = ${yMin.toFixed(2)} + ${L.toFixed(2)}/(1 + e^(-${k.toFixed(4)}(x-${x0.toFixed(2)})))`,
+                r2: r2,
+                rmse: rmse,
+                predict: (x) => yMin + L / (1 + Math.exp(-k * (x - x0))),
+                params: { L, k, x0, yMin }
+            };
+        }
+
+        // Risoluzione sistema lineare con eliminazione di Gauss
+        function solveLinearSystem(matrix) {
+            const n = matrix.length;
+            
+            // Forward elimination
+            for (let i = 0; i < n; i++) {
+                // Trova pivot
+                let maxRow = i;
+                for (let k = i + 1; k < n; k++) {
+                    if (Math.abs(matrix[k][i]) > Math.abs(matrix[maxRow][i])) {
+                        maxRow = k;
+                    }
+                }
+                
+                // Scambia righe
+                [matrix[i], matrix[maxRow]] = [matrix[maxRow], matrix[i]];
+                
+                // Elimina colonna
+                for (let k = i + 1; k < n; k++) {
+                    const factor = matrix[k][i] / matrix[i][i];
+                    for (let j = i; j <= n; j++) {
+                        matrix[k][j] -= factor * matrix[i][j];
+                    }
+                }
+            }
+            
+            // Back substitution
+            const solution = new Array(n);
+            for (let i = n - 1; i >= 0; i--) {
+                solution[i] = matrix[i][n];
+                for (let j = i + 1; j < n; j++) {
+                    solution[i] -= matrix[i][j] * solution[j];
+                }
+                solution[i] /= matrix[i][i];
+            }
+            
+            return solution;
+        }
+
+        function displayResults() {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            fitResults.forEach((fit, index) => {
+                const row = tbody.insertRow();
+                if (index === 0) {
+                    row.classList.add('best-fit');
+                }
+                
+                row.innerHTML = `
+                    <td>${fit.type}</td>
+                    <td class="r-squared">${fit.r2.toFixed(6)}</td>
+                    <td class="equation">${fit.equation}</td>
+                    <td>${fit.rmse.toFixed(4)}</td>
+                `;
+                
+                row.addEventListener('click', () => selectFit(index, row));
+            });
+
+            document.getElementById('resultsSection').classList.remove('hidden');
+            
+            // Seleziona automaticamente la migliore
+            selectFit(0, tbody.rows[0]);
+        }
+
+        function selectFit(index, row) {
+            // Rimuovi selezione precedente
+            document.querySelectorAll('.results-table tr.selected').forEach(r => {
+                r.classList.remove('selected');
+            });
+            
+            row.classList.add('selected');
+            selectedFit = fitResults[index];
+            drawGraph();
+        }
+
+        function drawGraph() {
+            if (!ctx) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (dataPoints.length === 0) {
+                ctx.fillStyle = '#666';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Inserisci i dati per visualizzare il grafico', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Usa i viewBounds per il rendering
+            const xMin = viewBounds.xMin;
+            const xMax = viewBounds.xMax;
+            const yMin = viewBounds.yMin;
+            const yMax = viewBounds.yMax;
+            
+            const xRange = xMax - xMin;
+            const yRange = yMax - yMin;
+            const padding = 60;
+            
+            const xScale = (canvas.width - 2 * padding) / xRange;
+            const yScale = (canvas.height - 2 * padding) / yRange;
+
+            function toCanvasX(x) {
+                return padding + (x - xMin) * xScale;
+            }
+
+            function toCanvasY(y) {
+                return canvas.height - padding - (y - yMin) * yScale;
+            }
+
+            // Disegna griglia
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            
+            // Griglia verticale
+            const xSteps = 10;
+            for (let i = 0; i <= xSteps; i++) {
+                const x = xMin + (xRange * i / xSteps);
+                const canvasX = toCanvasX(x);
+                ctx.beginPath();
+                ctx.moveTo(canvasX, padding);
+                ctx.lineTo(canvasX, canvas.height - padding);
+                ctx.stroke();
+            }
+            
+            // Griglia orizzontale
+            const ySteps = 10;
+            for (let i = 0; i <= ySteps; i++) {
+                const y = yMin + (yRange * i / ySteps);
+                const canvasY = toCanvasY(y);
+                ctx.beginPath();
+                ctx.moveTo(padding, canvasY);
+                ctx.lineTo(canvas.width - padding, canvasY);
+                ctx.stroke();
+            }
+
+            // Disegna assi
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+
+            // Etichette assi
+            ctx.fillStyle = '#999';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            
+            // Asse X
+            for (let i = 0; i <= 5; i++) {
+                const x = xMin + (xRange * i / 5);
+                const canvasX = toCanvasX(x);
+                ctx.fillText(x.toFixed(2), canvasX, canvas.height - padding + 20);
+                
+                ctx.strokeStyle = '#555';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(canvasX, canvas.height - padding);
+                ctx.lineTo(canvasX, canvas.height - padding + 5);
+                ctx.stroke();
+            }
+            
+            // Asse Y
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const y = yMin + (yRange * i / 5);
+                const canvasY = toCanvasY(y);
+                ctx.fillText(y.toFixed(2), padding - 10, canvasY + 4);
+                
+                ctx.strokeStyle = '#555';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(padding - 5, canvasY);
+                ctx.lineTo(padding, canvasY);
+                ctx.stroke();
+            }
+
+            // Disegna curva di fitting se selezionata (prima dei punti per essere sotto)
+            if (selectedFit && selectedFit.predict) {
+                ctx.strokeStyle = '#ff6666';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                // Disegna la curva sull'intero range visibile
+                const steps = 300;
+                const xStep = xRange / steps;
+                let firstPoint = true;
+                
+                for (let i = 0; i <= steps; i++) {
+                    const x = xMin + i * xStep;
+                    const y = selectedFit.predict(x);
+                    
+                    if (isFinite(y)) {
+                        const canvasX = toCanvasX(x);
+                        const canvasY = toCanvasY(y);
+                        
+                        // Disegna anche se fuori dall'area visibile (viene clippato automaticamente)
+                        if (firstPoint) {
+                            ctx.moveTo(canvasX, canvasY);
+                            firstPoint = false;
+                        } else {
+                            ctx.lineTo(canvasX, canvasY);
+                        }
+                    }
+                }
+                
+                ctx.stroke();
+            }
+
+            // Disegna punti dati sopra la curva
+            ctx.fillStyle = '#4da6ff';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            dataPoints.forEach(p => {
+                const canvasX = toCanvasX(p.x);
+                const canvasY = toCanvasY(p.y);
+                
+                // Disegna solo se visibile
+                if (canvasX >= padding && canvasX <= canvas.width - padding &&
+                    canvasY >= padding && canvasY <= canvas.height - padding) {
+                    ctx.beginPath();
+                    ctx.arc(canvasX, canvasY, 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            });
+
+            // Mostra equazione e info sul grafico
+            if (selectedFit) {
+                // Box semitrasparente per il testo
+                ctx.fillStyle = 'rgba(45, 45, 45, 0.9)';
+                ctx.fillRect(padding + 10, padding + 10, 400, 45);
+                
+                ctx.fillStyle = '#ff6666';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(selectedFit.type + ': R² = ' + selectedFit.r2.toFixed(6), padding + 20, padding + 30);
+                
+                ctx.fillStyle = '#ffcc66';
+                ctx.font = '12px Courier New';
+                ctx.fillText(selectedFit.equation, padding + 20, padding + 48);
+            }
+
+            // Etichette assi
+            ctx.fillStyle = '#b3b3b3';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('X (Lettura Strumento)', canvas.width / 2, canvas.height - 10);
+            
+            ctx.save();
+            ctx.translate(20, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Y (Valore Reale)', 0, 0);
+            ctx.restore();
+            
+            // Istruzioni zoom
+            ctx.fillStyle = '#666';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText('Rotellina: zoom | Tasto dx: reset vista', canvas.width - padding - 10, canvas.height - padding - 10);
+            
+            // Disegna indicatore valore corrente
+            if (mousePos.x !== null && mousePos.predictedY !== null && isFinite(mousePos.predictedY)) {
+                const canvasX = toCanvasX(mousePos.dataX);
+                const canvasY = toCanvasY(mousePos.predictedY);
+                
+                // Linea verticale
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(canvasX, padding);
+                ctx.lineTo(canvasX, canvas.height - padding);
+                ctx.stroke();
+                
+                // Linea orizzontale
+                ctx.beginPath();
+                ctx.moveTo(padding, canvasY);
+                ctx.lineTo(canvas.width - padding, canvasY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Punto sulla curva
+                ctx.fillStyle = '#ffff00';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(canvasX, canvasY, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Box informazioni
+                const infoText = `X: ${mousePos.dataX.toFixed(3)}  |  Y: ${mousePos.predictedY.toFixed(3)}`;
+                ctx.font = '13px Arial';
+                ctx.textAlign = 'left';
+                const textWidth = ctx.measureText(infoText).width;
+                
+                // Posiziona il box in base alla posizione del mouse
+                let boxX = canvasX + 15;
+                let boxY = canvasY - 30;
+                
+                // Aggiusta se esce dal canvas
+                if (boxX + textWidth + 20 > canvas.width - padding) {
+                    boxX = canvasX - textWidth - 35;
+                }
+                if (boxY < padding + 10) {
+                    boxY = canvasY + 15;
+                }
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.fillRect(boxX, boxY, textWidth + 20, 28);
+                
+                ctx.strokeStyle = '#ffff00';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(boxX, boxY, textWidth + 20, 28);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(infoText, boxX + 10, boxY + 18);
+            }
+        }
+
+        function clearData() {
+            document.getElementById('dataInput').value = '';
+            dataPoints = [];
+            fitResults = [];
+            selectedFit = null;
+            document.getElementById('dataStats').classList.add('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('resultsBody').innerHTML = '';
+            viewBounds = { xMin: 0, xMax: 100, yMin: 0, yMax: 100 };
+            initialViewBounds = null;
+            mousePos = { x: null, y: null, dataX: null, dataY: null };
+            drawGraph();
+        }
+
+        function loadExample() {
+            const exampleData = `0, 0.5
+10, 9.8
+20, 19.6
+30, 29.5
+40, 39.3
+50, 49.0
+60, 58.9
+70, 68.7
+80, 78.5
+90, 88.4
+100, 98.2`;
+            document.getElementById('dataInput').value = exampleData;
+            analyzeData();
+        }
+    </script>
+</body>
+</html>
