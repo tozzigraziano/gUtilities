@@ -235,6 +235,68 @@
             background-color: #2a2d2e;
         }
 
+        .log-table tr.limit-violation {
+            background-color: #5a1d1d !important;
+        }
+
+        .log-table tr.limit-violation:hover {
+            background-color: #6a2525 !important;
+        }
+
+        .log-table tr.limit-ok {
+            background-color: #1d3a1d !important;
+        }
+
+        .log-table tr.limit-ok:hover {
+            background-color: #254a25 !important;
+        }
+
+        .limit-status {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        .limit-status.out {
+            background-color: #c5282c;
+            color: white;
+        }
+
+        .limit-status.in {
+            background-color: #0e7d0e;
+            color: white;
+        }
+
+        .analysis-panel {
+            background-color: #2d2d30;
+            padding: 10px 15px;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 12px;
+            display: none;
+        }
+
+        .analysis-panel.active {
+            display: block;
+        }
+
+        .analysis-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #569cd6;
+        }
+
         .empty-state {
             display: flex;
             flex-direction: column;
@@ -323,6 +385,10 @@
                 <input type="checkbox" id="autoScroll">
                 <label for="autoScroll">Auto-scroll</label>
             </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="filterOutOfRange">
+                <label for="filterOutOfRange">Show only OUT of range</label>
+            </div>
         </div>
     </header>
 
@@ -350,6 +416,22 @@
                 <div class="file-info" id="fileInfo">No file selected</div>
                 <div>
                     <button onclick="refreshCurrentFile()" id="refreshBtn" disabled>Refresh</button>
+                </div>
+            </div>
+            <div class="analysis-panel" id="analysisPanel">
+                <div class="analysis-stats">
+                    <div class="stat-item">
+                        <span>Total Limits:</span>
+                        <span class="stat-value" id="totalLimits">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span style="color: #0e7d0e;">✓ In Range:</span>
+                        <span class="stat-value" style="color: #0e7d0e;" id="inRangeLimits">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span style="color: #c5282c;">✗ Out of Range:</span>
+                        <span class="stat-value" style="color: #c5282c;" id="outRangeLimits">0</span>
+                    </div>
                 </div>
             </div>
             <div class="log-viewer" id="logViewer">
@@ -466,8 +548,138 @@
             return line.split(';').map(col => col.trim());
         }
 
+        // Parse position data from string like "{X 363.500,Y -279.933,Z -8.000,A 270.000,B 0.000,C 180.000}"
+        function parsePositionData(str) {
+            if (!str || !str.includes('{') || !str.includes('}')) {
+                return null;
+            }
+
+            const data = str.match(/\{([^}]+)\}/);
+            if (!data) return null;
+
+            const parts = data[1].split(',');
+            const pos = {};
+
+            parts.forEach(part => {
+                const [key, value] = part.trim().split(/\s+/);
+                if (key && value) {
+                    pos[key] = parseFloat(value);
+                }
+            });
+
+            // Check if it has all required fields
+            if (pos.X !== undefined && pos.Y !== undefined && pos.Z !== undefined &&
+                pos.A !== undefined && pos.B !== undefined && pos.C !== undefined) {
+                return pos;
+            }
+
+            return null;
+        }
+
+        // Normalize angle to 0-360 range (AngleModule function)
+        function angleModule(angle) {
+            let normalized = angle % 360;
+            if (normalized < 0) normalized += 360;
+            return normalized;
+        }
+
+        // Check if position is within limits (robot logic)
+        function checkPositionInLimits(pPos, limitMin, limitMax) {
+            // Normalize angles
+            const pos = {
+                X: pPos.X,
+                Y: pPos.Y,
+                Z: pPos.Z,
+                A: angleModule(pPos.A),
+                B: angleModule(pPos.B),
+                C: angleModule(pPos.C)
+            };
+
+            const fMin = {
+                X: limitMin.X,
+                Y: limitMin.Y,
+                Z: limitMin.Z,
+                A: angleModule(limitMin.A),
+                B: angleModule(limitMin.B),
+                C: angleModule(limitMin.C)
+            };
+
+            const fMax = {
+                X: limitMax.X,
+                Y: limitMax.Y,
+                Z: limitMax.Z,
+                A: angleModule(limitMax.A),
+                B: angleModule(limitMax.B),
+                C: angleModule(limitMax.C)
+            };
+
+            // Check XYZ (simple range check)
+            const xOk = pos.X >= fMin.X && pos.X <= fMax.X;
+            const yOk = pos.Y >= fMin.Y && pos.Y <= fMax.Y;
+            const zOk = pos.Z >= fMin.Z && pos.Z <= fMax.Z;
+
+            // Check angles with wrap-around logic
+            let bC, bB, bA;
+
+            // C angle check
+            bC = ((fMin.C <= fMax.C) && (pos.C >= fMin.C) && (pos.C <= fMax.C)) ||
+                 ((fMin.C > fMax.C) && ((pos.C >= fMin.C) || (pos.C <= fMax.C)));
+
+            // B angle check
+            bB = ((fMin.B <= fMax.B) && (pos.B >= fMin.B) && (pos.B <= fMax.B)) ||
+                 ((fMin.B > fMax.B) && ((pos.B >= fMin.B) || (pos.B <= fMax.B)));
+
+            // A angle check
+            bA = ((fMin.A <= fMax.A) && (pos.A >= fMin.A) && (pos.A <= fMax.A)) ||
+                 ((fMin.A > fMax.A) && ((pos.A >= fMin.A) || (pos.A <= fMax.A)));
+
+            const result = xOk && yOk && zOk && bA && bB && bC;
+
+            return {
+                result: result,
+                details: {
+                    X: xOk,
+                    Y: yOk,
+                    Z: zOk,
+                    A: bA,
+                    B: bB,
+                    C: bC
+                },
+                values: {
+                    pos: pos,
+                    min: fMin,
+                    max: fMax
+                }
+            };
+        }
+
+        // Check if this is a limit analysis file
+        function isLimitAnalysisFile(filename) {
+            return filename.toLowerCase().startsWith('lim');
+        }
+
+        // Analyze limit data in columns
+        function analyzeLimitRow(row) {
+            // Check columns at indices 11, 12, 13 (after base columns which are 0-9)
+            // These correspond to Extra2, Extra3, Extra4 in the display
+            const col1Data = row[11]; // Extra2
+            const col2Data = row[12]; // Extra3
+            const col3Data = row[13]; // Extra4
+
+            const pos = parsePositionData(col1Data);
+            const limitMin = parsePositionData(col2Data);
+            const limitMax = parsePositionData(col3Data);
+
+            if (pos && limitMin && limitMax) {
+                return checkPositionInLimits(pos, limitMin, limitMax);
+            }
+
+            return null;
+        }
+
         function displayLogContent(content, filename, fileInfo = {}) {
             const logViewer = document.getElementById('logViewer');
+            const analysisPanel = document.getElementById('analysisPanel');
             
             if (!content || content.trim() === '') {
                 logViewer.innerHTML = `
@@ -475,12 +687,18 @@
                         <div style="font-size: 14px; color: #f48771;">File is empty or could not be read</div>
                     </div>
                 `;
+                analysisPanel.classList.remove('active');
                 return;
             }
 
             const lines = content.trim().split('\n').filter(line => line.trim() !== '');
             const rows = lines.map(line => parseCSVLine(line));
             
+            // Check if this is a limit analysis file
+            const isLimitFile = isLimitAnalysisFile(filename);
+            let limitStats = { total: 0, inRange: 0, outOfRange: 0 };
+            const filterOutOfRange = document.getElementById('filterOutOfRange').checked;
+
             // Determine columns based on first row
             const maxCols = Math.max(...rows.map(r => r.length));
             const extraCols = maxCols - BASE_COLUMNS.length;
@@ -495,19 +713,91 @@
             columns.forEach(col => {
                 html += `<th>${col}</th>`;
             });
+            if (isLimitFile) {
+                html += '<th>Limit Check</th>';
+            }
             html += '</tr></thead><tbody>';
 
             rows.forEach((row, index) => {
-                html += '<tr>';
+                let limitCheck = null;
+                let rowClass = '';
+
+                // Analyze limit if applicable
+                if (isLimitFile && row.length >= 14) {
+                    limitCheck = analyzeLimitRow(row);
+                    if (limitCheck) {
+                        limitStats.total++;
+                        if (limitCheck.result) {
+                            limitStats.inRange++;
+                            rowClass = 'limit-ok';
+                        } else {
+                            limitStats.outOfRange++;
+                            rowClass = 'limit-violation';
+                        }
+                    }
+                }
+
+                // Apply filter: skip rows that are IN range if filter is active
+                if (filterOutOfRange && isLimitFile && limitCheck && limitCheck.result) {
+                    return; // Skip this row
+                }
+
+                html += `<tr class="${rowClass}">`;
                 html += `<td style="color: #888; font-weight: bold;">${index + 1}</td>`;
                 for (let i = 0; i < columns.length; i++) {
                     html += `<td>${row[i] || ''}</td>`;
                 }
+
+                // Add limit check result column
+                if (isLimitFile) {
+                    if (limitCheck) {
+                        const statusClass = limitCheck.result ? 'in' : 'out';
+                        const statusText = limitCheck.result ? '✓ IN' : '✗ OUT';
+                        const details = limitCheck.details;
+                        const values = limitCheck.values;
+                        const failedAxes = [];
+                        
+                        // Build detailed tooltip
+                        let tooltipLines = [];
+                        
+                        ['X', 'Y', 'Z', 'A', 'B', 'C'].forEach(axis => {
+                            const isOk = details[axis];
+                            const val = values.pos[axis].toFixed(3);
+                            const min = values.min[axis].toFixed(3);
+                            const max = values.max[axis].toFixed(3);
+                            
+                            if (!isOk) {
+                                failedAxes.push(axis);
+                                tooltipLines.push(`${axis}: ${val} [${min} to ${max}] ✗`);
+                            } else {
+                                tooltipLines.push(`${axis}: ${val} [${min} to ${max}] ✓`);
+                            }
+                        });
+                        
+                        const title = tooltipLines.join('\n');
+                        const statusLabel = failedAxes.length > 0 ? `✗ OUT (${failedAxes.join(',')})` : '✓ IN';
+                        
+                        html += `<td><span class="limit-status ${statusClass}" title="${title}">${statusLabel}</span></td>`;
+                    } else {
+                        html += `<td style="color: #666;">-</td>`;
+                    }
+                }
+
                 html += '</tr>';
             });
 
             html += '</tbody></table>';
             logViewer.innerHTML = html;
+
+            // Show/update analysis panel for limit files
+            if (isLimitFile && limitStats.total > 0) {
+                analysisPanel.classList.add('active');
+                document.getElementById('totalLimits').textContent = limitStats.total;
+                document.getElementById('inRangeLimits').textContent = limitStats.inRange;
+                document.getElementById('outRangeLimits').textContent = limitStats.outOfRange;
+            } else {
+                analysisPanel.classList.remove('active');
+            }
 
             // Auto-scroll if enabled
             if (document.getElementById('autoScroll').checked) {
@@ -521,6 +811,13 @@
             }
             if (fileInfo.lastModified) {
                 statsText += ` | Modified: ${fileInfo.lastModified.toLocaleString()}`;
+            }
+            if (isLimitFile && limitStats.total > 0) {
+                const percentage = ((limitStats.inRange / limitStats.total) * 100).toFixed(1);
+                statsText += ` | ✓ ${percentage}% in range`;
+            }
+            if (filterOutOfRange && isLimitFile) {
+                statsText += ' | FILTERED: showing only OUT of range';
             }
             updateStats(statsText);
         }
@@ -629,7 +926,8 @@
             let html = '';
             state.devices.forEach((device, name) => {
                 const active = name === state.currentDevice ? 'active' : '';
-                const displayName = device.dirHandle ? device.dirHandle.name : name;
+                // Use the user-provided name, not the directory handle name
+                const displayName = name;
                 html += `
                     <div class="list-item device ${active}" onclick="selectDevice('${name}')">
                         <span title="${displayName}">${displayName}</span>
@@ -703,6 +1001,13 @@
                     state.autoRefreshInterval = null;
                 }
                 updateStatus('Auto-refresh disabled');
+            }
+        });
+
+        // Filter out of range functionality
+        document.getElementById('filterOutOfRange').addEventListener('change', function() {
+            if (state.currentFile) {
+                refreshCurrentFile();
             }
         });
 
