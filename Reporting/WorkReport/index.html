@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Report / Rapporto Intervento</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #cccccc;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #252526;
+            border: 2px solid #3e3e42;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            border-bottom: 2px solid #3e3e42;
+        }
+
+        .header-left {
+            width: 40%;
+            border-right: 2px solid #3e3e42;
+            padding: 15px;
+            background-color: #37373d;
+            color: #cccccc;
+        }
+
+        .logo {
+            width: 100%;
+            height: 60px;
+            margin-bottom: 5px;
+        }
+
+        .logo svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .company-info {
+            font-size: 11px;
+            line-height: 1.4;
+            color: #cccccc;
+        }
+
+        .header-right {
+            width: 60%;
+            padding: 15px;
+            background-color: #37373d;
+            color: #cccccc;
+        }
+
+        .report-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .report-number {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .report-number input {
+            width: 100px;
+            background-color: #3c3c3c;
+            border: 1px solid #3e3e42;
+            padding: 2px 5px;
+            color: #cccccc;
+            font-size: 12px;
+        }
+
+        .client-info {
+            display: flex;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .client-field {
+            flex: 1;
+        }
+
+        .client-field label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .client-field input {
+            width: 100%;
+            background-color: #3c3c3c;
+            border: 1px solid #3e3e42;
+            padding: 3px 5px;
+            color: #cccccc;
+            font-size: 12px;
+        }
+
+        /* Causale Section */
+        .causale {
+            border-bottom: 2px solid #3e3e42;
+            padding: 8px 15px;
+            background-color: #37373d;
+            color: #cccccc;
+        }
+
+        .causale-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .causale-options {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Dettagli Intervento */
+        .dettagli {
+            border-bottom: 2px solid #3e3e42;
+            background-color: #37373d;
+            color: #cccccc;
+        }
+
+        .dettagli-title {
+            font-size: 14px;
+            font-weight: bold;
+            padding: 8px 15px;
+            background-color: #37373d;
+        }
+
+        .dettagli-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dettagli-table th {
+            background-color: #37373d;
+            border: 1px solid #3e3e42;
+            padding: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .dettagli-table td {
+            background-color: #252526;
+            border: 1px solid #3e3e42;
+            padding: 3px;
+        }
+
+        .dettagli-table input {
+            width: 100%;
+            background-color: #3c3c3c;
+            border: none;
+            color: #cccccc;
+            font-family: inherit;
+            font-size: 12px;
+            padding: 2px;
+        }
+
+        .btn-add-row {
+            margin: 10px 15px;
+            padding: 5px 15px;
+            background-color: #0e639c;
+            color: #fff;
+            border: 1px solid #3e3e42;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-add-row:hover {
+            background-color: #1177bb;
+        }
+
+        .btn-remove {
+            background-color: #f48771;
+            color: #fff;
+            border: 1px solid #3e3e42;
+            padding: 2px 8px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .btn-remove:hover {
+            background-color: #f14c28;
+        }
+
+        /* Descrizione Lavori */
+        .descrizione {
+            border-bottom: 2px solid #3e3e42;
+        }
+
+        .descrizione-title {
+            font-size: 14px;
+            font-weight: bold;
+            padding: 8px 15px;
+            background-color: #37373d;
+            color: #cccccc;
+        }
+
+        .descrizione-content {
+            background-color: #252526;
+            padding: 10px;
+            min-height: 150px;
+        }
+
+        .descrizione-content textarea {
+            width: 100%;
+            min-height: 140px;
+            background-color: #3c3c3c;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            font-family: inherit;
+            font-size: 13px;
+            resize: vertical;
+            line-height: 1.5;
+            padding: 5px;
+        }
+
+        /* Note del Cliente */
+        .note {
+            border-bottom: 2px solid #3e3e42;
+        }
+
+        .note-title {
+            font-size: 14px;
+            font-weight: bold;
+            padding: 8px 15px;
+            background-color: #37373d;
+            color: #cccccc;
+        }
+
+        .note-content {
+            background-color: #252526;
+            padding: 10px;
+            min-height: 80px;
+        }
+
+        .note-content textarea {
+            width: 100%;
+            min-height: 70px;
+            background-color: #3c3c3c;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            font-family: inherit;
+            font-size: 13px;
+            resize: vertical;
+            line-height: 1.5;
+            padding: 5px;
+        }
+
+        /* Firme */
+        .firme {
+            background-color: #37373d;
+            color: #cccccc;
+        }
+
+        .firme-title {
+            font-size: 14px;
+            font-weight: bold;
+            padding: 8px 15px;
+        }
+
+        .firme-content {
+            display: flex;
+        }
+
+        .firma-box {
+            flex: 1;
+            padding: 10px 15px;
+        }
+
+        .firma-box:first-child {
+            border-right: 2px solid #3e3e42;
+        }
+
+        .firma-label {
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .firma-input {
+            width: 100%;
+            height: 60px;
+            background-color: #252526;
+            border: 1px solid #3e3e42;
+            margin-bottom: 5px;
+        }
+
+        .firma-name {
+            width: 100%;
+            background-color: #3c3c3c;
+            border: 1px solid #3e3e42;
+            padding: 3px 5px;
+            font-size: 12px;
+            color: #cccccc;
+        }
+
+        /* Controls */
+        .controls {
+            padding: 20px;
+            background-color: #252526;
+            display: none;
+            border-top: 2px solid #3e3e42;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background-color: #0e639c;
+            color: #fff;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            min-width: 120px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            background-color: #1177bb;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn .material-icons {
+            font-size: 18px;
+        }
+
+        .btn-export {
+            background-color: #16825d;
+        }
+
+        .btn-export:hover {
+            background-color: #1e9d72;
+        }
+
+        .btn-pdf {
+            background-color: #5a5a5a;
+            color: #fff;
+        }
+
+        .btn-pdf:hover {
+            background-color: #707070;
+        }
+
+        .btn-lang {
+            background-color: #f48771;
+        }
+
+        .btn-lang:hover {
+            background-color: #f14c28;
+        }
+
+        .btn-lang .flag {
+            font-size: 16px;
+        }
+
+        /* Language Toggle */
+        .lang-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+            }
+
+            .container {
+                background-color: #fff;
+                box-shadow: none;
+            }
+
+            .controls, .lang-toggle, .btn-add-row, .btn-remove {
+                display: none !important;
+            }
+
+            .header-left {
+                background-color: #fff;
+            }
+
+            .header-right {
+                background-color: #9999cc;
+            }
+
+            .dettagli-table td {
+                background-color: #9999cc;
+            }
+
+            .descrizione-content, .note-content {
+                background-color: #9999cc;
+            }
+
+            .firma-input, .firma-name {
+                background-color: #9999cc;
+            }
+        }
+
+        /* Hidden file input */
+        #fileInput {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="lang-toggle">
+        <button class="btn btn-lang" onclick="toggleLanguage()">
+            <span class="flag lang-flag">🇮🇹</span>
+            <span class="lang-text">EN</span>
+        </button>
+        <button class="btn" onclick="newReport()">
+            <span class="material-icons">add_circle_outline</span>
+            <span class="text-new">Nuovo</span>
+        </button>
+        <button class="btn btn-export" onclick="document.getElementById('fileInput').click()">
+            <span class="material-icons">file_upload</span>
+            <span class="text-import">Carica JSON</span>
+        </button>
+        <button class="btn btn-export" onclick="exportJSON()">
+            <span class="material-icons">save_alt</span>
+            <span class="text-export">Esporta JSON</span>
+        </button>
+        <button class="btn btn-pdf" onclick="exportPDF()">
+            <span class="material-icons">picture_as_pdf</span>
+            <span class="text-pdf">Esporta PDF</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 800">
+                        <g>
+                            <path fill="#060E9F" d="M1242.964,92.394V57.15c0-26.04-21.109-47.149-47.148-47.149h-244.97h-35.244
+                                c-26.04,0-47.15,21.109-47.15,47.149v35.244v116.099v82.393v233.734c0,26.041,21.11,47.149,47.15,47.149h35.244V290.885h104.996
+                                v-82.393H950.846V92.394H1242.964z"/>
+                            <path fill="#060E9F" d="M827.256,66.178c0-31.025-25.152-56.177-56.178-56.177H535.137h-26.216
+                                c-31.025,0-56.177,25.151-56.177,56.177v26.216v423.198c0,31.024,25.151,56.177,56.177,56.177h26.216V92.394h292.119V66.178z"/>
+                            <path fill="#060E9F" d="M411.548,92.394V66.178c0-31.025-25.151-56.178-56.177-56.178H119.429H93.212
+                                c-31.024,0-56.176,25.152-56.176,56.178v26.216v396.982v26.216c0,31.026,25.151,56.177,56.176,56.177h26.217h104.863v-82.393
+                                H119.429V92.394H411.548z"/>
+                        </g>
+                    </svg>
+                </div>
+                <div class="company-info">
+                    <strong>CTF Automazioni SRL</strong><br>
+                    Z.I. Cavalieri - voc. Felceto, 7<br>
+                    62024 MATELICA (MC) - Italy<br>
+                    Tel. +39 0737 680100<br>
+                    P.IVA 01386620437
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="report-title">
+                    <span class="text-report-title">Rapporto Intervento n°</span>
+                    <input type="text" id="reportNumber" placeholder="">
+                </div>
+                <div class="report-number">
+                    <span class="text-date">Del</span>
+                    <input type="date" id="reportDate">
+                </div>
+                <div class="client-info">
+                    <div class="client-field">
+                        <label class="text-client">Cliente:</label>
+                        <input type="text" id="cliente">
+                    </div>
+                    <div class="client-field">
+                        <label class="text-address">Indirizzo:</label>
+                        <input type="text" id="indirizzo">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Causale -->
+        <div class="causale">
+            <div class="causale-title text-causale-title">CAUSALE DI INTERVENTO</div>
+            <div class="causale-options">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="installazione">
+                    <label for="installazione" class="text-installazione">Installazione</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="collaudo">
+                    <label for="collaudo" class="text-collaudo">Collaudo</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="riparazione">
+                    <label for="riparazione" class="text-riparazione">Riparazione</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="contratto">
+                    <label for="contratto" class="text-contratto">Contratto</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="modifica">
+                    <label for="modifica" class="text-modifica">Modifica</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="manutenzione">
+                    <label for="manutenzione" class="text-manutenzione">Manutenzione</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="altro">
+                    <label for="altro" class="text-altro">Altro</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dettagli Intervento -->
+        <div class="dettagli">
+            <div class="dettagli-title text-dettagli-title">DETTAGLI INTERVENTO</div>
+            <table class="dettagli-table">
+                <thead>
+                    <tr>
+                        <th class="text-data">Data</th>
+                        <th class="text-nr-tecnici">Nr Tecnici</th>
+                        <th class="text-matricola">Matricola</th>
+                        <th class="text-ore">Ore</th>
+                        <th class="text-note">Note</th>
+                        <th class="text-vitto">Vitto</th>
+                        <th class="text-alloggio">Alloggio</th>
+                        <th class="text-km">Km</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="dettagliTableBody">
+                    <tr>
+                        <td><input type="date" class="detail-date"></td>
+                        <td><input type="number" class="detail-tecnici" min="1"></td>
+                        <td><input type="text" class="detail-matricola"></td>
+                        <td><input type="time" class="detail-ore"></td>
+                        <td><input type="text" class="detail-note"></td>
+                        <td><input type="number" class="detail-vitto" min="0"></td>
+                        <td><input type="number" class="detail-alloggio" min="0"></td>
+                        <td><input type="number" class="detail-km"></td>
+                        <td><button class="btn-remove" onclick="removeRow(this)">X</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn-add-row" onclick="addDetailRow()">
+                <span class="text-add-row">+ Aggiungi Riga</span>
+            </button>
+        </div>
+
+        <!-- Descrizione Lavori -->
+        <div class="descrizione">
+            <div class="descrizione-title text-descrizione-title">DESCRIZIONE LAVORI SVOLTI</div>
+            <div class="descrizione-content">
+                <textarea id="descrizioneLavori" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- Note del Cliente -->
+        <div class="note">
+            <div class="note-title text-note-title">NOTE DEL CLIENTE</div>
+            <div class="note-content">
+                <textarea id="noteCliente" placeholder=""></textarea>
+            </div>
+        </div>
+
+        <!-- Firme -->
+        <div class="firme">
+            <div class="firme-title text-firme-title">FIRME</div>
+            <div class="firme-content">
+                <div class="firma-box">
+                    <div class="firma-label text-firma-cff">Per CTF Automazioni:</div>
+                    <div class="firma-input"></div>
+                    <input type="text" class="firma-name" id="firmaCTF" placeholder="">
+                </div>
+                <div class="firma-box">
+                    <div class="firma-label text-firma-cliente">Per il Cliente:</div>
+                    <div class="firma-input"></div>
+                    <input type="text" class="firma-name" id="firmaCliente" placeholder="">
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <input type="file" id="fileInput" accept=".json" onchange="importJSON(event)">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        let currentLanguage = 'it';
+
+        const translations = {
+            it: {
+                'text-report-title': 'Rapporto Intervento n°',
+                'text-date': 'Del',
+                'text-client': 'Cliente:',
+                'text-address': 'Indirizzo:',
+                'text-causale-title': 'CAUSALE DI INTERVENTO',
+                'text-installazione': 'Installazione',
+                'text-collaudo': 'Collaudo',
+                'text-riparazione': 'Riparazione',
+                'text-contratto': 'Contratto',
+                'text-modifica': 'Modifica',
+                'text-manutenzione': 'Manutenzione',
+                'text-altro': 'Altro',
+                'text-dettagli-title': 'DETTAGLI INTERVENTO',
+                'text-data': 'Data',
+                'text-nr-tecnici': 'Nr Tecnici',
+                'text-matricola': 'Matricola',
+                'text-ore': 'Ore',
+                'text-note': 'Note',
+                'text-vitto': 'Vitto',
+                'text-alloggio': 'Alloggio',
+                'text-km': 'Km',
+                'text-add-row': '+ Aggiungi Riga',
+                'text-descrizione-title': 'DESCRIZIONE LAVORI SVOLTI',
+                'text-note-title': 'NOTE DEL CLIENTE',
+                'text-firme-title': 'FIRME',
+                'text-firma-cff': 'Per CTF Automazioni:',
+                'text-firma-cliente': 'Per il Cliente:',
+                'text-new': 'Nuovo',
+                'text-import': 'Carica JSON',
+                'text-export': 'Esporta JSON',
+                'text-pdf': 'Esporta PDF',
+                'lang-text': 'EN'
+            },
+            en: {
+                'text-report-title': 'Work Report n°',
+                'text-date': 'Date',
+                'text-client': 'Client:',
+                'text-address': 'Address:',
+                'text-causale-title': 'INTERVENTION REASON',
+                'text-installazione': 'Installation',
+                'text-collaudo': 'Testing',
+                'text-riparazione': 'Repair',
+                'text-contratto': 'Contract',
+                'text-modifica': 'Modification',
+                'text-manutenzione': 'Maintenance',
+                'text-altro': 'Other',
+                'text-dettagli-title': 'INTERVENTION DETAILS',
+                'text-data': 'Date',
+                'text-nr-tecnici': 'Nr Technicians',
+                'text-matricola': 'Serial Number',
+                'text-ore': 'Hours',
+                'text-note': 'Notes',
+                'text-vitto': 'Meals',
+                'text-alloggio': 'Lodging',
+                'text-km': 'Km',
+                'text-add-row': '+ Add Row',
+                'text-descrizione-title': 'WORK DESCRIPTION',
+                'text-note-title': 'CLIENT NOTES',
+                'text-firme-title': 'SIGNATURES',
+                'text-firma-cff': 'For CTF Automazioni:',
+                'text-firma-cliente': 'For the Client:',
+                'text-new': 'New',
+                'text-import': 'Load JSON',
+                'text-export': 'Export JSON',
+                'text-pdf': 'Export PDF',
+                'lang-text': 'IT'
+            }
+        };
+
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'it' ? 'en' : 'it';
+            // Update flag first
+            const flagElement = document.querySelector('.lang-flag');
+            if (flagElement) {
+                flagElement.textContent = currentLanguage === 'it' ? '��' : '��';
+            }
+            updateLanguage();
+        }
+
+        function updateLanguage() {
+            const lang = translations[currentLanguage];
+            document.querySelectorAll('[class*="text-"]').forEach(el => {
+                const classes = el.className.split(' ');
+                classes.forEach(className => {
+                    if (className.startsWith('text-') && lang[className]) {
+                        el.textContent = lang[className];
+                    }
+                });
+            });
+        }
+
+        function addDetailRow() {
+            const tbody = document.getElementById('dettagliTableBody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="date" class="detail-date"></td>
+                <td><input type="number" class="detail-tecnici" min="1"></td>
+                <td><input type="text" class="detail-matricola"></td>
+                <td><input type="time" class="detail-ore"></td>
+                <td><input type="text" class="detail-note"></td>
+                <td><input type="number" class="detail-vitto" min="0"></td>
+                <td><input type="number" class="detail-alloggio" min="0"></td>
+                <td><input type="number" class="detail-km"></td>
+                <td><button class="btn-remove" onclick="removeRow(this)">X</button></td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function removeRow(button) {
+            const tbody = document.getElementById('dettagliTableBody');
+            if (tbody.children.length > 1) {
+                button.closest('tr').remove();
+            } else {
+                alert(currentLanguage === 'it' ? 'Deve rimanere almeno una riga' : 'At least one row must remain');
+            }
+        }
+
+        function exportJSON() {
+            const data = collectData();
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `work-report-${data.reportNumber || 'new'}-${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        loadData(data);
+                        alert(currentLanguage === 'it' ? 'Dati caricati con successo!' : 'Data loaded successfully!');
+                    } catch (error) {
+                        alert(currentLanguage === 'it' ? 'Errore nel caricamento del file JSON' : 'Error loading JSON file');
+                        console.error(error);
+                    }
+                };
+                reader.readAsText(file);
+            }
+            event.target.value = '';
+        }
+
+        function collectData() {
+            const data = {
+                reportNumber: document.getElementById('reportNumber').value,
+                reportDate: document.getElementById('reportDate').value,
+                cliente: document.getElementById('cliente').value,
+                indirizzo: document.getElementById('indirizzo').value,
+                causale: {
+                    installazione: document.getElementById('installazione').checked,
+                    collaudo: document.getElementById('collaudo').checked,
+                    riparazione: document.getElementById('riparazione').checked,
+                    contratto: document.getElementById('contratto').checked,
+                    modifica: document.getElementById('modifica').checked,
+                    manutenzione: document.getElementById('manutenzione').checked,
+                    altro: document.getElementById('altro').checked
+                },
+                dettagli: [],
+                descrizioneLavori: document.getElementById('descrizioneLavori').value,
+                noteCliente: document.getElementById('noteCliente').value,
+                firme: {
+                    ctf: document.getElementById('firmaCTF').value,
+                    cliente: document.getElementById('firmaCliente').value
+                },
+                language: currentLanguage
+            };
+
+            // Collect detail rows
+            const rows = document.querySelectorAll('#dettagliTableBody tr');
+            rows.forEach(row => {
+                data.dettagli.push({
+                    data: row.querySelector('.detail-date').value,
+                    tecnici: row.querySelector('.detail-tecnici').value,
+                    matricola: row.querySelector('.detail-matricola').value,
+                    ore: row.querySelector('.detail-ore').value,
+                    note: row.querySelector('.detail-note').value,
+                    vitto: row.querySelector('.detail-vitto').value,
+                    alloggio: row.querySelector('.detail-alloggio').value,
+                    km: row.querySelector('.detail-km').value
+                });
+            });
+
+            return data;
+        }
+
+        function loadData(data) {
+            document.getElementById('reportNumber').value = data.reportNumber || '';
+            document.getElementById('reportDate').value = data.reportDate || '';
+            document.getElementById('cliente').value = data.cliente || '';
+            document.getElementById('indirizzo').value = data.indirizzo || '';
+
+            if (data.causale) {
+                document.getElementById('installazione').checked = data.causale.installazione || false;
+                document.getElementById('collaudo').checked = data.causale.collaudo || false;
+                document.getElementById('riparazione').checked = data.causale.riparazione || false;
+                document.getElementById('contratto').checked = data.causale.contratto || false;
+                document.getElementById('modifica').checked = data.causale.modifica || false;
+                document.getElementById('manutenzione').checked = data.causale.manutenzione || false;
+                document.getElementById('altro').checked = data.causale.altro || false;
+            }
+
+            // Load detail rows
+            const tbody = document.getElementById('dettagliTableBody');
+            tbody.innerHTML = '';
+            if (data.dettagli && data.dettagli.length > 0) {
+                data.dettagli.forEach(dettaglio => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><input type="date" class="detail-date" value="${dettaglio.data || ''}"></td>
+                        <td><input type="number" class="detail-tecnici" min="1" value="${dettaglio.tecnici || ''}"></td>
+                        <td><input type="text" class="detail-matricola" value="${dettaglio.matricola || ''}"></td>
+                        <td><input type="time" class="detail-ore" value="${dettaglio.ore || ''}"></td>
+                        <td><input type="text" class="detail-note" value="${dettaglio.note || ''}"></td>
+                        <td><input type="number" class="detail-vitto" min="0" value="${dettaglio.vitto || ''}"></td>
+                        <td><input type="number" class="detail-alloggio" min="0" value="${dettaglio.alloggio || ''}"></td>
+                        <td><input type="number" class="detail-km" value="${dettaglio.km || ''}"></td>
+                        <td><button class="btn-remove" onclick="removeRow(this)">X</button></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                addDetailRow();
+            }
+
+            document.getElementById('descrizioneLavori').value = data.descrizioneLavori || '';
+            document.getElementById('noteCliente').value = data.noteCliente || '';
+
+            if (data.firme) {
+                document.getElementById('firmaCTF').value = data.firme.ctf || data.firme.cff || '';
+                document.getElementById('firmaCliente').value = data.firme.cliente || '';
+            }
+
+            if (data.language) {
+                currentLanguage = data.language;
+                updateLanguage();
+            }
+        }
+
+        function exportJSON() {
+            const data = collectData();
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `work-report-${data.reportNumber || 'new'}-${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        loadData(data);
+                        alert(currentLanguage === 'it' ? 'Dati caricati con successo!' : 'Data loaded successfully!');
+                    } catch (error) {
+                        alert(currentLanguage === 'it' ? 'Errore nel caricamento del file JSON' : 'Error loading JSON file');
+                        console.error(error);
+                    }
+                };
+                reader.readAsText(file);
+            }
+            event.target.value = '';
+        }
+
+        function newReport() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const data = collectData();
+            
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 10;
+            let yPos = margin;
+            
+            // Colors
+            const darkBlue = [6, 14, 159];
+            const lightBlue = [153, 153, 204];
+            
+            // SVG Logo as text (simplified representation)
+            const logoSvg = 'data:image/svg+xml;base64,' + btoa(`<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 180">
+<g>
+    <path fill="#060E9F" d="M410,30V18.5c0-8.6-7-15.6-15.6-15.6h-81h-11.7c-8.6,0-15.6,7-15.6,15.6v11.7v38.4v27.3v77.4c0,8.6,7,15.6,15.6,15.6h11.7V96.4h34.8V69.1h-34.8V30H410z"/>
+    <path fill="#060E9F" d="M273.9,21.8c0-10.3-8.3-18.6-18.6-18.6H177.4h-8.7c-10.3,0-18.6,8.3-18.6,18.6v8.7v140c0,10.3,8.3,18.6,18.6,18.6h8.7V30.5h96.5V21.8z"/>
+    <path fill="#060E9F" d="M136.2,30.5V21.8c0-10.3-8.3-18.6-18.6-18.6H39.5h-8.7c-10.3,0-18.6,8.3-18.6,18.6v8.7v131.4v8.7c0,10.3,8.3,18.6,18.6,18.6h8.7h34.7V162H39.5V30.5H136.2z"/>
+</g>
+</svg>`);
+            
+            // Header - Logo area (left)
+            pdf.setDrawColor(0);
+            pdf.setLineWidth(0.5);
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, yPos, 80, 40, 'FD');
+            
+            // Add SVG Logo
+            pdf.addImage(logoSvg, 'SVG', margin + 5, yPos + 3, 30, 15);
+            
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(0);
+            pdf.text('CTF Automazioni SRL', margin + 5, yPos + 22);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(6.5);
+            pdf.text('Z.I. Cavalieri - voc. Felceto, 7', margin + 5, yPos + 26);
+            pdf.text('62024 MATELICA (MC) - Italy', margin + 5, yPos + 30);
+            pdf.text('Tel. +39 0737 680100', margin + 5, yPos + 34);
+            pdf.text('P.IVA 01386620437', margin + 5, yPos + 38);
+            
+            // Header - Report info (right)
+            const rightX = margin + 80;
+            pdf.setFillColor(...lightBlue);
+            pdf.rect(rightX, yPos, pageWidth - margin - rightX, 40, 'FD');
+            
+            const lang = translations[currentLanguage];
+            pdf.setTextColor(0);
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(lang['text-report-title'], rightX + 5, yPos + 8);
+            pdf.setFontSize(9);
+            pdf.text(lang['text-date'], rightX + 5, yPos + 12);
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(data.reportNumber || '', rightX + 80, yPos + 8);
+            pdf.text(data.reportDate || '', rightX + 80, yPos + 12);
+            
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(lang['text-client'], rightX + 5, yPos + 20);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(data.cliente || '', rightX + 25, yPos + 20);
+            
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(lang['text-address'], rightX + 5, yPos + 25);
+            pdf.setFont('helvetica', 'normal');
+            const indirizzoLines = pdf.splitTextToSize(data.indirizzo || '', pageWidth - rightX - 30);
+            pdf.text(indirizzoLines, rightX + 25, yPos + 25);
+            
+            yPos += 45;
+            
+            // Causale section
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 12, 'FD');
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(lang['text-causale-title'], margin + 2, yPos + 5);
+            
+            yPos += 8;
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'normal');
+            const causaleOptions = [
+                { key: 'installazione', label: lang['text-installazione'], checked: data.causale.installazione },
+                { key: 'collaudo', label: lang['text-collaudo'], checked: data.causale.collaudo },
+                { key: 'riparazione', label: lang['text-riparazione'], checked: data.causale.riparazione },
+                { key: 'contratto', label: lang['text-contratto'], checked: data.causale.contratto }
+            ];
+            
+            const causaleOptions2 = [
+                { key: 'modifica', label: lang['text-modifica'], checked: data.causale.modifica },
+                { key: 'manutenzione', label: lang['text-manutenzione'], checked: data.causale.manutenzione },
+                { key: 'altro', label: lang['text-altro'], checked: data.causale.altro }
+            ];
+            
+            let xOffset = margin + 2;
+            causaleOptions.forEach((opt) => {
+                pdf.rect(xOffset, yPos - 3, 3, 3, 'D');
+                if (opt.checked) {
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text('X', xOffset + 0.7, yPos - 0.3);
+                    pdf.setFont('helvetica', 'normal');
+                }
+                pdf.text(opt.label, xOffset + 5, yPos);
+                xOffset += 47;
+            });
+            
+            yPos += 6;
+            xOffset = margin + 2;
+            causaleOptions2.forEach((opt) => {
+                pdf.rect(xOffset, yPos - 3, 3, 3, 'D');
+                if (opt.checked) {
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text('X', xOffset + 0.7, yPos - 0.3);
+                    pdf.setFont('helvetica', 'normal');
+                }
+                pdf.text(opt.label, xOffset + 5, yPos);
+                xOffset += 47;
+            });
+            
+            yPos += 8;
+            
+            // Dettagli Intervento
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(9);
+            pdf.text(lang['text-dettagli-title'], margin + 2, yPos + 5);
+            
+            yPos += 8;
+            
+            // Table headers
+            const colWidths = [22, 13, 32, 13, 45, 13, 16, 11];
+            const headers = [
+                lang['text-data'],
+                lang['text-nr-tecnici'],
+                lang['text-matricola'],
+                lang['text-ore'],
+                lang['text-note'],
+                lang['text-vitto'],
+                lang['text-alloggio'],
+                lang['text-km']
+            ];
+            
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(7);
+            
+            let xPos = margin;
+            headers.forEach((header, idx) => {
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(xPos, yPos, colWidths[idx], 6, 'FD');
+                pdf.text(header, xPos + 1, yPos + 4);
+                xPos += colWidths[idx];
+            });
+            
+            yPos += 6;
+            
+            // Table rows
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(7);
+            
+            data.dettagli.forEach(row => {
+                xPos = margin;
+                const rowData = [
+                    row.data || '',
+                    row.tecnici || '',
+                    row.matricola || '',
+                    row.ore || '',
+                    row.note || '',
+                    row.vitto || '',
+                    row.alloggio || '',
+                    row.km || ''
+                ];
+                
+                rowData.forEach((cell, idx) => {
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.rect(xPos, yPos, colWidths[idx], 6, 'D');
+                    const cellText = pdf.splitTextToSize(String(cell), colWidths[idx] - 2);
+                    pdf.text(cellText, xPos + 1, yPos + 4);
+                    xPos += colWidths[idx];
+                });
+                
+                yPos += 6;
+            });
+            
+            yPos += 5;
+            
+            // Descrizione Lavori
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(9);
+            pdf.text(lang['text-descrizione-title'], margin + 2, yPos + 5);
+            
+            yPos += 8;
+            
+            const descHeight = 60;
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, descHeight, 'D');
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(8);
+            const descLines = pdf.splitTextToSize(data.descrizioneLavori || '', pageWidth - 2 * margin - 4);
+            pdf.text(descLines, margin + 2, yPos + 4);
+            
+            yPos += descHeight + 5;
+            
+            // Note del Cliente
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(9);
+            pdf.text(lang['text-note-title'], margin + 2, yPos + 5);
+            
+            yPos += 8;
+            
+            const noteHeight = 30;
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, noteHeight, 'D');
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(8);
+            const noteLines = pdf.splitTextToSize(data.noteCliente || '', pageWidth - 2 * margin - 4);
+            pdf.text(noteLines, margin + 2, yPos + 4);
+            
+            yPos += noteHeight + 5;
+            
+            // Firme
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(9);
+            pdf.text(lang['text-firme-title'], margin + 2, yPos + 5);
+            
+            yPos += 8;
+            
+            const firmaWidth = (pageWidth - 2 * margin) / 2;
+            
+            // Firma CTF
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, yPos, firmaWidth - 1, 30, 'D');
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(8);
+            pdf.text(lang['text-firma-cff'], margin + 2, yPos + 4);
+            
+            pdf.rect(margin + 2, yPos + 6, firmaWidth - 5, 10, 'D');
+            pdf.rect(margin + 2, yPos + 18, firmaWidth - 5, 10, 'D');
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(data.firme.ctf || '', margin + 4, yPos + 24);
+            
+            // Firma Cliente
+            pdf.rect(margin + firmaWidth, yPos, firmaWidth - 1, 30, 'D');
+            pdf.text(lang['text-firma-cliente'], margin + firmaWidth + 2, yPos + 4);
+            
+            pdf.rect(margin + firmaWidth + 2, yPos + 6, firmaWidth - 5, 10, 'D');
+            pdf.rect(margin + firmaWidth + 2, yPos + 18, firmaWidth - 5, 10, 'D');
+            pdf.text(data.firme.cliente || '', margin + firmaWidth + 4, yPos + 24);
+            
+            pdf.save(`work-report-${data.reportNumber || 'new'}-${Date.now()}.pdf`);
+        }
+
+        function newReport() {
+            if (confirm(currentLanguage === 'it' ? 'Creare un nuovo rapporto? Tutti i dati non salvati andranno persi.' : 'Create a new report? All unsaved data will be lost.')) {
+                document.getElementById('reportNumber').value = '';
+                document.getElementById('reportDate').value = '';
+                document.getElementById('cliente').value = '';
+                document.getElementById('indirizzo').value = '';
+                document.getElementById('installazione').checked = false;
+                document.getElementById('collaudo').checked = false;
+                document.getElementById('riparazione').checked = false;
+                document.getElementById('contratto').checked = false;
+                document.getElementById('modifica').checked = false;
+                document.getElementById('manutenzione').checked = false;
+                document.getElementById('altro').checked = false;
+                
+                const tbody = document.getElementById('dettagliTableBody');
+                tbody.innerHTML = `
+                    <tr>
+                        <td><input type="date" class="detail-date"></td>
+                        <td><input type="number" class="detail-tecnici" min="1"></td>
+                        <td><input type="text" class="detail-matricola"></td>
+                        <td><input type="time" class="detail-ore"></td>
+                        <td><input type="text" class="detail-note"></td>
+                        <td><input type="number" class="detail-vitto" min="0"></td>
+                        <td><input type="number" class="detail-alloggio" min="0"></td>
+                        <td><input type="number" class="detail-km"></td>
+                        <td><button class="btn-remove" onclick="removeRow(this)">X</button></td>
+                    </tr>
+                `;
+                
+                document.getElementById('descrizioneLavori').value = '';
+                document.getElementById('noteCliente').value = '';
+                document.getElementById('firmaCTF').value = '';
+                document.getElementById('firmaCliente').value = '';
+            }
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const data = collectData();
+            
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 10;
+            const maxY = pageHeight - margin; // Maximum Y position before new page
+            let yPos = margin;
+            
+            // Helper function to check if we need a new page
+            function checkNewPage(requiredSpace) {
+                if (yPos + requiredSpace > maxY) {
+                    pdf.addPage();
+                    yPos = margin;
+                    return true;
+                }
+                return false;
+            }
+            
+            // Colors
+            const darkBlue = [6, 14, 159];
+            const lightBlue = [153, 153, 204];
+            
+            // Convert logo from SVG in the page to base64
+            const logoSvgElement = document.querySelector('.logo svg');
+            let logoData = null;
+            
+            if (logoSvgElement) {
+                try {
+                    const svgString = new XMLSerializer().serializeToString(logoSvgElement);
+                    const canvas = document.createElement('canvas');
+                    const svgWidth = logoSvgElement.viewBox.baseVal.width || 1280;
+                    const svgHeight = logoSvgElement.viewBox.baseVal.height || 800;
+                    const aspectRatio = svgWidth / svgHeight;
+                    
+                    canvas.width = 800;
+                    canvas.height = 800 / aspectRatio;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    const img = new Image();
+                    const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+                    const url = URL.createObjectURL(svgBlob);
+                    
+                    img.onload = function() {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        logoData = canvas.toDataURL('image/png');
+                        URL.revokeObjectURL(url);
+                        generatePDF();
+                    };
+                    
+                    img.onerror = function() {
+                        URL.revokeObjectURL(url);
+                        generatePDF();
+                    };
+                    
+                    img.src = url;
+                    
+                    // Timeout fallback
+                    setTimeout(() => {
+                        if (!logoData) {
+                            generatePDF();
+                        }
+                    }, 1000);
+                } catch (e) {
+                    generatePDF();
+                }
+            } else {
+                generatePDF();
+            }
+            
+            function generatePDF() {
+                // Header - Logo area (left)
+                pdf.setDrawColor(0);
+                pdf.setLineWidth(0.5);
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(margin, yPos, 80, 30, 'FD');
+                
+                // Add logo image if available
+                if (logoData) {
+                    try {
+                        // Calculate proportional height based on 40mm width
+                        const logoWidth = 40;
+                        const logoHeight = logoWidth / 1.6; // Aspect ratio from SVG viewBox (1280/800) = 25mm
+                        const headerHeight = 30;
+                        const logoYPos = yPos + 4; // Adjusted for visual centering
+                        pdf.addImage(logoData, 'PNG', margin + 3, logoYPos, logoWidth, logoHeight);
+                    } catch (e) {
+                        // Fallback to text logo
+                        pdf.setFontSize(28);
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setTextColor(...darkBlue);
+                        pdf.text('CTF', margin + 5, yPos + 15);
+                    }
+                } else {
+                    // Fallback to text logo
+                    pdf.setFontSize(28);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setTextColor(...darkBlue);
+                    pdf.text('CTF', margin + 5, yPos + 15);
+                }
+                
+                // Company info next to logo
+                const companyTextX = margin + 45;
+                pdf.setFontSize(7);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(0);
+                pdf.text('CTF Automazioni SRL', companyTextX, yPos + 6);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(6.5);
+                pdf.text('Z.I. Cavalieri - voc. Felceto, 7', companyTextX, yPos + 10);
+                pdf.text('62024 MATELICA (MC) - Italy', companyTextX, yPos + 14);
+                
+                // Contact info on the right side of logo area
+                pdf.text('Tel. +39 0737 680100', companyTextX, yPos + 22);
+                pdf.text('P.IVA 01386620437', companyTextX, yPos + 26);
+                
+                // Header - Report info (right)
+                const rightX = margin + 80;
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(rightX, yPos, pageWidth - margin - rightX, 30, 'FD');
+                
+                const lang = translations[currentLanguage];
+                pdf.setTextColor(0);
+                pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(lang['text-report-title'], rightX + 5, yPos + 6);
+                pdf.setFontSize(9);
+                pdf.text(lang['text-date'], rightX + 5, yPos + 11);
+                
+                // Report number and date aligned to the right
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                const reportNumText = data.reportNumber || '';
+                const reportDateText = data.reportDate || '';
+                const reportNumWidth = pdf.getTextWidth(reportNumText);
+                const reportDateWidth = pdf.getTextWidth(reportDateText);
+                
+                pdf.text(reportNumText, pageWidth - margin - reportNumWidth - 5, yPos + 6);
+                pdf.text(reportDateText, pageWidth - margin - reportDateWidth - 5, yPos + 11);
+                
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(lang['text-client'], rightX + 5, yPos + 20);
+                pdf.setFont('helvetica', 'normal');
+                const clientText = data.cliente || '';
+                pdf.text(clientText, rightX + 25, yPos + 20);
+                
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(lang['text-address'], rightX + 5, yPos + 25);
+                pdf.setFont('helvetica', 'normal');
+                const indirizzoText = data.indirizzo || '';
+                pdf.text(indirizzoText, rightX + 25, yPos + 25);
+                
+                yPos += 35;
+                
+                // Causale section
+                checkNewPage(20);
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(lang['text-causale-title'], margin + 2, yPos + 5);
+                
+                yPos += 11;
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                const causaleOptions = [
+                    { key: 'installazione', label: lang['text-installazione'], checked: data.causale.installazione },
+                    { key: 'collaudo', label: lang['text-collaudo'], checked: data.causale.collaudo },
+                    { key: 'riparazione', label: lang['text-riparazione'], checked: data.causale.riparazione },
+                    { key: 'contratto', label: lang['text-contratto'], checked: data.causale.contratto }
+                ];
+                
+                const causaleOptions2 = [
+                    { key: 'modifica', label: lang['text-modifica'], checked: data.causale.modifica },
+                    { key: 'manutenzione', label: lang['text-manutenzione'], checked: data.causale.manutenzione },
+                    { key: 'altro', label: lang['text-altro'], checked: data.causale.altro }
+                ];
+                
+                let xOffset = margin + 2;
+                causaleOptions.forEach((opt) => {
+                    pdf.setDrawColor(0);
+                    pdf.rect(xOffset, yPos - 2.5, 4, 4, 'D');
+                    if (opt.checked) {
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setFontSize(10);
+                        pdf.text('X', xOffset + 0.8, yPos + 1);
+                        pdf.setFontSize(8);
+                        pdf.setFont('helvetica', 'normal');
+                    }
+                    pdf.text(opt.label, xOffset + 6, yPos + 0.5);
+                    xOffset += 47;
+                });
+                
+                yPos += 6;
+                xOffset = margin + 2;
+                causaleOptions2.forEach((opt) => {
+                    pdf.setDrawColor(0);
+                    pdf.rect(xOffset, yPos - 2.5, 4, 4, 'D');
+                    if (opt.checked) {
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setFontSize(10);
+                        pdf.text('X', xOffset + 0.8, yPos + 1);
+                        pdf.setFontSize(8);
+                        pdf.setFont('helvetica', 'normal');
+                    }
+                    pdf.text(opt.label, xOffset + 6, yPos + 0.5);
+                    xOffset += 47;
+                });
+                
+                yPos += 6;
+                
+                // Dettagli Intervento
+                checkNewPage(20);
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(9);
+                pdf.text(lang['text-dettagli-title'], margin + 2, yPos + 5);
+                
+                yPos += 8;
+                
+                // Table headers - total width must be pageWidth - 2*margin = 190mm
+                const totalWidth = pageWidth - 2 * margin;
+                const colWidths = [22.5, 17, 28, 15, 52, 12, 15, 13.5]; // Total: 175mm
+                const actualTotal = colWidths.reduce((a, b) => a + b, 0);
+                
+                // Adjust to fill exact width
+                const widthRatio = totalWidth / actualTotal;
+                const adjustedColWidths = colWidths.map(w => w * widthRatio);
+                
+                const headers = [
+                    lang['text-data'],
+                    lang['text-nr-tecnici'],
+                    lang['text-matricola'],
+                    lang['text-ore'],
+                    lang['text-note'],
+                    lang['text-vitto'],
+                    lang['text-alloggio'],
+                    lang['text-km']
+                ];
+                
+                // Function to draw table headers
+                function drawTableHeaders() {
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(7.5);
+                    pdf.setDrawColor(0);
+                    
+                    let xPos = margin;
+                    headers.forEach((header, idx) => {
+                        pdf.setFillColor(255, 255, 255);
+                        pdf.rect(xPos, yPos, adjustedColWidths[idx], 7, 'FD');
+                        pdf.text(header, xPos + 1, yPos + 4.5);
+                        xPos += adjustedColWidths[idx];
+                    });
+                    
+                    yPos += 7;
+                }
+                
+                // Draw initial headers
+                drawTableHeaders();
+                
+                // Table rows
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(7.5);
+                
+                data.dettagli.forEach(row => {
+                    // Check if we need a new page and redraw headers
+                    if (checkNewPage(7)) {
+                        drawTableHeaders();
+                    }
+                    
+                    let xPos = margin;
+                    const rowData = [
+                        row.data || '',
+                        row.tecnici || '',
+                        row.matricola || '',
+                        row.ore || '',
+                        row.note || '',
+                        row.vitto || '',
+                        row.alloggio || '',
+                        row.km || ''
+                    ];
+                    
+                    rowData.forEach((cell, idx) => {
+                        pdf.setFillColor(255, 255, 255);
+                        pdf.rect(xPos, yPos, adjustedColWidths[idx], 7, 'D');
+                        const cellText = pdf.splitTextToSize(String(cell), adjustedColWidths[idx] - 2);
+                        pdf.text(cellText, xPos + 1, yPos + 4.5);
+                        xPos += adjustedColWidths[idx];
+                    });
+                    
+                    yPos += 7;
+                });
+                
+                yPos += 5;
+                
+                // Descrizione Lavori
+                checkNewPage(15);
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(9);
+                pdf.text(lang['text-descrizione-title'], margin + 2, yPos + 5);
+                
+                yPos += 8;
+                
+                // Calculate dynamic height for description
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                const descLines = pdf.splitTextToSize(data.descrizioneLavori || '', pageWidth - 2 * margin - 4);
+                const lineHeight = 4;
+                const descHeight = Math.max(30, descLines.length * lineHeight + 8);
+                
+                // Check if description fits, otherwise split across pages
+                let remainingLines = [...descLines];
+                let startY = yPos;
+                
+                while (remainingLines.length > 0) {
+                    const availableHeight = maxY - yPos - 5;
+                    const linesInPage = Math.floor((availableHeight - 8) / lineHeight);
+                    
+                    if (linesInPage <= 0 || yPos + 15 > maxY) {
+                        pdf.addPage();
+                        yPos = margin;
+                        startY = yPos;
+                    }
+                    
+                    const currentLines = remainingLines.slice(0, Math.max(1, Math.floor((maxY - yPos - 8) / lineHeight)));
+                    const boxHeight = currentLines.length * lineHeight + 8;
+                    
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.rect(margin, yPos, pageWidth - 2 * margin, boxHeight, 'D');
+                    pdf.text(currentLines, margin + 2, yPos + 4);
+                    
+                    yPos += boxHeight;
+                    remainingLines = remainingLines.slice(currentLines.length);
+                    
+                    if (remainingLines.length > 0) {
+                        pdf.addPage();
+                        yPos = margin;
+                    }
+                }
+                
+                yPos += 5;
+                
+                // Note del Cliente
+                checkNewPage(15);
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(9);
+                pdf.text(lang['text-note-title'], margin + 2, yPos + 5);
+                
+                yPos += 8;
+                
+                // Calculate dynamic height for notes
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                const noteLines = pdf.splitTextToSize(data.noteCliente || '', pageWidth - 2 * margin - 4);
+                const noteHeight = Math.max(20, noteLines.length * lineHeight + 8);
+                
+                // Check if notes fit, otherwise split across pages
+                remainingLines = [...noteLines];
+                
+                while (remainingLines.length > 0) {
+                    const availableHeight = maxY - yPos - 5;
+                    const linesInPage = Math.floor((availableHeight - 8) / lineHeight);
+                    
+                    if (linesInPage <= 0 || yPos + 15 > maxY) {
+                        pdf.addPage();
+                        yPos = margin;
+                    }
+                    
+                    const currentLines = remainingLines.slice(0, Math.max(1, Math.floor((maxY - yPos - 8) / lineHeight)));
+                    const boxHeight = currentLines.length * lineHeight + 8;
+                    
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.rect(margin, yPos, pageWidth - 2 * margin, boxHeight, 'D');
+                    pdf.text(currentLines, margin + 2, yPos + 4);
+                    
+                    yPos += boxHeight;
+                    remainingLines = remainingLines.slice(currentLines.length);
+                    
+                    if (remainingLines.length > 0) {
+                        pdf.addPage();
+                        yPos = margin;
+                    }
+                }
+                
+                yPos += 5;
+                
+                // Firme
+                checkNewPage(45);
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(9);
+                pdf.text(lang['text-firme-title'], margin + 2, yPos + 5);
+                
+                yPos += 8;
+                
+                const firmaWidth = (pageWidth - 2 * margin) / 2;
+                
+                // Firma CTF
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(margin, yPos, firmaWidth - 1, 30, 'D');
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                pdf.text(lang['text-firma-cff'], margin + 2, yPos + 4);
+                
+                pdf.rect(margin + 2, yPos + 6, firmaWidth - 5, 16, 'D');
+                pdf.rect(margin + 2, yPos + 23, firmaWidth - 5, 5, 'D');
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(data.firme.ctf || '', margin + 4, yPos + 26);
+                
+                // Firma Cliente
+                pdf.rect(margin + firmaWidth, yPos, firmaWidth - 1, 30, 'D');
+                pdf.text(lang['text-firma-cliente'], margin + firmaWidth + 2, yPos + 4);
+                
+                pdf.rect(margin + firmaWidth + 2, yPos + 6, firmaWidth - 5, 16, 'D');
+                pdf.rect(margin + firmaWidth + 2, yPos + 23, firmaWidth - 5, 5, 'D');
+                pdf.text(data.firme.cliente || '', margin + firmaWidth + 4, yPos + 26);
+                
+                pdf.save(`work-report-${data.reportNumber || 'new'}-${Date.now()}.pdf`);
+            }
+        }
+
+        // Initialize with current date
+        document.getElementById('reportDate').valueAsDate = new Date();
+    </script>
+</body>
+</html>
