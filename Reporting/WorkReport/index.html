@@ -1589,7 +1589,14 @@
                 // Calculate required space for title + minimum content
                 pdf.setFont('helvetica', 'normal');
                 pdf.setFontSize(8);
-                const noteLines = pdf.splitTextToSize(data.noteCliente || '', textWidth);
+                
+                // If empty, create 10 empty lines for manual writing
+                let noteLines;
+                if (!data.noteCliente || data.noteCliente.trim() === '') {
+                    noteLines = Array(10).fill('');
+                } else {
+                    noteLines = pdf.splitTextToSize(data.noteCliente, textWidth);
+                }
                 
                 // Check if title + minimum content fit, otherwise go to new page
                 if (checkNewPage(7 + 8 + minContentHeight)) {
