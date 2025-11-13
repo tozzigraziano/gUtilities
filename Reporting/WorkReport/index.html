@@ -1519,7 +1519,23 @@
                 yPos += 5;
                 
                 // Descrizione Lavori
-                checkNewPage(15);
+                // Set font BEFORE calculating text split
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                
+                const textWidth = pageWidth - 2 * margin - 4;
+                const descLines = pdf.splitTextToSize(data.descrizioneLavori || '', textWidth);
+                
+                // Calculate line height based on font size
+                const fontSize = 8;
+                const lineHeight = fontSize * 0.3527 * 1.15; // Convert pt to mm with line spacing
+                const minContentHeight = 20;
+                
+                // Check if title + minimum content fit, otherwise go to new page
+                if (checkNewPage(7 + 8 + minContentHeight)) {
+                    // Title was moved to new page
+                }
+                
                 pdf.setFillColor(255, 255, 255);
                 pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
                 pdf.setFont('helvetica', 'bold');
@@ -1528,47 +1544,58 @@
                 
                 yPos += 8;
                 
-                // Calculate dynamic height for description
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(8);
-                const descLines = pdf.splitTextToSize(data.descrizioneLavori || '', pageWidth - 2 * margin - 4);
-                const lineHeight = 4;
-                const descHeight = Math.max(30, descLines.length * lineHeight + 8);
-                
-                // Check if description fits, otherwise split across pages
+                // Process description lines across pages if needed
                 let remainingLines = [...descLines];
-                let startY = yPos;
+                let isFirstBox = true;
                 
                 while (remainingLines.length > 0) {
-                    const availableHeight = maxY - yPos - 5;
-                    const linesInPage = Math.floor((availableHeight - 8) / lineHeight);
+                    // Reserve space for bottom padding (text shouldn't touch the border)
+                    const bottomPadding = 2;
+                    const availableSpace = maxY - yPos - bottomPadding;
                     
-                    if (linesInPage <= 0 || yPos + 15 > maxY) {
+                    // Calculate how many lines fit
+                    let maxLinesInSpace = Math.floor(availableSpace / lineHeight);
+                    
+                    if (maxLinesInSpace <= 0) {
                         pdf.addPage();
                         yPos = margin;
-                        startY = yPos;
+                        isFirstBox = false;
+                        continue;
                     }
                     
-                    const currentLines = remainingLines.slice(0, Math.max(1, Math.floor((maxY - yPos - 8) / lineHeight)));
-                    const boxHeight = currentLines.length * lineHeight + 8;
+                    const linesToDraw = Math.min(remainingLines.length, maxLinesInSpace);
+                    const currentLines = remainingLines.slice(0, linesToDraw);
+                    const boxHeight = linesToDraw * lineHeight + bottomPadding;
                     
                     pdf.setFillColor(255, 255, 255);
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(8);
                     pdf.rect(margin, yPos, pageWidth - 2 * margin, boxHeight, 'D');
                     pdf.text(currentLines, margin + 2, yPos + 4);
                     
                     yPos += boxHeight;
-                    remainingLines = remainingLines.slice(currentLines.length);
+                    remainingLines = remainingLines.slice(linesToDraw);
                     
                     if (remainingLines.length > 0) {
                         pdf.addPage();
                         yPos = margin;
+                        isFirstBox = false;
                     }
                 }
                 
                 yPos += 5;
                 
                 // Note del Cliente
-                checkNewPage(15);
+                // Calculate required space for title + minimum content
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                const noteLines = pdf.splitTextToSize(data.noteCliente || '', textWidth);
+                
+                // Check if title + minimum content fit, otherwise go to new page
+                if (checkNewPage(7 + 8 + minContentHeight)) {
+                    // Title was moved to new page
+                }
+                
                 pdf.setFillColor(255, 255, 255);
                 pdf.rect(margin, yPos, pageWidth - 2 * margin, 7, 'FD');
                 pdf.setFont('helvetica', 'bold');
@@ -1577,37 +1604,42 @@
                 
                 yPos += 8;
                 
-                // Calculate dynamic height for notes
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(8);
-                const noteLines = pdf.splitTextToSize(data.noteCliente || '', pageWidth - 2 * margin - 4);
-                const noteHeight = Math.max(20, noteLines.length * lineHeight + 8);
-                
-                // Check if notes fit, otherwise split across pages
+                // Process note lines across pages if needed
                 remainingLines = [...noteLines];
+                isFirstBox = true;
                 
                 while (remainingLines.length > 0) {
-                    const availableHeight = maxY - yPos - 5;
-                    const linesInPage = Math.floor((availableHeight - 8) / lineHeight);
+                    // Reserve space for bottom padding (text shouldn't touch the border)
+                    const bottomPadding = 2;
+                    const availableSpace = maxY - yPos - bottomPadding;
                     
-                    if (linesInPage <= 0 || yPos + 15 > maxY) {
+                    // Calculate how many lines fit
+                    let maxLinesInSpace = Math.floor(availableSpace / lineHeight);
+                    
+                    if (maxLinesInSpace <= 0) {
                         pdf.addPage();
                         yPos = margin;
+                        isFirstBox = false;
+                        continue;
                     }
                     
-                    const currentLines = remainingLines.slice(0, Math.max(1, Math.floor((maxY - yPos - 8) / lineHeight)));
-                    const boxHeight = currentLines.length * lineHeight + 8;
+                    const linesToDraw = Math.min(remainingLines.length, maxLinesInSpace);
+                    const currentLines = remainingLines.slice(0, linesToDraw);
+                    const boxHeight = linesToDraw * lineHeight + bottomPadding;
                     
                     pdf.setFillColor(255, 255, 255);
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(8);
                     pdf.rect(margin, yPos, pageWidth - 2 * margin, boxHeight, 'D');
                     pdf.text(currentLines, margin + 2, yPos + 4);
                     
                     yPos += boxHeight;
-                    remainingLines = remainingLines.slice(currentLines.length);
+                    remainingLines = remainingLines.slice(linesToDraw);
                     
                     if (remainingLines.length > 0) {
                         pdf.addPage();
                         yPos = margin;
+                        isFirstBox = false;
                     }
                 }
                 
