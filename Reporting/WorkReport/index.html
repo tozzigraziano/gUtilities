@@ -190,18 +190,58 @@
             padding: 2px;
         }
 
-        .btn-add-row {
-            margin: 10px 15px;
-            padding: 5px 15px;
-            background-color: #0e639c;
-            color: #fff;
-            border: 1px solid #3e3e42;
-            cursor: pointer;
-            font-size: 12px;
+        /* Row divider with add button */
+        .row-divider {
+            position: relative;
+            height: 0;
+            border: none;
         }
 
-        .btn-add-row:hover {
+        .row-divider-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: -1px;
+            height: 2px;
+            background-color: transparent;
+            transition: background-color 0.2s;
+            z-index: 1;
+            cursor: pointer;
+        }
+
+        .row-divider:hover .row-divider-line {
+            background-color: #0e639c;
+        }
+
+        .row-add-btn {
+            position: absolute;
+            left: 50%;
+            top: -10px;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background-color: #0e639c;
+            color: white;
+            border: 2px solid #252526;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 2;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .row-divider:hover .row-add-btn {
+            display: flex;
+        }
+
+        .row-add-btn:hover {
             background-color: #1177bb;
+            transform: translateX(-50%) scale(1.1);
         }
 
         .btn-remove {
@@ -420,7 +460,7 @@
                 box-shadow: none;
             }
 
-            .controls, .lang-toggle, .btn-add-row, .btn-remove {
+            .controls, .lang-toggle, .btn-remove {
                 display: none !important;
             }
 
@@ -576,7 +616,7 @@
                     </tr>
                 </thead>
                 <tbody id="dettagliTableBody">
-                    <tr>
+                    <tr class="data-row">
                         <td><input type="date" class="detail-date"></td>
                         <td><input type="number" class="detail-tecnici" min="1"></td>
                         <td><input type="text" class="detail-matricola"></td>
@@ -587,11 +627,14 @@
                         <td><input type="number" class="detail-km"></td>
                         <td><button class="btn-remove" onclick="removeRow(this)">X</button></td>
                     </tr>
+                    <tr class="row-divider">
+                        <td colspan="9" style="padding: 0; height: 0; border: none;">
+                            <div class="row-divider-line"></div>
+                            <button class="row-add-btn" onclick="insertRowAfter(this.closest('tr').previousElementSibling)">+</button>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
-            <button class="btn-add-row" onclick="addDetailRow()">
-                <span class="text-add-row">+ Aggiungi Riga</span>
-            </button>
         </div>
 
         <!-- Descrizione Lavori -->
@@ -729,9 +772,22 @@
             });
         }
 
-        function addDetailRow() {
+        function addDetailRow(afterRow = null) {
             const tbody = document.getElementById('dettagliTableBody');
+            
+            // Create divider row
+            const divider = document.createElement('tr');
+            divider.className = 'row-divider';
+            divider.innerHTML = `
+                <td colspan="9" style="padding: 0; height: 0; border: none;">
+                    <div class="row-divider-line"></div>
+                    <button class="row-add-btn" onclick="insertRowAfter(this.closest('tr').previousElementSibling)">+</button>
+                </td>
+            `;
+            
+            // Create data row
             const row = document.createElement('tr');
+            row.className = 'data-row';
             row.innerHTML = `
                 <td><input type="date" class="detail-date"></td>
                 <td><input type="number" class="detail-tecnici" min="1"></td>
@@ -741,15 +797,61 @@
                 <td><input type="number" class="detail-vitto" min="0"></td>
                 <td><input type="number" class="detail-alloggio" min="0"></td>
                 <td><input type="number" class="detail-km"></td>
-                <td><button class="btn-remove" onclick="removeRow(this)">X</button></td>
+                <td>
+                    <button class="btn-remove" onclick="removeRow(this)">X</button>
+                </td>
             `;
-            tbody.appendChild(row);
+            
+            if (afterRow) {
+                // Insert divider and row after specified row
+                const nextDivider = afterRow.nextElementSibling;
+                if (nextDivider && nextDivider.classList.contains('row-divider')) {
+                    afterRow.parentNode.insertBefore(divider, nextDivider);
+                    afterRow.parentNode.insertBefore(row, nextDivider);
+                } else {
+                    afterRow.parentNode.insertBefore(divider, afterRow.nextSibling);
+                    afterRow.parentNode.insertBefore(row, afterRow.nextSibling);
+                }
+                
+                // Ensure there's always a divider at the end
+                ensureFinalDivider(tbody);
+            } else {
+                tbody.appendChild(row);
+                ensureFinalDivider(tbody);
+            }
+        }
+        
+        function ensureFinalDivider(tbody) {
+            // Check if last element is a divider, if not add one
+            const lastChild = tbody.lastElementChild;
+            if (!lastChild || !lastChild.classList.contains('row-divider')) {
+                const divider = document.createElement('tr');
+                divider.className = 'row-divider';
+                divider.innerHTML = `
+                    <td colspan="9" style="padding: 0; height: 0; border: none;">
+                        <div class="row-divider-line"></div>
+                        <button class="row-add-btn" onclick="insertRowAfter(this.closest('tr').previousElementSibling)">+</button>
+                    </td>
+                `;
+                tbody.appendChild(divider);
+            }
+        }
+        
+        function insertRowAfter(afterRow) {
+            addDetailRow(afterRow);
         }
 
         function removeRow(button) {
             const tbody = document.getElementById('dettagliTableBody');
-            if (tbody.children.length > 1) {
-                button.closest('tr').remove();
+            const dataRows = tbody.querySelectorAll('.data-row');
+            if (dataRows.length > 1) {
+                const row = button.closest('tr');
+                const nextSibling = row.nextElementSibling;
+                row.remove();
+                // Remove associated divider if present
+                if (nextSibling && nextSibling.classList.contains('row-divider')) {
+                    nextSibling.remove();
+                }
             } else {
                 alert(currentLanguage === 'it' ? 'Deve rimanere almeno una riga' : 'At least one row must remain');
             }
@@ -762,7 +864,7 @@
             const url = URL.createObjectURL(dataBlob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `work-report-${data.reportNumber || 'new'}-${Date.now()}.json`;
+            link.download = `work-report-${data.reportNumber || 'new'}.json`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -813,8 +915,8 @@
                 language: currentLanguage
             };
 
-            // Collect detail rows
-            const rows = document.querySelectorAll('#dettagliTableBody tr');
+            // Collect detail rows (only data rows, not dividers)
+            const rows = document.querySelectorAll('#dettagliTableBody tr.data-row');
             rows.forEach(row => {
                 data.dettagli.push({
                     data: row.querySelector('.detail-date').value,
@@ -851,8 +953,9 @@
             const tbody = document.getElementById('dettagliTableBody');
             tbody.innerHTML = '';
             if (data.dettagli && data.dettagli.length > 0) {
-                data.dettagli.forEach(dettaglio => {
+                data.dettagli.forEach((dettaglio, index) => {
                     const row = document.createElement('tr');
+                    row.className = 'data-row';
                     row.innerHTML = `
                         <td><input type="date" class="detail-date" value="${dettaglio.data || ''}"></td>
                         <td><input type="number" class="detail-tecnici" min="1" value="${dettaglio.tecnici || ''}"></td>
@@ -862,9 +965,22 @@
                         <td><input type="number" class="detail-vitto" min="0" value="${dettaglio.vitto || ''}"></td>
                         <td><input type="number" class="detail-alloggio" min="0" value="${dettaglio.alloggio || ''}"></td>
                         <td><input type="number" class="detail-km" value="${dettaglio.km || ''}"></td>
-                        <td><button class="btn-remove" onclick="removeRow(this)">X</button></td>
+                        <td>
+                            <button class="btn-remove" onclick="removeRow(this)">X</button>
+                        </td>
                     `;
                     tbody.appendChild(row);
+                    
+                    // Add divider after each row
+                    const divider = document.createElement('tr');
+                    divider.className = 'row-divider';
+                    divider.innerHTML = `
+                        <td colspan="9" style="padding: 0; height: 0; border: none;">
+                            <div class="row-divider-line"></div>
+                            <button class="row-add-btn" onclick="insertRowAfter(this.closest('tr').previousElementSibling)">+</button>
+                        </td>
+                    `;
+                    tbody.appendChild(divider);
                 });
             } else {
                 addDetailRow();
@@ -891,7 +1007,7 @@
             const url = URL.createObjectURL(dataBlob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `work-report-${data.reportNumber || 'new'}-${Date.now()}.json`;
+            link.download = `work-report-${data.reportNumber || 'new'}.json`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
