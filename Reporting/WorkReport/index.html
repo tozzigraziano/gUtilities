@@ -559,6 +559,10 @@
                         <label class="text-address">Indirizzo:</label>
                         <input type="text" id="indirizzo">
                     </div>
+                    <div class="client-field" style="max-width: 120px;">
+                        <label class="text-codice-cliente">Codice Cliente:</label>
+                        <input type="number" id="codiceCliente" maxlength="4" max="9999" min="0" placeholder="0000">
+                    </div>
                 </div>
             </div>
         </div>
@@ -685,6 +689,7 @@
                 'text-date': 'Del',
                 'text-client': 'Cliente:',
                 'text-address': 'Indirizzo:',
+                'text-codice-cliente': 'Codice Cliente:',
                 'text-causale-title': 'CAUSALE DI INTERVENTO',
                 'text-installazione': 'Installazione',
                 'text-collaudo': 'Collaudo',
@@ -719,6 +724,7 @@
                 'text-date': 'Date',
                 'text-client': 'Client:',
                 'text-address': 'Address:',
+                'text-codice-cliente': 'Client Code:',
                 'text-causale-title': 'INTERVENTION REASON',
                 'text-installazione': 'Installation',
                 'text-collaudo': 'Testing',
@@ -896,6 +902,7 @@
                 reportDate: document.getElementById('reportDate').value,
                 cliente: document.getElementById('cliente').value,
                 indirizzo: document.getElementById('indirizzo').value,
+                codiceCliente: document.getElementById('codiceCliente').value,
                 causale: {
                     installazione: document.getElementById('installazione').checked,
                     collaudo: document.getElementById('collaudo').checked,
@@ -938,6 +945,7 @@
             document.getElementById('reportDate').value = data.reportDate || '';
             document.getElementById('cliente').value = data.cliente || '';
             document.getElementById('indirizzo').value = data.indirizzo || '';
+            document.getElementById('codiceCliente').value = data.codiceCliente || '';
 
             if (data.causale) {
                 document.getElementById('installazione').checked = data.causale.installazione || false;
@@ -1294,7 +1302,32 @@
             pdf.rect(margin + firmaWidth + 2, yPos + 18, firmaWidth - 5, 10, 'D');
             pdf.text(data.firme.cliente || '', margin + firmaWidth + 4, yPos + 24);
             
-            pdf.save(`work-report-${data.reportNumber || 'new'}-${Date.now()}.pdf`);
+            // Generate filename: YYMMDD_ID_CodiceCliente_(codicilavoro).pdf
+            const today = new Date();
+            const yy = String(today.getFullYear()).slice(-2);
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const datePrefix = `${yy}${mm}${dd}`;
+            const reportId = data.reportNumber || 'new';
+            const codiceCliente = data.codiceCliente ? `_CC${String(data.codiceCliente).padStart(4, '0')}` : '';
+            
+            // Get unique work codes (remove duplicates)
+            const uniqueCodici = [...new Set(
+                data.dettagli
+                    .map(d => d.matricola)
+                    .filter(m => m && m.trim() !== '')
+            )].map(code => {
+                // Pad numeric codes to 4 digits
+                const numCode = parseInt(code);
+                return !isNaN(numCode) ? String(numCode).padStart(4, '0') : code;
+            });
+            const codiciLavoro = uniqueCodici.join('-');
+            
+            const filename = codiciLavoro 
+                ? `${datePrefix}_ID${reportId}${codiceCliente}_CL(${codiciLavoro}).pdf`
+                : `${datePrefix}_ID${reportId}${codiceCliente}.pdf`;
+            
+            pdf.save(filename);
         }
 
         function newReport() {
@@ -1303,6 +1336,7 @@
                 document.getElementById('reportDate').value = '';
                 document.getElementById('cliente').value = '';
                 document.getElementById('indirizzo').value = '';
+                document.getElementById('codiceCliente').value = '';
                 document.getElementById('installazione').checked = false;
                 document.getElementById('collaudo').checked = false;
                 document.getElementById('riparazione').checked = false;
@@ -1800,7 +1834,32 @@
                 pdf.rect(margin + firmaWidth + 2, yPos + 23, firmaWidth - 5, 5, 'D');
                 pdf.text(data.firme.cliente || '', margin + firmaWidth + 4, yPos + 26);
                 
-                pdf.save(`work-report-${data.reportNumber || 'new'}-${Date.now()}.pdf`);
+                // Generate filename: YYMMDD_ID_CodiceCliente_(codicilavoro).pdf
+                const today = new Date();
+                const yy = String(today.getFullYear()).slice(-2);
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                const datePrefix = `${yy}${mm}${dd}`;
+                const reportId = data.reportNumber || 'new';
+                const codiceCliente = data.codiceCliente ? `_CC${String(data.codiceCliente).padStart(4, '0')}` : '';
+                
+                // Get unique work codes (remove duplicates)
+                const uniqueCodici = [...new Set(
+                    data.dettagli
+                        .map(d => d.matricola)
+                        .filter(m => m && m.trim() !== '')
+                )].map(code => {
+                    // Pad numeric codes to 4 digits
+                    const numCode = parseInt(code);
+                    return !isNaN(numCode) ? String(numCode).padStart(4, '0') : code;
+                });
+                const codiciLavoro = uniqueCodici.join('-');
+                
+                const filename = codiciLavoro 
+                    ? `${datePrefix}_ID${reportId}${codiceCliente}_CL(${codiciLavoro}).pdf`
+                    : `${datePrefix}_ID${reportId}${codiceCliente}.pdf`;
+                
+                pdf.save(filename);
             }
         }
 
