@@ -357,6 +357,29 @@
             background-color: #252526;
             border: 1px solid #3e3e42;
             margin-bottom: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 11px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .firma-input:hover {
+            background-color: #2d2d2d;
+            border-color: #4da6ff;
+        }
+
+        .firma-input.has-signature {
+            padding: 0;
+        }
+
+        .firma-input img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
         }
 
         .firma-name {
@@ -446,6 +469,101 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+        }
+
+        /* Signature Modal */
+        .signature-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .signature-modal.active {
+            display: flex;
+        }
+
+        .signature-panel {
+            background-color: #2d2d2d;
+            border: 2px solid #4da6ff;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .signature-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #4da6ff;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .signature-close {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .signature-close:hover {
+            color: #ff6b6b;
+        }
+
+        .signature-canvas {
+            background-color: #fff;
+            border: 2px solid #3e3e42;
+            border-radius: 4px;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .signature-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-clear {
+            background-color: #d97706;
+        }
+
+        .btn-clear:hover {
+            background-color: #ea580c;
+        }
+
+        .btn-save {
+            background-color: #16825d;
+        }
+
+        .btn-save:hover {
+            background-color: #1e9d72;
+        }
+
+        @media (max-width: 768px) {
+            .signature-panel {
+                max-width: 95%;
+                max-height: 85%;
+                padding: 15px;
+            }
         }
 
         /* Print Styles */
@@ -663,17 +781,42 @@
             <div class="firme-content">
                 <div class="firma-box">
                     <div class="firma-label text-firma-cff">Per CTF Automazioni:</div>
-                    <div class="firma-input"></div>
+                    <div class="firma-input" onclick="openSignaturePanel('ctf')" id="firmaInputCTF">
+                        <span style="color: #666;">Clicca per firmare</span>
+                    </div>
                     <input type="text" class="firma-name" id="firmaCTF" placeholder="">
                 </div>
                 <div class="firma-box">
                     <div class="firma-label text-firma-cliente">Per il Cliente:</div>
-                    <div class="firma-input"></div>
+                    <div class="firma-input" onclick="openSignaturePanel('cliente')" id="firmaInputCliente">
+                        <span style="color: #666;">Clicca per firmare</span>
+                    </div>
                     <input type="text" class="firma-name" id="firmaCliente" placeholder="">
                 </div>
             </div>
         </div>
 
+    </div>
+
+    <!-- Signature Modal -->
+    <div class="signature-modal" id="signatureModal">
+        <div class="signature-panel">
+            <div class="signature-header">
+                <span id="signatureTitle">Firma digitale</span>
+                <button class="signature-close" onclick="closeSignaturePanel()">×</button>
+            </div>
+            <canvas class="signature-canvas" id="signatureCanvas" width="900" height="100"></canvas>
+            <div class="signature-controls">
+                <button class="btn btn-clear" onclick="clearSignature()">
+                    <span class="material-icons">clear</span>
+                    <span>Cancella</span>
+                </button>
+                <button class="btn btn-save" onclick="saveSignature()">
+                    <span class="material-icons">check</span>
+                    <span>Salva</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <input type="file" id="fileInput" accept=".json" onchange="importJSON(event)">
@@ -1290,6 +1433,10 @@
             pdf.text(lang['text-firma-cff'], margin + 2, yPos + 4);
             
             pdf.rect(margin + 2, yPos + 6, firmaWidth - 5, 10, 'D');
+            // Add signature image if available
+            if (signatures.ctf) {
+                pdf.addImage(signatures.ctf, 'PNG', margin + 2, yPos + 6, firmaWidth - 5, 10);
+            }
             pdf.rect(margin + 2, yPos + 18, firmaWidth - 5, 10, 'D');
             pdf.setFont('helvetica', 'normal');
             pdf.text(data.firme.ctf || '', margin + 4, yPos + 24);
@@ -1299,6 +1446,10 @@
             pdf.text(lang['text-firma-cliente'], margin + firmaWidth + 2, yPos + 4);
             
             pdf.rect(margin + firmaWidth + 2, yPos + 6, firmaWidth - 5, 10, 'D');
+            // Add signature image if available
+            if (signatures.cliente) {
+                pdf.addImage(signatures.cliente, 'PNG', margin + firmaWidth + 2, yPos + 6, firmaWidth - 5, 10);
+            }
             pdf.rect(margin + firmaWidth + 2, yPos + 18, firmaWidth - 5, 10, 'D');
             pdf.text(data.firme.cliente || '', margin + firmaWidth + 4, yPos + 24);
             
@@ -1822,6 +1973,10 @@
                 pdf.text(lang['text-firma-cff'], margin + 2, yPos + 4);
                 
                 pdf.rect(margin + 2, yPos + 6, firmaWidth - 5, 16, 'D');
+                // Add signature image if available
+                if (signatures.ctf) {
+                    pdf.addImage(signatures.ctf, 'PNG', margin + 2, yPos + 6, firmaWidth - 5, 16);
+                }
                 pdf.rect(margin + 2, yPos + 23, firmaWidth - 5, 5, 'D');
                 pdf.setFont('helvetica', 'normal');
                 pdf.text(data.firme.ctf || '', margin + 4, yPos + 26);
@@ -1831,6 +1986,10 @@
                 pdf.text(lang['text-firma-cliente'], margin + firmaWidth + 2, yPos + 4);
                 
                 pdf.rect(margin + firmaWidth + 2, yPos + 6, firmaWidth - 5, 16, 'D');
+                // Add signature image if available
+                if (signatures.cliente) {
+                    pdf.addImage(signatures.cliente, 'PNG', margin + firmaWidth + 2, yPos + 6, firmaWidth - 5, 16);
+                }
                 pdf.rect(margin + firmaWidth + 2, yPos + 23, firmaWidth - 5, 5, 'D');
                 pdf.text(data.firme.cliente || '', margin + firmaWidth + 4, yPos + 26);
                 
@@ -1861,6 +2020,127 @@
                 
                 pdf.save(filename);
             }
+        }
+
+        // Signature functionality
+        let currentSignatureType = null;
+        let isDrawing = false;
+        let canvas = null;
+        let ctx = null;
+        const signatures = {
+            ctf: null,
+            cliente: null
+        };
+
+        function openSignaturePanel(type) {
+            currentSignatureType = type;
+            const modal = document.getElementById('signatureModal');
+            canvas = document.getElementById('signatureCanvas');
+            ctx = canvas.getContext('2d');
+            
+            modal.classList.add('active');
+            
+            // Clear canvas
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Load existing signature if present
+            if (signatures[type]) {
+                const img = new Image();
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                };
+                img.src = signatures[type];
+            }
+            
+            // Setup drawing
+            setupCanvas();
+        }
+
+        function closeSignaturePanel() {
+            const modal = document.getElementById('signatureModal');
+            modal.classList.remove('active');
+            currentSignatureType = null;
+        }
+
+        function setupCanvas() {
+            // Mouse events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch events
+            canvas.addEventListener('touchstart', handleTouchStart);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            ctx.beginPath();
+            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!isDrawing) return;
+            
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        }
+
+        function clearSignature() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function saveSignature() {
+            if (!currentSignatureType) return;
+            
+            // Save signature as data URL
+            const dataURL = canvas.toDataURL('image/png');
+            signatures[currentSignatureType] = dataURL;
+            
+            // Update preview
+            const inputId = currentSignatureType === 'ctf' ? 'firmaInputCTF' : 'firmaInputCliente';
+            const inputElement = document.getElementById(inputId);
+            inputElement.innerHTML = `<img src="${dataURL}" alt="Firma">`;
+            inputElement.classList.add('has-signature');
+            
+            closeSignaturePanel();
         }
 
         // Initialize with current date
