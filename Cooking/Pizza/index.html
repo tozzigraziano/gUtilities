@@ -91,6 +91,31 @@
             transform: translateY(1px);
         }
 
+        select {
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #4da6ff;
+            box-shadow: 0 0 5px rgba(77, 166, 255, 0.5);
+        }
+
+        .warning {
+            background-color: #ff6b6b;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #d63031;
+            font-weight: 500;
+        }
+
+        .warning-icon {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+
         table {
             width: 100%;
             margin-top: 20px;
@@ -199,8 +224,18 @@
         </div>
 
         <div class="input-group">
-            <label for="numBatches">Numero Impasti Monsieur Cousine:</label>
-            <input type="number" id="numBatches" min="1" value="2" placeholder="Es: 2">
+            <label for="monsieurModel">Modello Monsieur Cousine:</label>
+            <select id="monsieurModel" style="width: 100%; padding: 10px; background-color: #3d3d3d; border: 1px solid #555; border-radius: 5px; color: #e0e0e0; font-size: 16px;">
+                <option value="1000">Monsieur Cousine Connect (max 1000g)</option>
+                <option value="1500" selected>Monsieur Cousine Plus (max 1500g)</option>
+                <option value="1000-edition">Monsieur Cousine Edition (max 1000g)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="maxDoughWeight">Peso Massimo Impasto (g):</label>
+            <input type="number" id="maxDoughWeight" min="100" value="1500" placeholder="Es: 1500">
+            <p style="font-size: 12px; color: #999; margin-top: 5px;">Modifica questo valore per personalizzare il limite</p>
         </div>
 
         <button onclick="calculate()">Calcola Ingredienti</button>
@@ -218,17 +253,40 @@
             yeastPercent: 0.003     // 0.3% sul peso farina
         };
 
+        // Aggiorna il valore massimo quando cambia il modello
+        document.getElementById('monsieurModel').addEventListener('change', function() {
+            const selectedValue = this.value;
+            let maxWeight;
+            if (selectedValue === '1500') {
+                maxWeight = 1500;
+            } else {
+                maxWeight = 1000;
+            }
+            document.getElementById('maxDoughWeight').value = maxWeight;
+            calculate();
+        });
+
+        // Ricalcola quando cambia il peso massimo
+        document.getElementById('maxDoughWeight').addEventListener('input', function() {
+            calculate();
+        });
+
+        // Ricalcola quando cambia il numero di persone
+        document.getElementById('numPeople').addEventListener('input', function() {
+            calculate();
+        });
+
         function calculate() {
             const numPeople = parseInt(document.getElementById('numPeople').value);
-            const numBatches = parseInt(document.getElementById('numBatches').value);
+            const maxDoughWeight = parseInt(document.getElementById('maxDoughWeight').value);
 
             if (isNaN(numPeople) || numPeople < 1) {
                 alert('Inserire un numero di persone valido');
                 return;
             }
 
-            if (isNaN(numBatches) || numBatches < 1) {
-                alert('Inserire un numero di impasti valido');
+            if (isNaN(maxDoughWeight) || maxDoughWeight < 100) {
+                alert('Inserire un peso massimo valido (minimo 100g)');
                 return;
             }
 
@@ -241,15 +299,33 @@
             const totalYeast = totalFlour * BASE_RECIPE.yeastPercent;
             const totalWeight = totalCaputoNuvola + totalCaputoPizzeria + totalWater + totalSalt + totalYeast;
 
+            // Calcolo automatico numero impasti
+            const numBatches = Math.ceil(totalWeight / maxDoughWeight);
+
             // Calcolo per impasto
             const caputoNuvolaPerBatch = totalCaputoNuvola / numBatches;
             const caputoPizzeriaPerBatch = totalCaputoPizzeria / numBatches;
             const waterPerBatch = totalWater / numBatches;
             const saltPerBatch = totalSalt / numBatches;
             const yeastPerBatch = totalYeast / numBatches;
+            const weightPerBatch = totalWeight / numBatches;
+
+            // Verifica se si supera il limite
+            const exceedsLimit = weightPerBatch > maxDoughWeight;
+            let warningHTML = '';
+            if (exceedsLimit) {
+                warningHTML = `
+                    <div class="warning">
+                        <span class="warning-icon">⚠️</span>
+                        <strong>Attenzione!</strong> Il peso per impasto (${weightPerBatch.toFixed(0)}g) supera il limite impostato (${maxDoughWeight}g). 
+                        Considera di ridurre il numero di persone o aumentare il limite.
+                    </div>
+                `;
+            }
 
             // Genera HTML risultati
             let resultsHTML = `
+                ${warningHTML}
                 <div class="result-section">
                     <h2 style="margin-top: 0;">📊 Ingredienti Totali</h2>
                     <table>
@@ -291,8 +367,8 @@
                                 <td class="text-right highlight">${totalYeast.toFixed(0)} g</td>
                             </tr>
                             <tr class="total-row">
-                                <td colspan="2"></td>
-                                <td class="text-right">${totalWeight.toFixed(1)}</td>
+                                <td colspan="2"><strong>Peso Totale</strong></td>
+                                <td class="text-right">${totalWeight.toFixed(0)} g</td>
                             </tr>
                         </tbody>
                     </table>
@@ -303,34 +379,34 @@
                     <table>
                         <thead>
                             <tr>
-                                <th style="background-color: #2d2d2d; color: #4da6ff;">Numero Impasti Monsieur Cousine</th>
+                                <th style="background-color: #2d2d2d; color: #4da6ff;">Numero Impasti Calcolati Automaticamente</th>
                                 <th class="text-center highlight" colspan="1">${numBatches}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
                                 <td><strong>Quantità per impasto</strong></td>
-                                <td class="text-right highlight"></td>
+                                <td class="text-right highlight"><strong>${weightPerBatch.toFixed(0)} g</strong></td>
                             </tr>
                             <tr>
                                 <td>Caputo Nuvola</td>
-                                <td class="text-right highlight">${caputoNuvolaPerBatch.toFixed(0)}</td>
+                                <td class="text-right highlight">${caputoNuvolaPerBatch.toFixed(0)} g</td>
                             </tr>
                             <tr>
                                 <td>Caputo Pizzeria</td>
-                                <td class="text-right highlight">${caputoPizzeriaPerBatch.toFixed(0)}</td>
+                                <td class="text-right highlight">${caputoPizzeriaPerBatch.toFixed(0)} g</td>
                             </tr>
                             <tr>
                                 <td>Acqua</td>
-                                <td class="text-right highlight">${waterPerBatch.toFixed(0)}</td>
+                                <td class="text-right highlight">${waterPerBatch.toFixed(0)} g</td>
                             </tr>
                             <tr>
                                 <td>Sale</td>
-                                <td class="text-right highlight">${saltPerBatch.toFixed(2)}</td>
+                                <td class="text-right highlight">${saltPerBatch.toFixed(2)} g</td>
                             </tr>
                             <tr>
                                 <td>Lievito</td>
-                                <td class="text-right highlight">${yeastPerBatch.toFixed(1)}</td>
+                                <td class="text-right highlight">${yeastPerBatch.toFixed(1)} g</td>
                             </tr>
                         </tbody>
                     </table>
