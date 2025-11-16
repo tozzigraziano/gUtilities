@@ -244,6 +244,13 @@
             transform: translateX(-50%) scale(1.1);
         }
 
+        /* Make add buttons visible on touch devices */
+        @media (hover: none) and (pointer: coarse) {
+            .row-add-btn {
+                display: flex !important;
+            }
+        }
+
         .btn-remove {
             background-color: #f48771;
             color: #fff;
@@ -255,6 +262,31 @@
 
         .btn-remove:hover {
             background-color: #f14c28;
+        }
+
+        /* Add row button at bottom of table */
+        .btn-add-row-bottom {
+            background-color: #0e639c;
+            color: #fff;
+            border: 1px solid #3e3e42;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 3px;
+        }
+
+        .btn-add-row-bottom:hover {
+            background-color: #1177bb;
+        }
+
+        .table-footer {
+            background-color: #252526;
+            text-align: center;
+            border-top: 2px solid #3e3e42;
         }
 
         /* Descrizione Lavori */
@@ -757,6 +789,12 @@
                     </tr>
                 </tbody>
             </table>
+            <div class="table-footer">
+                <button class="btn-add-row-bottom" onclick="addDetailRow()">
+                    <span style="font-size: 16px; font-weight: bold;">+</span>
+                    <span class="text-add-row">Aggiungi Riga</span>
+                </button>
+            </div>
         </div>
 
         <!-- Descrizione Lavori -->
@@ -850,7 +888,7 @@
                 'text-vitto': 'Vitto',
                 'text-alloggio': 'Alloggio',
                 'text-km': 'Km',
-                'text-add-row': '+ Aggiungi Riga',
+                'text-add-row': 'Aggiungi Riga',
                 'text-descrizione-title': 'DESCRIZIONE LAVORI SVOLTI',
                 'text-note-title': 'NOTE DEL CLIENTE',
                 'text-firme-title': 'FIRME',
@@ -885,7 +923,7 @@
                 'text-vitto': 'Meals',
                 'text-alloggio': 'Lodging',
                 'text-km': 'Km',
-                'text-add-row': '+ Add Row',
+                'text-add-row': 'Add Row',
                 'text-descrizione-title': 'WORK DESCRIPTION',
                 'text-note-title': 'CLIENT NOTES',
                 'text-firme-title': 'SIGNATURES',
