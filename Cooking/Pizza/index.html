@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Impasto Pizza</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #4da6ff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #66b3ff;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #404040;
+            padding-bottom: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b3b3b3;
+            font-weight: 500;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #3d3d3d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 16px;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4da6ff;
+            box-shadow: 0 0 5px rgba(77, 166, 255, 0.5);
+        }
+
+        button {
+            padding: 12px 25px;
+            background-color: #4da6ff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #3d8dd9;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: #3d3d3d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #4da6ff;
+            color: #fff;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #505050;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #454545;
+        }
+
+        .info-box {
+            background-color: #3d3d3d;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #66b3ff;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .result-section {
+            background-color: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4da6ff;
+        }
+
+        .highlight {
+            background-color: #90EE90 !important;
+            color: #000 !important;
+            font-weight: bold;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #454545;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍕 Calcolatore Impasto Pizza</h1>
+        
+        <div class="info-box">
+            <p><strong>Calcolatore ingredienti per impasto pizza napoletana</strong></p>
+            <p>Formula base: 250g farina per persona (125g Caputo Nuvola + 125g Caputo Pizzeria)</p>
+            <p>Idratazione: 66% | Sale: 2.24% | Lievito: 0.3%</p>
+        </div>
+
+        <h2>Parametri</h2>
+        
+        <div class="input-group">
+            <label for="numPeople">Numero Persone:</label>
+            <input type="number" id="numPeople" min="1" value="4" placeholder="Es: 4">
+        </div>
+
+        <div class="input-group">
+            <label for="numBatches">Numero Impasti Monsieur Cousine:</label>
+            <input type="number" id="numBatches" min="1" value="2" placeholder="Es: 2">
+        </div>
+
+        <button onclick="calculate()">Calcola Ingredienti</button>
+
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        // Costanti ricetta base (per persona)
+        const BASE_RECIPE = {
+            caputoNuvola: 125,      // g per persona
+            caputoPizzeria: 125,    // g per persona
+            waterPercent: 0.66,     // 66% idratazione
+            saltPercent: 0.0224,    // 2.24% sul peso farina
+            yeastPercent: 0.003     // 0.3% sul peso farina
+        };
+
+        function calculate() {
+            const numPeople = parseInt(document.getElementById('numPeople').value);
+            const numBatches = parseInt(document.getElementById('numBatches').value);
+
+            if (isNaN(numPeople) || numPeople < 1) {
+                alert('Inserire un numero di persone valido');
+                return;
+            }
+
+            if (isNaN(numBatches) || numBatches < 1) {
+                alert('Inserire un numero di impasti valido');
+                return;
+            }
+
+            // Calcolo totali
+            const totalCaputoNuvola = BASE_RECIPE.caputoNuvola * numPeople;
+            const totalCaputoPizzeria = BASE_RECIPE.caputoPizzeria * numPeople;
+            const totalFlour = totalCaputoNuvola + totalCaputoPizzeria;
+            const totalWater = totalFlour * BASE_RECIPE.waterPercent;
+            const totalSalt = totalFlour * BASE_RECIPE.saltPercent;
+            const totalYeast = totalFlour * BASE_RECIPE.yeastPercent;
+            const totalWeight = totalCaputoNuvola + totalCaputoPizzeria + totalWater + totalSalt + totalYeast;
+
+            // Calcolo per impasto
+            const caputoNuvolaPerBatch = totalCaputoNuvola / numBatches;
+            const caputoPizzeriaPerBatch = totalCaputoPizzeria / numBatches;
+            const waterPerBatch = totalWater / numBatches;
+            const saltPerBatch = totalSalt / numBatches;
+            const yeastPerBatch = totalYeast / numBatches;
+
+            // Genera HTML risultati
+            let resultsHTML = `
+                <div class="result-section">
+                    <h2 style="margin-top: 0;">📊 Ingredienti Totali</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="background-color: #2d2d2d; color: #4da6ff;">Numero Persone</th>
+                                <th class="text-center highlight" colspan="2">${numPeople}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Ingredienti</strong></td>
+                                <td class="text-center"><strong>a persona</strong></td>
+                                <td class="text-center highlight"><strong>totale</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Caputo Nuvola</td>
+                                <td class="text-right">${BASE_RECIPE.caputoNuvola}</td>
+                                <td class="text-right highlight">${totalCaputoNuvola.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Caputo Pizzeria</td>
+                                <td class="text-right">${BASE_RECIPE.caputoPizzeria}</td>
+                                <td class="text-right highlight">${totalCaputoPizzeria.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Acqua (66%)</td>
+                                <td class="text-right">${(BASE_RECIPE.caputoNuvola + BASE_RECIPE.caputoPizzeria) * BASE_RECIPE.waterPercent}</td>
+                                <td class="text-right highlight">${totalWater.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Sale</td>
+                                <td class="text-right">${((BASE_RECIPE.caputoNuvola + BASE_RECIPE.caputoPizzeria) * BASE_RECIPE.saltPercent).toFixed(2)}</td>
+                                <td class="text-right highlight">${totalSalt.toFixed(2)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Lievito</td>
+                                <td class="text-right">${((BASE_RECIPE.caputoNuvola + BASE_RECIPE.caputoPizzeria) * BASE_RECIPE.yeastPercent).toFixed(2)}</td>
+                                <td class="text-right highlight">${totalYeast.toFixed(0)} g</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td colspan="2"></td>
+                                <td class="text-right">${totalWeight.toFixed(1)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="result-section">
+                    <h2 style="margin-top: 0;">🤖 Dosi per Impasto (Monsieur Cousine)</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="background-color: #2d2d2d; color: #4da6ff;">Numero Impasti Monsieur Cousine</th>
+                                <th class="text-center highlight" colspan="1">${numBatches}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Quantità per impasto</strong></td>
+                                <td class="text-right highlight"></td>
+                            </tr>
+                            <tr>
+                                <td>Caputo Nuvola</td>
+                                <td class="text-right highlight">${caputoNuvolaPerBatch.toFixed(0)}</td>
+                            </tr>
+                            <tr>
+                                <td>Caputo Pizzeria</td>
+                                <td class="text-right highlight">${caputoPizzeriaPerBatch.toFixed(0)}</td>
+                            </tr>
+                            <tr>
+                                <td>Acqua</td>
+                                <td class="text-right highlight">${waterPerBatch.toFixed(0)}</td>
+                            </tr>
+                            <tr>
+                                <td>Sale</td>
+                                <td class="text-right highlight">${saltPerBatch.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>Lievito</td>
+                                <td class="text-right highlight">${yeastPerBatch.toFixed(1)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('results').innerHTML = resultsHTML;
+        }
+
+        // Calcolo iniziale al caricamento
+        window.addEventListener('load', function() {
+            calculate();
+        });
+    </script>
+</body>
+</html>
