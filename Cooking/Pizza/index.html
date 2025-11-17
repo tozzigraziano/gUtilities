@@ -191,6 +191,29 @@
             text-align: center;
         }
 
+        .procedure {
+            background-color: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #ff9966;
+        }
+
+        .procedure h2 {
+            color: #ff9966;
+            margin-top: 0;
+        }
+
+        .procedure ol {
+            margin-left: 20px;
+            margin-top: 15px;
+        }
+
+        .procedure li {
+            margin-bottom: 10px;
+            line-height: 1.8;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -252,6 +275,26 @@
         <button onclick="calculate()">Calcola Ingredienti</button>
 
         <div id="results" class="results"></div>
+
+        <div class="procedure">
+            <h2>📝 Procedura (Monsieur Cuisine Smart)</h2>
+            <ol>
+                <li><strong>Attivare il lievito:</strong> Inserire lievito e acqua nel boccale, <strong>2 minuti 37°C modalità DX</strong> per attivare il lievito</li>
+                <li><strong>Aggiungere la farina:</strong> Aggiungere la farina, <strong>modalità impastare per 3 minuti</strong></li>
+                <li><strong>Prime pieghe:</strong> Trasferire l'impasto su una spianatoia con farina di semola, svuotare l'impasto e fare le pieghe</li>
+                <li><strong>Primo riposo:</strong> Mettere in <strong>contenitore chiuso per 15 minuti</strong></li>
+                <li><strong>Seconde pieghe:</strong> Eseguire un secondo giro di pieghe</li>
+                <li><strong>Secondo riposo:</strong> Mettere in <strong>contenitore chiuso per altri 15 minuti</strong></li>
+                <li><strong>Terze pieghe:</strong> Eseguire un terzo giro di pieghe</li>
+                <li><strong>Riposo in frigo:</strong> Mettere in <strong>frigo per 20 minuti</strong></li>
+                <li><strong>Staglio:</strong> Dividere l'impasto in <strong>panetti da 280 grammi</strong></li>
+                <li><strong>Lievitazione finale:</strong> Far riposare i panetti per <strong>2 ore</strong></li>
+                <li><strong>Stendere e cuocere:</strong> Stendere la pizza e procedere con la cottura</li>
+            </ol>
+            <p style="margin-top: 15px; padding: 10px; background-color: #454545; border-radius: 5px; font-size: 14px;">
+                <strong>💡 Suggerimento:</strong> Le pieghe danno forza all'impasto. Eseguile delicatamente per non sgonfiare l'impasto. Ogni panetto da 280g è ideale per una pizza tonda di circa 30cm di diametro.
+            </p>
+        </div>
     </div>
 
     <script>
