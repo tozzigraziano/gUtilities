@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Salame al Cioccolato</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #4da6ff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #66b3ff;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #404040;
+            padding-bottom: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b3b3b3;
+            font-weight: 500;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #3d3d3d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 16px;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4da6ff;
+            box-shadow: 0 0 5px rgba(77, 166, 255, 0.5);
+        }
+
+        button {
+            padding: 12px 25px;
+            background-color: #4da6ff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #3d8dd9;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: #3d3d3d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #4da6ff;
+            color: #fff;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #505050;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #454545;
+        }
+
+        .info-box {
+            background-color: #3d3d3d;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #66b3ff;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .result-section {
+            background-color: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4da6ff;
+        }
+
+        .highlight {
+            background-color: #90EE90 !important;
+            color: #000 !important;
+            font-weight: bold;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #454545;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .procedure {
+            background-color: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #ff9966;
+        }
+
+        .procedure h2 {
+            color: #ff9966;
+            margin-top: 0;
+        }
+
+        .procedure ol {
+            margin-left: 20px;
+            margin-top: 15px;
+        }
+
+        .procedure li {
+            margin-bottom: 10px;
+            line-height: 1.8;
+        }
+
+        .warning {
+            background-color: #ff6b6b;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #d63031;
+            font-weight: 500;
+        }
+
+        .warning-icon {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #4da6ff;
+            box-shadow: 0 0 5px rgba(77, 166, 255, 0.5);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #3d3d3d;
+            border-radius: 5px;
+            border-left: 4px solid #66b3ff;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            accent-color: #4da6ff;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍫 Calcolatore Salame al Cioccolato</h1>
+        
+        <div class="info-box">
+            <p><strong>Ricetta salame al cioccolato con arachidi</strong></p>
+            <p>Formula base per 1 sfilatino</p>
+        </div>
+
+        <h2>Parametri</h2>
+        
+        <div class="input-group">
+            <label for="numSfilatini">Numero Sfilatini:</label>
+            <input type="number" id="numSfilatini" min="0" value="0" placeholder="Es: 2">
+        </div>
+
+        <div class="input-group">
+            <label for="monsieurModel">Modello Robot da Cucina:</label>
+            <select id="monsieurModel" style="width: 100%; padding: 10px; background-color: #3d3d3d; border: 1px solid #555; border-radius: 5px; color: #e0e0e0; font-size: 16px;">
+                <option value="connect">Monsieur Cousine Connect (max 750g farina, 1500g impasto)</option>
+                <option value="plus">Monsieur Cousine Plus (max 1000g farina, 1750g impasto)</option>
+                <option value="edition">Monsieur Cousine Edition Plus (max 750g farina, 1500g impasto)</option>
+                <option value="smart" selected>Monsieur Cousine Smart (max 750g farina, 1500g impasto)</option>
+                <option value="tm6">Bimby TM6 (max 1000g farina, 3000g impasto)</option>
+                <option value="tm5">Bimby TM5 (max 1000g farina, 3000g impasto)</option>
+                <option value="tm31">Bimby TM31 (max 500g farina, 2000g impasto)</option>
+                <option value="custom">Altro (personalizzato)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="maxDoughWeight">Peso Massimo Impasto (g):</label>
+            <input type="number" id="maxDoughWeight" min="100" value="1500" placeholder="Es: 1500">
+            <p style="font-size: 12px; color: #999; margin-top: 5px;">Questo valore viene impostato automaticamente in base al modello selezionato, ma puoi modificarlo manualmente</p>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="includeBiscotti" checked>
+            <label for="includeBiscotti">Includi i biscotti nel calcolo del peso dell'impasto</label>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="includeArachidi" checked>
+            <label for="includeArachidi">Includi le arachidi nel calcolo del peso dell'impasto</label>
+        </div>
+
+        <button onclick="calculate()">Calcola Ingredienti</button>
+
+        <div id="results" class="results"></div>
+
+        <div class="procedure">
+            <h2>📝 Procedura (Monsieur Cuisine Smart)</h2>
+            <ol>
+                <li><strong>Preparare biscotti e arachidi:</strong> Tritare grossolanamente i biscotti secchi a mano e sbucciare le arachidi, mettere il tutto in una ciotola</li>
+                <li><strong>Polverizzare lo zucchero:</strong> Inserire lo zucchero nel boccale, <strong>modalità turbo 4 secondi</strong> per ridurlo in polvere, poi trasferirlo in una ciotola</li>
+                <li><strong>Sciogliere il burro:</strong> Mettere il burro nel boccale pulito, <strong>45°C modalità DX</strong> fino a completo scioglimento</li>
+                <li><strong>Preparare la crema al cioccolato:</strong> Aggiungere lo zucchero polverizzato, il cacao e l'uovo, <strong>1 minuto DX 4</strong>. Aprire il coperchio e abbassare l'impasto dalle pareti con una spatola, poi <strong>30 secondi DX 4</strong></li>
+                <li><strong>Incorporare biscotti e arachidi:</strong> Aggiungere i biscotti tritati e le arachidi sbucciate, <strong>50 secondi modalità mescolare</strong> partendo da velocità 1 fino a 3 (ogni tanto aprire e spingere giù l'impasto con la spatola)</li>
+                <li><strong>Formare gli sfilatini:</strong> Trasferire l'impasto su carta da forno e arrotolare formando uno o più sfilatini di forma cilindrica</li>
+                <li><strong>Raffreddamento:</strong> Mettere in <strong>congelatore per 30 minuti</strong> per far rassodare, poi trasferire in frigorifero</li>
+                <li><strong>Conservazione:</strong> Mantenere in frigorifero se si consuma entro 3 giorni, altrimenti conservare in congelatore</li>
+            </ol>
+            <p style="margin-top: 15px; padding: 10px; background-color: #454545; border-radius: 5px; font-size: 14px;">
+                <strong>💡 Suggerimento:</strong> Per ottenere fette perfette, utilizzare un coltello affilato leggermente riscaldato. Il salame deve essere ben freddo al momento del taglio.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Costanti ricetta base (per 1 sfilatino)
+        const BASE_RECIPE = {
+            biscotti: 200,          // g per sfilatino
+            arachidi: 100,          // g per sfilatino
+            zucchero: 100,          // g per sfilatino
+            burro: 125,             // g per sfilatino
+            cacao: 45,              // g per sfilatino
+            uova: 1                 // unità per sfilatino
+        };
+
+        // Aggiorna il valore massimo quando cambia il modello
+        document.getElementById('monsieurModel').addEventListener('change', function() {
+            const selectedValue = this.value;
+            let maxWeight, maxFlour;
+            
+            switch(selectedValue) {
+                case 'connect':
+                    maxFlour = 750;
+                    maxWeight = 1500;
+                    break;
+                case 'plus':
+                    maxFlour = 1000;
+                    maxWeight = 1750;
+                    break;
+                case 'edition':
+                    maxFlour = 750;
+                    maxWeight = 1500;
+                    break;
+                case 'smart':
+                    maxFlour = 750;
+                    maxWeight = 1500;
+                    break;
+                case 'tm6':
+                    maxFlour = 1000;
+                    maxWeight = 3000;
+                    break;
+                case 'tm5':
+                    maxFlour = 1000;
+                    maxWeight = 3000;
+                    break;
+                case 'tm31':
+                    maxFlour = 500;
+                    maxWeight = 2000;
+                    break;
+                case 'custom':
+                    maxWeight = document.getElementById('maxDoughWeight').value || 1500;
+                    break;
+                default:
+                    maxWeight = 1500;
+            }
+            
+            document.getElementById('maxDoughWeight').value = maxWeight;
+        });
+
+        function calculate() {
+            const numSfilatini = parseInt(document.getElementById('numSfilatini').value);
+            const maxDoughWeight = parseInt(document.getElementById('maxDoughWeight').value);
+            const includeBiscotti = document.getElementById('includeBiscotti').checked;
+            const includeArachidi = document.getElementById('includeArachidi').checked;
+
+            // Validazione input
+            if (isNaN(numSfilatini) || numSfilatini < 0) {
+                alert('Inserire un numero di sfilatini valido (minimo 0)');
+                return;
+            }
+
+            if (numSfilatini === 0) {
+                document.getElementById('results').innerHTML = '<div class="info-box"><p>Inserire il numero di sfilatini per calcolare gli ingredienti.</p></div>';
+                return;
+            }
+
+            if (isNaN(maxDoughWeight) || maxDoughWeight < 100) {
+                alert('Inserire un peso massimo impasto valido (minimo 100g)');
+                return;
+            }
+
+            // Calcolo totali
+            const totalBiscotti = BASE_RECIPE.biscotti * numSfilatini;
+            const totalArachidi = BASE_RECIPE.arachidi * numSfilatini;
+            const totalZucchero = BASE_RECIPE.zucchero * numSfilatini;
+            const totalBurro = BASE_RECIPE.burro * numSfilatini;
+            const totalCacao = BASE_RECIPE.cacao * numSfilatini;
+            const totalUova = BASE_RECIPE.uova * numSfilatini;
+            
+            // Peso uova (circa 50g per uovo)
+            const pesoUova = totalUova * 50;
+            // Calcola peso totale includendo o escludendo biscotti e arachidi
+            const totalWeight = (includeBiscotti ? totalBiscotti : 0) + (includeArachidi ? totalArachidi : 0) + 
+                                totalZucchero + totalBurro + totalCacao + pesoUova;
+
+            // Calcolo automatico numero impasti
+            const numBatches = Math.ceil(totalWeight / maxDoughWeight);
+
+            // Calcolo per impasto
+            const biscottiPerBatch = totalBiscotti / numBatches;
+            const arachidiPerBatch = totalArachidi / numBatches;
+            const zuccheroPerBatch = totalZucchero / numBatches;
+            const burroPerBatch = totalBurro / numBatches;
+            const cacaoPerBatch = totalCacao / numBatches;
+            const uovaPerBatch = totalUova / numBatches;
+            const weightPerBatch = totalWeight / numBatches;
+            
+            // Nota informativa su biscotti e arachidi
+            let ingredientiNote = '';
+            if (!includeBiscotti || !includeArachidi) {
+                let notes = [];
+                if (!includeBiscotti) notes.push('i biscotti');
+                if (!includeArachidi) notes.push('le arachidi');
+                ingredientiNote = `<p style="color: #ff9966; margin-top: 10px; font-style: italic;">⚠️ ${notes.join(' e ').charAt(0).toUpperCase() + notes.join(' e ').slice(1)} non sono inclusi nel peso dell'impasto (si aggiungono dopo)</p>`;
+            }
+
+            // Verifica se si superano i limiti
+            const exceedsWeightLimit = weightPerBatch > maxDoughWeight;
+            let warningHTML = '';
+            
+            if (exceedsWeightLimit) {
+                warningHTML = `
+                    <div class="warning">
+                        <span class="warning-icon">⚠️</span>
+                        <strong>Attenzione!</strong> Il peso per impasto (${weightPerBatch.toFixed(0)}g) supera il limite (${maxDoughWeight}g). 
+                        Considera di ridurre il numero di sfilatini o aumentare i limiti.
+                    </div>
+                `;
+            }
+
+            // Genera HTML risultati
+            let resultsHTML = `
+                ${warningHTML}
+                <div class="result-section">
+                    <h2 style="margin-top: 0;">📊 Ingredienti Totali</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="background-color: #2d2d2d; color: #4da6ff;">Numero Sfilatini</th>
+                                <th class="text-center highlight" colspan="2">${numSfilatini}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Ingredienti</strong></td>
+                                <td class="text-center"><strong>per sfilatino</strong></td>
+                                <td class="text-center highlight"><strong>totale</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Biscotti secchi</td>
+                                <td class="text-right">${BASE_RECIPE.biscotti} g</td>
+                                <td class="text-right highlight">${totalBiscotti} g</td>
+                            </tr>
+                            <tr>
+                                <td>Arachidi da sbucciare</td>
+                                <td class="text-right">${BASE_RECIPE.arachidi} g</td>
+                                <td class="text-right highlight">${totalArachidi} g</td>
+                            </tr>
+                            <tr>
+                                <td>Zucchero</td>
+                                <td class="text-right">${BASE_RECIPE.zucchero} g</td>
+                                <td class="text-right highlight">${totalZucchero} g</td>
+                            </tr>
+                            <tr>
+                                <td>Burro</td>
+                                <td class="text-right">${BASE_RECIPE.burro} g</td>
+                                <td class="text-right highlight">${totalBurro} g</td>
+                            </tr>
+                            <tr>
+                                <td>Cacao</td>
+                                <td class="text-right">${BASE_RECIPE.cacao} g</td>
+                                <td class="text-right highlight">${totalCacao} g</td>
+                            </tr>
+                            <tr>
+                                <td>Uova</td>
+                                <td class="text-right">${BASE_RECIPE.uova}</td>
+                                <td class="text-right highlight">${totalUova}</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td colspan="2"><strong>Peso Totale (approssimativo)</strong></td>
+                                <td class="text-right">${totalWeight.toFixed(0)} g</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="result-section">
+                    <h2 style="margin-top: 0;">🤖 Dosi per Impasto (Robot da Cucina)</h2>
+                    ${ingredientiNote}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="background-color: #2d2d2d; color: #4da6ff;">Numero Impasti Calcolati Automaticamente</th>
+                                <th class="text-center highlight" colspan="1">${numBatches}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Quantità per impasto (approssimativa)</strong></td>
+                                <td class="text-right highlight"><strong>${weightPerBatch.toFixed(0)} g</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Biscotti secchi</td>
+                                <td class="text-right highlight">${biscottiPerBatch.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Arachidi da sbucciare</td>
+                                <td class="text-right highlight">${arachidiPerBatch.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Zucchero</td>
+                                <td class="text-right highlight">${zuccheroPerBatch.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Burro</td>
+                                <td class="text-right highlight">${burroPerBatch.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Cacao</td>
+                                <td class="text-right highlight">${cacaoPerBatch.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Uova</td>
+                                <td class="text-right highlight">${uovaPerBatch.toFixed(1)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('results').innerHTML = resultsHTML;
+        }
+
+        // Non eseguire calcolo iniziale, partire con 0 sfilatini
+        window.addEventListener('load', function() {
+            document.getElementById('results').innerHTML = '<div class="info-box"><p>Inserire il numero di sfilatini per calcolare gli ingredienti.</p></div>';
+        });
+    </script>
+</body>
+</html>
