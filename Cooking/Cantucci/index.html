@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Cantucci</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #4da6ff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #66b3ff;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #404040;
+            padding-bottom: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b3b3b3;
+            font-weight: 500;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #3d3d3d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 16px;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4da6ff;
+            box-shadow: 0 0 5px rgba(77, 166, 255, 0.5);
+        }
+
+        button {
+            padding: 12px 25px;
+            background-color: #4da6ff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #3d8dd9;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: #3d3d3d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #4da6ff;
+            color: #fff;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #505050;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #454545;
+        }
+
+        .info-box {
+            background-color: #3d3d3d;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #66b3ff;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .result-section {
+            background-color: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4da6ff;
+        }
+
+        .highlight {
+            background-color: #90EE90 !important;
+            color: #000 !important;
+            font-weight: bold;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #454545;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .procedure {
+            background-color: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #ff9966;
+        }
+
+        .procedure h2 {
+            color: #ff9966;
+            margin-top: 0;
+        }
+
+        .procedure ol {
+            margin-left: 20px;
+            margin-top: 15px;
+        }
+
+        .procedure li {
+            margin-bottom: 10px;
+            line-height: 1.8;
+        }
+
+        .warning {
+            background-color: #ff6b6b;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #d63031;
+            font-weight: 500;
+        }
+
+        .warning-icon {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #4da6ff;
+            box-shadow: 0 0 5px rgba(77, 166, 255, 0.5);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #3d3d3d;
+            border-radius: 5px;
+            border-left: 4px solid #66b3ff;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            accent-color: #4da6ff;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍪 Calcolatore Cantucci</h1>
+        
+        <div class="info-box">
+            <p><strong>Ricetta cantucci toscani alle mandorle</strong></p>
+            <p>Formula base per 1 sfilatino</p>
+        </div>
+
+        <h2>Parametri</h2>
+        
+        <div class="input-group">
+            <label for="numSfilatini">Numero Sfilatini:</label>
+            <input type="number" id="numSfilatini" min="0" value="0" placeholder="Es: 2">
+        </div>
+
+        <div class="input-group">
+            <label for="monsieurModel">Modello Robot da Cucina:</label>
+            <select id="monsieurModel" style="width: 100%; padding: 10px; background-color: #3d3d3d; border: 1px solid #555; border-radius: 5px; color: #e0e0e0; font-size: 16px;">
+                <option value="connect">Monsieur Cousine Connect (max 750g farina, 1500g impasto)</option>
+                <option value="plus">Monsieur Cousine Plus (max 1000g farina, 1750g impasto)</option>
+                <option value="edition">Monsieur Cousine Edition Plus (max 750g farina, 1500g impasto)</option>
+                <option value="smart" selected>Monsieur Cousine Smart (max 750g farina, 1500g impasto)</option>
+                <option value="tm6">Bimby TM6 (max 1000g farina, 3000g impasto)</option>
+                <option value="tm5">Bimby TM5 (max 1000g farina, 3000g impasto)</option>
+                <option value="tm31">Bimby TM31 (max 500g farina, 2000g impasto)</option>
+                <option value="custom">Altro (personalizzato)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="maxDoughWeight">Peso Massimo Impasto (g):</label>
+            <input type="number" id="maxDoughWeight" min="100" value="1500" placeholder="Es: 1500">
+            <p style="font-size: 12px; color: #999; margin-top: 5px;">Questo valore viene impostato automaticamente in base al modello selezionato, ma puoi modificarlo manualmente</p>
+        </div>
+
+        <div class="input-group">
+            <label for="maxFlourWeight">Peso Massimo Farina (g):</label>
+            <input type="number" id="maxFlourWeight" min="100" value="750" placeholder="Es: 750">
+            <p style="font-size: 12px; color: #999; margin-top: 5px;">Limite massimo di farina che il robot può lavorare</p>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="includeMandorle" checked>
+            <label for="includeMandorle">Includi le mandorle nel calcolo del peso dell'impasto</label>
+        </div>
+
+        <button onclick="calculate()">Calcola Ingredienti</button>
+
+        <div id="results" class="results"></div>
+
+        <div class="procedure">
+            <h2>📝 Procedura (Monsieur Cuisine Smart)</h2>
+            <ol>
+                <li><strong>Tritare gli aromi:</strong> Inserire lo zucchero e le scorze di arancio e limone nel boccale, <strong>turbo 6 secondi</strong> per tritare finemente</li>
+                <li><strong>Incorporare gli ingredienti liquidi:</strong> Aggiungere le uova e il lievito in polvere, <strong>Sx 3 per 30 secondi</strong> fino ad amalgamare bene</li>
+                <li><strong>Formare l'impasto:</strong> Aggiungere la farina, <strong>modo impastare per 2 minuti</strong> fino ad ottenere un impasto omogeneo</li>
+                <li><strong>Aggiungere le mandorle:</strong> Togliere l'impasto dal boccale e incorporare le mandorle impastando a mano (se aggiunte nel robot si spezzano troppo)</li>
+                <li><strong>Riposo in frigo:</strong> Avvolgere l'impasto nella pellicola e far riposare in <strong>frigorifero per 30 minuti</strong></li>
+                <li><strong>Formare e cuocere:</strong> Formare uno o più sfilatini lunghi circa 3-4 cm di larghezza, infornare a <strong>180°C per 25 minuti</strong> fino a doratura</li>
+                <li><strong>Prima tostatura:</strong> Sfornare, tagliare a fette diagonali spesse circa 1-1.5 cm, adagiare le fette su un lato e infornare per <strong>5 minuti</strong></li>
+                <li><strong>Seconda tostatura:</strong> Girare le fette sull'altro lato e infornare per altri <strong>5 minuti</strong> fino a completa tostatura</li>
+            </ol>
+            <p style="margin-top: 15px; padding: 10px; background-color: #454545; border-radius: 5px; font-size: 14px;">
+                <strong>💡 Suggerimento:</strong> I cantucci devono risultare croccanti ma non troppo duri. Se preferite più morbidi, riducete di 1-2 minuti la tostatura finale.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Costanti ricetta base (per 1 sfilatino)
+        const BASE_RECIPE = {
+            zucchero: 150,          // g per sfilatino
+            scorzeArancio: 2,       // strisce
+            scorzeLimone: 2,        // strisce
+            uova: 2,                // unità
+            lievito: 1,             // cucchiaino
+            farina: 280,            // g
+            mandorle: 150           // g
+        };
+
+        // Aggiorna il valore massimo quando cambia il modello
+        document.getElementById('monsieurModel').addEventListener('change', function() {
+            const selectedValue = this.value;
+            let maxWeight, maxFlour;
+            
+            switch(selectedValue) {
+                case 'connect':
+                    maxFlour = 750;
+                    maxWeight = 1500;
+                    break;
+                case 'plus':
+                    maxFlour = 1000;
+                    maxWeight = 1750;
+                    break;
+                case 'edition':
+                    maxFlour = 750;
+                    maxWeight = 1500;
+                    break;
+                case 'smart':
+                    maxFlour = 750;
+                    maxWeight = 1500;
+                    break;
+                case 'tm6':
+                    maxFlour = 1000;
+                    maxWeight = 3000;
+                    break;
+                case 'tm5':
+                    maxFlour = 1000;
+                    maxWeight = 3000;
+                    break;
+                case 'tm31':
+                    maxFlour = 500;
+                    maxWeight = 2000;
+                    break;
+                case 'custom':
+                    maxWeight = document.getElementById('maxDoughWeight').value || 1500;
+                    maxFlour = document.getElementById('maxFlourWeight').value || 750;
+                    break;
+                default:
+                    maxFlour = 750;
+                    maxWeight = 1500;
+            }
+            
+            document.getElementById('maxDoughWeight').value = maxWeight;
+            document.getElementById('maxFlourWeight').value = maxFlour;
+        });
+
+        function calculate() {
+            const numSfilatini = parseInt(document.getElementById('numSfilatini').value);
+            const maxDoughWeight = parseInt(document.getElementById('maxDoughWeight').value);
+            const maxFlourWeight = parseInt(document.getElementById('maxFlourWeight').value);
+            const includeMandorle = document.getElementById('includeMandorle').checked;
+
+            // Validazione input
+            if (isNaN(numSfilatini) || numSfilatini < 0) {
+                alert('Inserire un numero di sfilatini valido (minimo 0)');
+                return;
+            }
+
+            if (numSfilatini === 0) {
+                document.getElementById('results').innerHTML = '<div class="info-box"><p>Inserire il numero di sfilatini per calcolare gli ingredienti.</p></div>';
+                return;
+            }
+
+            if (isNaN(maxDoughWeight) || maxDoughWeight < 100) {
+                alert('Inserire un peso massimo impasto valido (minimo 100g)');
+                return;
+            }
+
+            if (isNaN(maxFlourWeight) || maxFlourWeight < 100) {
+                alert('Inserire un peso massimo farina valido (minimo 100g)');
+                return;
+            }
+
+            // Calcolo totali
+            const totalZucchero = BASE_RECIPE.zucchero * numSfilatini;
+            const totalScorzeArancio = BASE_RECIPE.scorzeArancio * numSfilatini;
+            const totalScorzeLimone = BASE_RECIPE.scorzeLimone * numSfilatini;
+            const totalUova = BASE_RECIPE.uova * numSfilatini;
+            const totalLievito = BASE_RECIPE.lievito * numSfilatini;
+            const totalFarina = BASE_RECIPE.farina * numSfilatini;
+            const totalMandorle = BASE_RECIPE.mandorle * numSfilatini;
+            
+            // Peso uova (circa 50g per uovo)
+            const pesoUova = totalUova * 50;
+            // Peso lievito in polvere (circa 5g per cucchiaino)
+            const pesoLievito = totalLievito * 5;
+            // Calcola peso totale includendo o escludendo le mandorle
+            const totalWeight = totalZucchero + pesoUova + pesoLievito + totalFarina + (includeMandorle ? totalMandorle : 0);
+
+            // Calcolo automatico numero impasti considerando ENTRAMBI i limiti
+            const numBatchesByWeight = Math.ceil(totalWeight / maxDoughWeight);
+            const numBatchesByFlour = Math.ceil(totalFarina / maxFlourWeight);
+            const numBatches = Math.max(numBatchesByWeight, numBatchesByFlour);
+
+            // Calcolo per impasto
+            const zuccheroPerBatch = totalZucchero / numBatches;
+            const scorzeArancioPerBatch = totalScorzeArancio / numBatches;
+            const scorzeLimonePerBatch = totalScorzeLimone / numBatches;
+            const uovaPerBatch = totalUova / numBatches;
+            const lievitoPerBatch = totalLievito / numBatches;
+            const farinaPerBatch = totalFarina / numBatches;
+            const mandorlePerBatch = totalMandorle / numBatches;
+            const weightPerBatch = totalWeight / numBatches;
+            
+            // Nota informativa sulle mandorle
+            const mandorleNote = !includeMandorle ? '<p style="color: #ff9966; margin-top: 10px; font-style: italic;">⚠️ Le mandorle non sono incluse nel peso dell\'impasto (si aggiungono a mano dopo)</p>' : '';
+
+            // Verifica se si superano i limiti
+            const exceedsWeightLimit = weightPerBatch > maxDoughWeight;
+            const exceedsFlourLimit = farinaPerBatch > maxFlourWeight;
+            let warningHTML = '';
+            
+            if (exceedsWeightLimit || exceedsFlourLimit) {
+                let warningMessages = [];
+                if (exceedsFlourLimit) {
+                    warningMessages.push(`La farina per impasto (${farinaPerBatch.toFixed(0)}g) supera il limite (${maxFlourWeight}g)`);
+                }
+                if (exceedsWeightLimit) {
+                    warningMessages.push(`Il peso per impasto (${weightPerBatch.toFixed(0)}g) supera il limite (${maxDoughWeight}g)`);
+                }
+                warningHTML = `
+                    <div class="warning">
+                        <span class="warning-icon">⚠️</span>
+                        <strong>Attenzione!</strong> ${warningMessages.join('. ')}. 
+                        Considera di ridurre il numero di sfilatini o aumentare i limiti.
+                    </div>
+                `;
+            }
+
+            // Genera HTML risultati
+            let resultsHTML = `
+                ${warningHTML}
+                <div class="result-section">
+                    <h2 style="margin-top: 0;">📊 Ingredienti Totali</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="background-color: #2d2d2d; color: #4da6ff;">Numero Sfilatini</th>
+                                <th class="text-center highlight" colspan="2">${numSfilatini}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Ingredienti</strong></td>
+                                <td class="text-center"><strong>per sfilatino</strong></td>
+                                <td class="text-center highlight"><strong>totale</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Zucchero</td>
+                                <td class="text-right">${BASE_RECIPE.zucchero} g</td>
+                                <td class="text-right highlight">${totalZucchero} g</td>
+                            </tr>
+                            <tr>
+                                <td>Scorze di arancio</td>
+                                <td class="text-right">${BASE_RECIPE.scorzeArancio} strisce</td>
+                                <td class="text-right highlight">${totalScorzeArancio} strisce</td>
+                            </tr>
+                            <tr>
+                                <td>Scorze di limone</td>
+                                <td class="text-right">${BASE_RECIPE.scorzeLimone} strisce</td>
+                                <td class="text-right highlight">${totalScorzeLimone} strisce</td>
+                            </tr>
+                            <tr>
+                                <td>Uova</td>
+                                <td class="text-right">${BASE_RECIPE.uova}</td>
+                                <td class="text-right highlight">${totalUova}</td>
+                            </tr>
+                            <tr>
+                                <td>Lievito in polvere</td>
+                                <td class="text-right">${BASE_RECIPE.lievito} cucchiaino</td>
+                                <td class="text-right highlight">${totalLievito} ${totalLievito === 1 ? 'cucchiaino' : 'cucchiaini'}</td>
+                            </tr>
+                            <tr>
+                                <td>Farina 00</td>
+                                <td class="text-right">${BASE_RECIPE.farina} g</td>
+                                <td class="text-right highlight">${totalFarina} g</td>
+                            </tr>
+                            <tr>
+                                <td>Mandorle</td>
+                                <td class="text-right">${BASE_RECIPE.mandorle} g</td>
+                                <td class="text-right highlight">${totalMandorle} g</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td colspan="2"><strong>Peso Totale (approssimativo)</strong></td>
+                                <td class="text-right">${totalWeight.toFixed(0)} g</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="result-section">
+                    <h2 style="margin-top: 0;">🤖 Dosi per Impasto (Robot da Cucina)</h2>
+                    ${mandorleNote}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="background-color: #2d2d2d; color: #4da6ff;">Numero Impasti Calcolati Automaticamente</th>
+                                <th class="text-center highlight" colspan="1">${numBatches}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Quantità per impasto (approssimativa)</strong></td>
+                                <td class="text-right highlight"><strong>${weightPerBatch.toFixed(0)} g</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Zucchero</td>
+                                <td class="text-right highlight">${zuccheroPerBatch.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Scorze di arancio</td>
+                                <td class="text-right highlight">${scorzeArancioPerBatch.toFixed(1)} strisce</td>
+                            </tr>
+                            <tr>
+                                <td>Scorze di limone</td>
+                                <td class="text-right highlight">${scorzeLimonePerBatch.toFixed(1)} strisce</td>
+                            </tr>
+                            <tr>
+                                <td>Uova</td>
+                                <td class="text-right highlight">${uovaPerBatch.toFixed(1)}</td>
+                            </tr>
+                            <tr>
+                                <td>Lievito in polvere</td>
+                                <td class="text-right highlight">${lievitoPerBatch.toFixed(1)} ${lievitoPerBatch === 1 ? 'cucchiaino' : 'cucchiaini'}</td>
+                            </tr>
+                            <tr>
+                                <td>Farina 00</td>
+                                <td class="text-right highlight">${farinaPerBatch.toFixed(0)} g</td>
+                            </tr>
+                            <tr>
+                                <td>Mandorle</td>
+                                <td class="text-right highlight">${mandorlePerBatch.toFixed(0)} g</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('results').innerHTML = resultsHTML;
+        }
+
+        // Non eseguire calcolo iniziale, partire con 0 sfilatini
+        window.addEventListener('load', function() {
+            document.getElementById('results').innerHTML = '<div class="info-box"><p>Inserire il numero di sfilatini per calcolare gli ingredienti.</p></div>';
+        });
+    </script>
+</body>
+</html>
