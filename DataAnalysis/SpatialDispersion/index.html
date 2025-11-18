@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Spatial Dispersion Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #4da6ff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #66b3ff;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #404040;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            color: #80bfff;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .info-box {
+            background-color: #3d3d3d;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #66b3ff;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .input-section {
+            background-color: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b3b3b3;
+            font-weight: 500;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            background-color: #2d2d2d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 10px;
+            background-color: #2d2d2d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: #4da6ff;
+            box-shadow: 0 0 5px rgba(77, 166, 255, 0.5);
+        }
+
+        button {
+            padding: 12px 25px;
+            background-color: #4da6ff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #3d8dd9;
+        }
+
+        button.secondary {
+            background-color: #666;
+        }
+
+        button.secondary:hover {
+            background-color: #555;
+        }
+
+        canvas {
+            width: 100%;
+            height: 500px;
+            background-color: #2d2d2d;
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background-color: #3d3d3d;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4da6ff;
+        }
+
+        .stat-card h4 {
+            color: #66b3ff;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4da6ff;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .axis-stats {
+            background-color: #454545;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .axis-stats table {
+            width: 100%;
+            font-size: 12px;
+        }
+
+        .axis-stats th {
+            color: #66b3ff;
+            text-align: left;
+            padding: 5px;
+        }
+
+        .axis-stats td {
+            padding: 5px;
+            color: #e0e0e0;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .data-section {
+            background-color: #3d3d3d;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .points-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #3d3d3d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .points-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .points-table thead {
+            position: sticky;
+            top: 0;
+            background-color: #4da6ff;
+            z-index: 10;
+        }
+
+        .points-table th {
+            background-color: #4da6ff;
+            color: #fff;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .points-table tbody {
+            display: block;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .points-table tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .points-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #505050;
+        }
+
+        .points-table tbody tr:hover {
+            background-color: #454545;
+            cursor: pointer;
+        }
+
+        .points-table tbody tr.highlighted {
+            background-color: #5a4a2a;
+            border-left: 4px solid #ffcc00;
+        }
+
+        .view-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .view-controls button {
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        small {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .error-message {
+            background-color: #5d2d2d;
+            border-left: 4px solid #ff4444;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            color: #ffaaaa;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Robot Spatial Dispersion Analysis</h1>
+        
+        <div class="info-box">
+            <p><strong>Utilizzo:</strong> Inserisci le coordinate del robot per analizzare la dispersione spaziale dei punti.</p>
+            <p>Supporta formati: KUKA, ABB, FANUC, YASKAWA. Il sistema rileva automaticamente il formato.</p>
+            <p><strong>Visualizzazione:</strong> Ruota la vista 3D con i pulsanti o usa il mouse sul grafico.</p>
+        </div>
+
+        <div class="grid-2col">
+            <div class="input-section">
+                <h2>Inserimento Dati</h2>
+                
+                <label for="robotType">Formato Robot:</label>
+                <select id="robotType">
+                    <option value="auto">Auto-detect</option>
+                    <option value="kuka">KUKA</option>
+                    <option value="abb">ABB</option>
+                    <option value="fanuc">FANUC</option>
+                    <option value="yaskawa">YASKAWA</option>
+                </select>
+
+                <label for="dataInput">Inserisci coordinate (una per riga):</label>
+                <textarea id="dataInput" placeholder="Esempi:
+
+KUKA:
+{X -13.581,Y 276.533,Z 280.306,A 180.000,B 45.000,C 90.000}
+
+ABB:
+[[380,192.5,300],[2.46759E-05,0.707113,0.707101,-6.99511E-09],[0,0,0,0],[0,0,0,0,0,0]];
+
+FANUC:
+  X:  -139.095   Y:  -882.881   Z:     0.000
+  W:  -180.000   P:     0.000   R:     0.000
+
+YASKAWA:
+-0.772,0.097,7.000,-179.9980,0.0020,0.0010"></textarea>
+                <small>Incolla le coordinate dal tuo robot. Il formato verrà rilevato automaticamente.</small>
+                <br>
+                <button onclick="analyzeData()">Analizza Dati</button>
+                <button class="secondary" onclick="clearData()">Cancella</button>
+                <button class="secondary" onclick="loadExample()">Carica Esempio</button>
+
+                <div id="errorMessage" class="error-message hidden"></div>
+
+                <div id="basicStats" class="hidden">
+                    <h3>Informazioni Base</h3>
+                    <div class="axis-stats">
+                        <p><strong>Formato rilevato:</strong> <span id="detectedFormat">-</span></p>
+                        <p><strong>Numero di punti:</strong> <span id="numPoints">-</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <h2>Informazioni</h2>
+                <p style="color: #b3b3b3;">Inserisci le coordinate del robot a sinistra e analizza i dati. La visualizzazione 3D apparirà in basso accanto alla tabella dei punti.</p>
+            </div>
+        </div>
+
+        <div id="statisticsSection" class="hidden">
+            <h2>Analisi Statistica</h2>
+            
+            <h3>Posizione (X, Y, Z)</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Centroide</h4>
+                    <div class="stat-value" id="centroid">-</div>
+                    <div class="stat-label">Centro geometrico dei punti</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Distanza Media dal Centroide</h4>
+                    <div class="stat-value" id="avgDistance">-</div>
+                    <div class="stat-label">Dispersione media</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Deviazione Standard 3D</h4>
+                    <div class="stat-value" id="std3d">-</div>
+                    <div class="stat-label">Variabilità spaziale</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Raggio Sfera Contenimento (3σ)</h4>
+                    <div class="stat-value" id="sphereRadius">-</div>
+                    <div class="stat-label">99.7% dei punti</div>
+                </div>
+            </div>
+
+            <h3>Statistiche per Asse</h3>
+            <div class="axis-stats">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asse</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>Range</th>
+                            <th>Media</th>
+                            <th>Dev. Std.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="axisStatsTable"></tbody>
+                </table>
+            </div>
+
+            <h3>Orientamento (A/W, B/P, C/R)</h3>
+            <div class="axis-stats">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asse</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>Range</th>
+                            <th>Media</th>
+                            <th>Dev. Std.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orientationStatsTable"></tbody>
+                </table>
+            </div>
+
+            <h3>Matrice di Covarianza (X, Y, Z)</h3>
+            <div class="axis-stats">
+                <table id="covarianceMatrix"></table>
+            </div>
+
+            <h2>Visualizzazione 3D e Dati</h2>
+            <div class="data-grid">
+                <div class="data-section">
+                    <h3>Elenco Punti</h3>
+                    <p style="color: #b3b3b3; margin-bottom: 10px;">Passa il mouse sui punti per evidenziarli sul grafico (e viceversa).</p>
+                    <div class="points-table-container">
+                        <table class="points-table" id="pointsTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>X</th>
+                                    <th>Y</th>
+                                    <th>Z</th>
+                                    <th>A/W</th>
+                                    <th>B/P</th>
+                                    <th>C/R</th>
+                                    <th>Dist. Centroide</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pointsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <h3>Visualizzazione 3D</h3>
+                    <div class="view-controls">
+                        <button onclick="setView('xy')">Vista XY</button>
+                        <button onclick="setView('xz')">Vista XZ</button>
+                        <button onclick="setView('yz')">Vista YZ</button>
+                        <button onclick="setView('iso')">Isometrica</button>
+                        <button class="secondary" onclick="resetView()">Reset</button>
+                    </div>
+                    <canvas id="canvas3d"></canvas>
+                    <small>Rotellina: zoom | Tasto dx: reset vista</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let points = [];
+        let canvas, ctx;
+        let rotation = { x: -30, y: -45 };
+        let scale = 1.0;
+        let offset = { x: 0, y: 0 };
+        let autoRotate = false;
+        let highlightedPoint = null;
+
+        window.addEventListener('load', function() {
+            canvas = document.getElementById('canvas3d');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            canvas.addEventListener('wheel', handleZoom);
+            canvas.addEventListener('contextmenu', handleRightClick);
+            canvas.addEventListener('mousemove', handleCanvasHover);
+            canvas.addEventListener('mouseleave', handleCanvasLeave);
+            
+            drawGraph();
+        });
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            drawGraph();
+        }
+
+        function handleZoom(event) {
+            event.preventDefault();
+            const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+            scale *= zoomFactor;
+            drawGraph();
+        }
+
+        function handleRightClick(event) {
+            event.preventDefault();
+            resetView();
+        }
+
+        function handleCanvasHover(event) {
+            if (points.length === 0) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
+            // Trova bounds
+            const xValues = points.map(p => p.x);
+            const yValues = points.map(p => p.y);
+            const zValues = points.map(p => p.z);
+
+            const bounds = {
+                xMin: Math.min(...xValues),
+                xMax: Math.max(...xValues),
+                yMin: Math.min(...yValues),
+                yMax: Math.max(...yValues),
+                zMin: Math.min(...zValues),
+                zMax: Math.max(...zValues)
+            };
+
+            const xRange = bounds.xMax - bounds.xMin || 1;
+            const yRange = bounds.yMax - bounds.yMin || 1;
+            const zRange = bounds.zMax - bounds.zMin || 1;
+            const maxRange = Math.max(xRange, yRange, zRange);
+
+            const centerX = (bounds.xMin + bounds.xMax) / 2;
+            const centerY = (bounds.yMin + bounds.yMax) / 2;
+            const centerZ = (bounds.zMin + bounds.zMax) / 2;
+
+            // Funzione di proiezione locale
+            function project3D(x, y, z) {
+                x -= centerX;
+                y -= centerY;
+                z -= centerZ;
+                x = x / maxRange;
+                y = y / maxRange;
+                z = z / maxRange;
+                const radX = rotation.x * Math.PI / 180;
+                const radY = rotation.y * Math.PI / 180;
+                let y1 = y * Math.cos(radX) - z * Math.sin(radX);
+                let z1 = y * Math.sin(radX) + z * Math.cos(radX);
+                let x2 = x * Math.cos(radY) + z1 * Math.sin(radY);
+                let z2 = -x * Math.sin(radY) + z1 * Math.cos(radY);
+                const plotScale = Math.min(canvas.width, canvas.height) * 0.35 * scale;
+                const screenX = canvas.width / 2 + x2 * plotScale + offset.x;
+                const screenY = canvas.height / 2 - y1 * plotScale + offset.y;
+                return { x: screenX, y: screenY, z: z2 };
+            }
+
+            // Trova punto più vicino al mouse
+            let closestIndex = -1;
+            let closestDist = Infinity;
+            const hoverRadius = 15; // Pixel di tolleranza
+
+            points.forEach((p, index) => {
+                const proj = project3D(p.x, p.y, p.z);
+                const dist = Math.sqrt(Math.pow(proj.x - mouseX, 2) + Math.pow(proj.y - mouseY, 2));
+                if (dist < closestDist && dist < hoverRadius) {
+                    closestDist = dist;
+                    closestIndex = index;
+                }
+            });
+
+            if (closestIndex !== highlightedPoint) {
+                highlightedPoint = closestIndex;
+                
+                // Aggiorna tabella
+                document.querySelectorAll('.points-table tbody tr').forEach((r, i) => {
+                    if (i === closestIndex) {
+                        r.classList.add('highlighted');
+                        r.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    } else {
+                        r.classList.remove('highlighted');
+                    }
+                });
+
+                drawGraph();
+            }
+        }
+
+        function handleCanvasLeave() {
+            if (highlightedPoint !== null) {
+                highlightedPoint = null;
+                document.querySelectorAll('.points-table tbody tr').forEach(r => r.classList.remove('highlighted'));
+                drawGraph();
+            }
+        }
+
+        function parseKUKA(line) {
+            // {X -13.581,Y 276.533,Z 280.306,A 180.000,B 45.000,C 90.000}
+            const match = line.match(/\{X\s*([-\d.]+),Y\s*([-\d.]+),Z\s*([-\d.]+),A\s*([-\d.]+),B\s*([-\d.]+),C\s*([-\d.]+)\}/i);
+            if (match) {
+                return {
+                    x: parseFloat(match[1]),
+                    y: parseFloat(match[2]),
+                    z: parseFloat(match[3]),
+                    a: parseFloat(match[4]),
+                    b: parseFloat(match[5]),
+                    c: parseFloat(match[6])
+                };
+            }
+            return null;
+        }
+
+        function parseABB(line) {
+            // [[380,192.5,300],[2.46759E-05,0.707113,0.707101,-6.99511E-09],[0,0,0,0],[0,0,0,0,0,0]];
+            const match = line.match(/\[\[([-\d.E+]+),([-\d.E+]+),([-\d.E+]+)\],\[([-\d.E+]+),([-\d.E+]+),([-\d.E+]+),([-\d.E+]+)\]/i);
+            if (match) {
+                // Converti quaternioni in angoli di Eulero (semplificato)
+                const q0 = parseFloat(match[4]);
+                const q1 = parseFloat(match[5]);
+                const q2 = parseFloat(match[6]);
+                const q3 = parseFloat(match[7]);
+                
+                // Conversione quaternione -> Eulero ZYX
+                const a = Math.atan2(2*(q0*q3 + q1*q2), 1 - 2*(q2*q2 + q3*q3)) * 180 / Math.PI;
+                const b = Math.asin(2*(q0*q2 - q3*q1)) * 180 / Math.PI;
+                const c = Math.atan2(2*(q0*q1 + q2*q3), 1 - 2*(q1*q1 + q2*q2)) * 180 / Math.PI;
+                
+                return {
+                    x: parseFloat(match[1]),
+                    y: parseFloat(match[2]),
+                    z: parseFloat(match[3]),
+                    a: a,
+                    b: b,
+                    c: c
+                };
+            }
+            return null;
+        }
+
+        function parseFANUC(text, startIndex) {
+            // Cerca due righe consecutive con X,Y,Z e W,P,R
+            const lines = text.split('\n');
+            for (let i = startIndex; i < lines.length - 1; i++) {
+                const line1 = lines[i];
+                const line2 = lines[i + 1];
+                
+                const match1 = line1.match(/X:\s*([-\d.]+)\s+Y:\s*([-\d.]+)\s+Z:\s*([-\d.]+)/i);
+                const match2 = line2.match(/W:\s*([-\d.]+)\s+P:\s*([-\d.]+)\s+R:\s*([-\d.]+)/i);
+                
+                if (match1 && match2) {
+                    return {
+                        point: {
+                            x: parseFloat(match1[1]),
+                            y: parseFloat(match1[2]),
+                            z: parseFloat(match1[3]),
+                            a: parseFloat(match2[1]),
+                            b: parseFloat(match2[2]),
+                            c: parseFloat(match2[3])
+                        },
+                        nextIndex: i + 2
+                    };
+                }
+            }
+            return null;
+        }
+
+        function parseYASKAWA(line) {
+            // -0.772,0.097,7.000,-179.9980,0.0020,0.0010
+            const parts = line.split(',').map(s => s.trim());
+            if (parts.length >= 6) {
+                const values = parts.map(p => parseFloat(p));
+                if (values.every(v => !isNaN(v))) {
+                    return {
+                        x: values[0],
+                        y: values[1],
+                        z: values[2],
+                        a: values[3],
+                        b: values[4],
+                        c: values[5]
+                    };
+                }
+            }
+            return null;
+        }
+
+        function detectAndParse(input, robotType) {
+            points = [];
+            let detectedFormat = 'Unknown';
+            const lines = input.split('\n');
+
+            if (robotType === 'auto') {
+                // Auto-detect
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) continue;
+
+                    let point = parseKUKA(line);
+                    if (point) {
+                        points.push(point);
+                        detectedFormat = 'KUKA';
+                        continue;
+                    }
+
+                    point = parseABB(line);
+                    if (point) {
+                        points.push(point);
+                        detectedFormat = 'ABB';
+                        continue;
+                    }
+
+                    point = parseYASKAWA(line);
+                    if (point) {
+                        points.push(point);
+                        detectedFormat = 'YASKAWA';
+                        continue;
+                    }
+                }
+
+                // Prova FANUC (richiede parsing multi-linea)
+                if (points.length === 0) {
+                    let i = 0;
+                    while (i < lines.length) {
+                        const result = parseFANUC(input, i);
+                        if (result) {
+                            points.push(result.point);
+                            detectedFormat = 'FANUC';
+                            i = result.nextIndex;
+                        } else {
+                            i++;
+                        }
+                    }
+                }
+            } else {
+                // Formato specificato
+                detectedFormat = robotType.toUpperCase();
+                
+                if (robotType === 'fanuc') {
+                    let i = 0;
+                    while (i < lines.length) {
+                        const result = parseFANUC(input, i);
+                        if (result) {
+                            points.push(result.point);
+                            i = result.nextIndex;
+                        } else {
+                            i++;
+                        }
+                    }
+                } else {
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line) continue;
+
+                        let point = null;
+                        if (robotType === 'kuka') point = parseKUKA(line);
+                        else if (robotType === 'abb') point = parseABB(line);
+                        else if (robotType === 'yaskawa') point = parseYASKAWA(line);
+
+                        if (point) points.push(point);
+                    }
+                }
+            }
+
+            return detectedFormat;
+        }
+
+        function analyzeData() {
+            const input = document.getElementById('dataInput').value.trim();
+            const robotType = document.getElementById('robotType').value;
+            const errorDiv = document.getElementById('errorMessage');
+
+            if (!input) {
+                showError('Inserire dei dati');
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+
+            const detectedFormat = detectAndParse(input, robotType);
+
+            if (points.length === 0) {
+                showError('Nessun punto valido trovato. Verificare il formato dei dati.');
+                return;
+            }
+
+            document.getElementById('detectedFormat').textContent = detectedFormat;
+            document.getElementById('numPoints').textContent = points.length;
+            document.getElementById('basicStats').classList.remove('hidden');
+
+            calculateStatistics();
+            
+            document.getElementById('statisticsSection').classList.remove('hidden');
+            
+            // Ridimensiona il canvas dopo che la sezione è visibile
+            setTimeout(() => {
+                resizeCanvas();
+            }, 10);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function calculateStatistics() {
+            if (points.length === 0) return;
+
+            // Calcola centroide
+            const centroid = {
+                x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+                y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
+                z: points.reduce((sum, p) => sum + p.z, 0) / points.length
+            };
+
+            // Distanza media dal centroide
+            const distances = points.map(p => 
+                Math.sqrt(
+                    Math.pow(p.x - centroid.x, 2) +
+                    Math.pow(p.y - centroid.y, 2) +
+                    Math.pow(p.z - centroid.z, 2)
+                )
+            );
+            const avgDistance = distances.reduce((a, b) => a + b, 0) / distances.length;
+
+            // Deviazione standard per ogni asse
+            const stdX = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.x - centroid.x, 2), 0) / points.length);
+            const stdY = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.y - centroid.y, 2), 0) / points.length);
+            const stdZ = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.z - centroid.z, 2), 0) / points.length);
+            
+            const std3d = Math.sqrt(stdX*stdX + stdY*stdY + stdZ*stdZ);
+            const sphereRadius = 3 * std3d; // 3 sigma
+
+            // Aggiorna UI
+            document.getElementById('centroid').textContent = 
+                `(${centroid.x.toFixed(2)}, ${centroid.y.toFixed(2)}, ${centroid.z.toFixed(2)})`;
+            document.getElementById('avgDistance').textContent = avgDistance.toFixed(3) + ' mm';
+            document.getElementById('std3d').textContent = std3d.toFixed(3) + ' mm';
+            document.getElementById('sphereRadius').textContent = sphereRadius.toFixed(3) + ' mm';
+
+            // Statistiche per asse (posizione)
+            updateAxisStats('axisStatsTable', ['X', 'Y', 'Z'], ['x', 'y', 'z']);
+            
+            // Statistiche orientamento
+            updateAxisStats('orientationStatsTable', ['A/W', 'B/P', 'C/R'], ['a', 'b', 'c']);
+
+            // Matrice di covarianza
+            calculateCovarianceMatrix(centroid);
+
+            // Popola tabella punti
+            populatePointsTable(centroid);
+        }
+
+        function updateAxisStats(tableId, axisNames, axisKeys) {
+            const tbody = document.getElementById(tableId);
+            tbody.innerHTML = '';
+
+            axisKeys.forEach((key, i) => {
+                const values = points.map(p => p[key]);
+                const min = Math.min(...values);
+                const max = Math.max(...values);
+                const range = max - min;
+                const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                const std = Math.sqrt(values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length);
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td><strong>${axisNames[i]}</strong></td>
+                    <td>${min.toFixed(3)}</td>
+                    <td>${max.toFixed(3)}</td>
+                    <td>${range.toFixed(3)}</td>
+                    <td>${mean.toFixed(3)}</td>
+                    <td>${std.toFixed(3)}</td>
+                `;
+            });
+        }
+
+        function calculateCovarianceMatrix(centroid) {
+            const n = points.length;
+            
+            // Calcola covarianze
+            let covXX = 0, covYY = 0, covZZ = 0;
+            let covXY = 0, covXZ = 0, covYZ = 0;
+
+            points.forEach(p => {
+                const dx = p.x - centroid.x;
+                const dy = p.y - centroid.y;
+                const dz = p.z - centroid.z;
+
+                covXX += dx * dx;
+                covYY += dy * dy;
+                covZZ += dz * dz;
+                covXY += dx * dy;
+                covXZ += dx * dz;
+                covYZ += dy * dz;
+            });
+
+            covXX /= n;
+            covYY /= n;
+            covZZ /= n;
+            covXY /= n;
+            covXZ /= n;
+            covYZ /= n;
+
+            const table = document.getElementById('covarianceMatrix');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>X</th>
+                        <th>Y</th>
+                        <th>Z</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th>X</th>
+                        <td>${covXX.toFixed(2)}</td>
+                        <td>${covXY.toFixed(2)}</td>
+                        <td>${covXZ.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <th>Y</th>
+                        <td>${covXY.toFixed(2)}</td>
+                        <td>${covYY.toFixed(2)}</td>
+                        <td>${covYZ.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <th>Z</th>
+                        <td>${covXZ.toFixed(2)}</td>
+                        <td>${covYZ.toFixed(2)}</td>
+                        <td>${covZZ.toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            `;
+        }
+
+        function populatePointsTable(centroid) {
+            const tbody = document.getElementById('pointsTableBody');
+            tbody.innerHTML = '';
+
+            points.forEach((p, index) => {
+                const dist = Math.sqrt(
+                    Math.pow(p.x - centroid.x, 2) +
+                    Math.pow(p.y - centroid.y, 2) +
+                    Math.pow(p.z - centroid.z, 2)
+                );
+
+                const row = tbody.insertRow();
+                row.setAttribute('data-point-index', index);
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${p.x.toFixed(3)}</td>
+                    <td>${p.y.toFixed(3)}</td>
+                    <td>${p.z.toFixed(3)}</td>
+                    <td>${p.a.toFixed(3)}</td>
+                    <td>${p.b.toFixed(3)}</td>
+                    <td>${p.c.toFixed(3)}</td>
+                    <td>${dist.toFixed(3)}</td>
+                `;
+
+                row.addEventListener('mouseenter', () => {
+                    highlightedPoint = index;
+                    document.querySelectorAll('.points-table tbody tr').forEach(r => r.classList.remove('highlighted'));
+                    row.classList.add('highlighted');
+                    drawGraph();
+                });
+
+                row.addEventListener('mouseleave', () => {
+                    highlightedPoint = null;
+                    row.classList.remove('highlighted');
+                    drawGraph();
+                });
+            });
+        }
+
+        function setView(view) {
+            switch(view) {
+                case 'xy':
+                    rotation = { x: 0, y: 0 };
+                    break;
+                case 'xz':
+                    rotation = { x: -90, y: 0 };
+                    break;
+                case 'yz':
+                    rotation = { x: 0, y: -90 };
+                    break;
+                case 'iso':
+                    rotation = { x: -30, y: -45 };
+                    break;
+            }
+            drawGraph();
+        }
+
+        function resetView() {
+            rotation = { x: -30, y: -45 };
+            scale = 1.0;
+            offset = { x: 0, y: 0 };
+            drawGraph();
+        }
+
+        function drawGraph() {
+            if (!ctx) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (points.length === 0) {
+                ctx.fillStyle = '#666';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Inserisci i dati per visualizzare il grafico 3D', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Trova bounds
+            const xValues = points.map(p => p.x);
+            const yValues = points.map(p => p.y);
+            const zValues = points.map(p => p.z);
+
+            const bounds = {
+                xMin: Math.min(...xValues),
+                xMax: Math.max(...xValues),
+                yMin: Math.min(...yValues),
+                yMax: Math.max(...yValues),
+                zMin: Math.min(...zValues),
+                zMax: Math.max(...zValues)
+            };
+
+            const xRange = bounds.xMax - bounds.xMin || 1;
+            const yRange = bounds.yMax - bounds.yMin || 1;
+            const zRange = bounds.zMax - bounds.zMin || 1;
+            const maxRange = Math.max(xRange, yRange, zRange);
+
+            const centerX = (bounds.xMin + bounds.xMax) / 2;
+            const centerY = (bounds.yMin + bounds.yMax) / 2;
+            const centerZ = (bounds.zMin + bounds.zMax) / 2;
+
+            // Proiezione 3D -> 2D
+            function project3D(x, y, z) {
+                // Centra
+                x -= centerX;
+                y -= centerY;
+                z -= centerZ;
+
+                // Normalizza
+                x = x / maxRange;
+                y = y / maxRange;
+                z = z / maxRange;
+
+                // Rotazione
+                const radX = rotation.x * Math.PI / 180;
+                const radY = rotation.y * Math.PI / 180;
+
+                // Rotazione attorno X
+                let y1 = y * Math.cos(radX) - z * Math.sin(radX);
+                let z1 = y * Math.sin(radX) + z * Math.cos(radX);
+
+                // Rotazione attorno Y
+                let x2 = x * Math.cos(radY) + z1 * Math.sin(radY);
+                let z2 = -x * Math.sin(radY) + z1 * Math.cos(radY);
+
+                // Scala e centra sul canvas
+                const plotScale = Math.min(canvas.width, canvas.height) * 0.35 * scale;
+                const screenX = canvas.width / 2 + x2 * plotScale + offset.x;
+                const screenY = canvas.height / 2 - y1 * plotScale + offset.y;
+
+                return { x: screenX, y: screenY, z: z2 };
+            }
+
+            // Calcola centroide
+            const centroid = {
+                x: xValues.reduce((a, b) => a + b, 0) / points.length,
+                y: yValues.reduce((a, b) => a + b, 0) / points.length,
+                z: zValues.reduce((a, b) => a + b, 0) / points.length
+            };
+
+            // Ordina punti per Z (per corretto rendering)
+            const sortedPoints = points.map((p, i) => ({ ...p, index: i }))
+                .sort((a, b) => {
+                    const projA = project3D(a.x, a.y, a.z);
+                    const projB = project3D(b.x, b.y, b.z);
+                    return projA.z - projB.z;
+                });
+
+            // Disegna assi con origine a 0,0,0
+            drawAxes(project3D, maxRange, 0, 0, 0);
+
+            // Disegna centroide in rosso
+            const centroidProj = project3D(centroid.x, centroid.y, centroid.z);
+            ctx.strokeStyle = '#ff0000';  // Rosso per il centroide
+            ctx.fillStyle = '#ff0000';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(centroidProj.x - 15, centroidProj.y);
+            ctx.lineTo(centroidProj.x + 15, centroidProj.y);
+            ctx.moveTo(centroidProj.x, centroidProj.y - 15);
+            ctx.lineTo(centroidProj.x, centroidProj.y + 15);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Cerchio pieno rosso per il centroide
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(centroidProj.x, centroidProj.y, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Disegna punti
+            sortedPoints.forEach(p => {
+                const proj = project3D(p.x, p.y, p.z);
+                const dist = Math.sqrt(
+                    Math.pow(p.x - centroid.x, 2) +
+                    Math.pow(p.y - centroid.y, 2) +
+                    Math.pow(p.z - centroid.z, 2)
+                );
+
+                // Colore basato sulla distanza dal centroide
+                const maxDist = Math.sqrt(
+                    Math.pow(xRange/2, 2) + Math.pow(yRange/2, 2) + Math.pow(zRange/2, 2)
+                );
+                const hue = 200 - (dist / maxDist) * 100; // Da blu a rosso
+                
+                const isHighlighted = highlightedPoint === p.index;
+                
+                ctx.fillStyle = isHighlighted ? '#ffcc00' : `hsl(${hue}, 70%, 60%)`;
+                ctx.strokeStyle = isHighlighted ? '#ffff00' : '#ffffff';
+                ctx.lineWidth = isHighlighted ? 3 : 1.5;
+                ctx.beginPath();
+                ctx.arc(proj.x, proj.y, isHighlighted ? 8 : 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Mostra etichetta per punto evidenziato
+                if (isHighlighted) {
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.font = 'bold 11px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`#${p.index + 1}`, proj.x, proj.y - 12);
+                    
+                    // Box info
+                    const infoText = `X:${p.x.toFixed(2)} Y:${p.y.toFixed(2)} Z:${p.z.toFixed(2)}`;
+                    ctx.font = '10px Arial';
+                    const textWidth = ctx.measureText(infoText).width;
+                    
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    ctx.fillRect(proj.x - textWidth/2 - 5, proj.y + 12, textWidth + 10, 16);
+                    
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.fillText(infoText, proj.x, proj.y + 23);
+                }
+            });
+
+            // Legenda
+            ctx.fillStyle = '#b3b3b3';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Punti: ${points.length}`, 10, 20);
+            ctx.fillText(`Rotazione: X=${rotation.x}° Y=${rotation.y}°`, 10, 35);
+            ctx.fillText(`Zoom: ${scale.toFixed(2)}x`, 10, 50);
+            
+            // Legenda colore
+            ctx.fillText('Colore: ', 10, canvas.height - 30);
+            const gradWidth = 100;
+            for (let i = 0; i < gradWidth; i++) {
+                const hue = 200 - (i / gradWidth) * 100;
+                ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
+                ctx.fillRect(60 + i, canvas.height - 35, 1, 10);
+            }
+            ctx.fillStyle = '#b3b3b3';
+            ctx.fillText('Vicino', 60, canvas.height - 15);
+            ctx.fillText('Lontano', 120, canvas.height - 15);
+        }
+
+        function drawAxes(project3D, maxRange, originX, originY, originZ) {
+            const axisLength = maxRange * 0.6;
+            const origin = project3D(originX, originY, originZ);
+            
+            // Calcola valori dati reali
+            const xValues = points.map(p => p.x);
+            const yValues = points.map(p => p.y);
+            const zValues = points.map(p => p.z);
+            const xMin = Math.min(...xValues);
+            const xMax = Math.max(...xValues);
+            const yMin = Math.min(...yValues);
+            const yMax = Math.max(...yValues);
+            const zMin = Math.min(...zValues);
+            const zMax = Math.max(...zValues);
+            const xDataRange = xMax - xMin;
+            const yDataRange = yMax - yMin;
+            const zDataRange = zMax - zMin;
+            
+            // Funzione per calcolare step griglia intelligente in base allo zoom
+            function calculateGridStep(dataRange, scale) {
+                // Range visibile diminuisce con lo zoom (inversamente proporzionale)
+                const visibleRange = dataRange / scale;
+                
+                // Determina ordine di grandezza
+                const magnitude = Math.pow(10, Math.floor(Math.log10(visibleRange)));
+                const normalized = visibleRange / magnitude;
+                
+                // Scegli step appropriato
+                let step;
+                if (normalized <= 1.5) step = magnitude * 0.2;
+                else if (normalized <= 3) step = magnitude * 0.5;
+                else if (normalized <= 7) step = magnitude * 1;
+                else step = magnitude * 2;
+                
+                return step;
+            }
+            
+            const xGridStep = calculateGridStep(xDataRange, scale);
+            const yGridStep = calculateGridStep(yDataRange, scale);
+            
+            // Espandi la griglia a tutta l'area visibile del canvas
+            // Calcola i limiti estesi proiettando gli angoli del canvas
+            const gridMargin = maxRange * 2; // Margine ampio per coprire tutta l'area
+            const xMinGrid = xMin - gridMargin;
+            const xMaxGrid = xMax + gridMargin;
+            const yMinGrid = yMin - gridMargin;
+            const yMaxGrid = yMax + gridMargin;
+            
+            // Disegna griglia di riferimento sul piano XY con etichette
+            ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';  // Griglia più leggera
+            ctx.lineWidth = 1;
+            ctx.font = '10px Arial';
+            ctx.fillStyle = 'rgba(150, 150, 150, 0.5)';  // Etichette più leggere
+            
+            // Griglia parallela all'asse X (linee costanti in Y) - estesa
+            const yStart = Math.floor(yMinGrid / yGridStep) * yGridStep;
+            const yEndGrid = Math.ceil(yMaxGrid / yGridStep) * yGridStep;
+            for (let yVal = yStart; yVal <= yEndGrid; yVal += yGridStep) {
+                const y1 = project3D(xMinGrid, yVal, zMin);
+                const y2 = project3D(xMaxGrid, yVal, zMin);
+                
+                ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';  // Griglia più leggera
+                ctx.beginPath();
+                ctx.moveTo(y1.x, y1.y);
+                ctx.lineTo(y2.x, y2.y);
+                ctx.stroke();
+                
+                // Etichetta valore Y sulla griglia
+                if (Math.abs(yVal - yMin) > yGridStep * 0.1) {
+                    ctx.fillStyle = 'rgba(100, 200, 100, 0.4)';  // Etichette più leggere
+                    ctx.textAlign = 'right';
+                    // Più decimali con zoom maggiore
+                    const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                    ctx.fillText(yVal.toFixed(decimals), y1.x - 5, y1.y);
+                }
+            }
+            
+            // Griglia parallela all'asse Y (linee costanti in X) - estesa
+            const xStart = Math.floor(xMinGrid / xGridStep) * xGridStep;
+            const xEndGrid = Math.ceil(xMaxGrid / xGridStep) * xGridStep;
+            for (let xVal = xStart; xVal <= xEndGrid; xVal += xGridStep) {
+                const x1 = project3D(xVal, yMinGrid, zMin);
+                const x2 = project3D(xVal, yMaxGrid, zMin);
+                
+                ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';  // Griglia più leggera
+                ctx.beginPath();
+                ctx.moveTo(x1.x, x1.y);
+                ctx.lineTo(x2.x, x2.y);
+                ctx.stroke();
+                
+                // Etichetta valore X sulla griglia
+                if (Math.abs(xVal - xMin) > xGridStep * 0.1) {
+                    ctx.fillStyle = 'rgba(200, 100, 100, 0.4)';  // Etichette più leggere
+                    ctx.textAlign = 'center';
+                    // Più decimali con zoom maggiore
+                    const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                    ctx.fillText(xVal.toFixed(decimals), x1.x, x1.y + 12);
+                }
+            }
+
+            // Asse X (rosso) - parte da 0,0,0
+            const xEndAxis = project3D(originX + axisLength, originY, originZ);
+            ctx.strokeStyle = '#ff4444';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(xEndAxis.x, xEndAxis.y);
+            ctx.stroke();
+            ctx.fillStyle = '#ff4444';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('X', xEndAxis.x + 15, xEndAxis.y);
+            
+            // Tick marks e valori asse X
+            ctx.font = '11px Arial';
+            ctx.fillStyle = '#ff8888';
+            const xTickStep = calculateGridStep(xDataRange, scale);
+            const xTickStart = Math.floor(xMin / xTickStep) * xTickStep;
+            const xTickEnd = Math.ceil(xMax / xTickStep) * xTickStep;
+            for (let xVal = xTickStart; xVal <= xTickEnd; xVal += xTickStep) {
+                const t = (xVal - xMin) / xDataRange;
+                if (t >= 0 && t <= 1) {
+                    const tickX = originX - axisLength + (axisLength * 2 * t);
+                    const tickPos = project3D(tickX, originY, originZ);
+                    
+                    ctx.textAlign = 'center';
+                    const decimalsX = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                    ctx.fillText(xVal.toFixed(decimalsX), tickPos.x, tickPos.y + 15);
+                    
+                    // Tick mark
+                    ctx.strokeStyle = '#ff4444';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(tickPos.x, tickPos.y - 3);
+                    ctx.lineTo(tickPos.x, tickPos.y + 3);
+                    ctx.stroke();
+                }
+            }
+
+            // Asse Y (verde) - parte da 0,0,0
+            const yEndAxis = project3D(originX, originY + axisLength, originZ);
+            ctx.strokeStyle = '#44ff44';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(yEndAxis.x, yEndAxis.y);
+            ctx.stroke();
+            ctx.fillStyle = '#44ff44';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('Y', yEndAxis.x + 15, yEndAxis.y);
+            
+            // Tick marks e valori asse Y
+            ctx.font = '11px Arial';
+            ctx.fillStyle = '#88ff88';
+            const yTickStep = calculateGridStep(yDataRange, scale);
+            const yTickStart = Math.floor(yMin / yTickStep) * yTickStep;
+            const yTickEnd = Math.ceil(yMax / yTickStep) * yTickStep;
+            for (let yVal = yTickStart; yVal <= yTickEnd; yVal += yTickStep) {
+                const t = (yVal - yMin) / yDataRange;
+                if (t >= 0 && t <= 1) {
+                    const tickY = originY - axisLength + (axisLength * 2 * t);
+                    const tickPos = project3D(originX, tickY, originZ);
+                    
+                    ctx.textAlign = 'center';
+                    const decimalsY = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                    ctx.fillText(yVal.toFixed(decimalsY), tickPos.x, tickPos.y + 15);
+                    
+                    ctx.strokeStyle = '#44ff44';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(tickPos.x - 3, tickPos.y);
+                    ctx.lineTo(tickPos.x + 3, tickPos.y);
+                    ctx.stroke();
+                }
+            }
+
+            // Asse Z (blu) - parte da 0,0,0
+            const zEndAxis = project3D(originX, originY, originZ + axisLength);
+            ctx.strokeStyle = '#4444ff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(zEndAxis.x, zEndAxis.y);
+            ctx.stroke();
+            ctx.fillStyle = '#4444ff';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('Z', zEndAxis.x + 15, zEndAxis.y);
+            
+            // Tick marks e valori asse Z
+            ctx.font = '11px Arial';
+            ctx.fillStyle = '#8888ff';
+            const zTickStep = calculateGridStep(zDataRange, scale);
+            const zTickStart = Math.floor(zMin / zTickStep) * zTickStep;
+            const zTickEnd = Math.ceil(zMax / zTickStep) * zTickStep;
+            for (let zVal = zTickStart; zVal <= zTickEnd; zVal += zTickStep) {
+                const t = (zVal - zMin) / zDataRange;
+                if (t >= 0 && t <= 1) {
+                    const tickZ = originZ - axisLength + (axisLength * 2 * t);
+                    const tickPos = project3D(originX, originY, tickZ);
+                    
+                    ctx.textAlign = 'center';
+                    const decimalsZ = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                    ctx.fillText(zVal.toFixed(decimalsZ), tickPos.x - 20, tickPos.y);
+                    
+                    ctx.strokeStyle = '#4444ff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(tickPos.x - 3, tickPos.y);
+                    ctx.lineTo(tickPos.x + 3, tickPos.y);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function clearData() {
+            document.getElementById('dataInput').value = '';
+            points = [];
+            document.getElementById('basicStats').classList.add('hidden');
+            document.getElementById('statisticsSection').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+            resetView();
+            drawGraph();
+        }
+
+        function loadExample() {
+            const example = `{X -13.581,Y 276.533,Z 280.306,A 180.000,B 45.000,C 90.000}
+{X -13.234,Y 276.892,Z 280.156,A 180.123,B 44.987,C 89.876}
+{X -13.789,Y 276.245,Z 280.489,A 179.876,B 45.123,C 90.234}
+{X -13.456,Y 276.678,Z 280.234,A 180.045,B 45.034,C 89.967}
+{X -13.623,Y 276.456,Z 280.389,A 179.923,B 44.956,C 90.089}
+{X -13.512,Y 276.589,Z 280.267,A 180.067,B 45.078,C 89.934}
+{X -13.678,Y 276.423,Z 280.378,A 179.945,B 44.923,C 90.112}
+{X -13.423,Y 276.712,Z 280.189,A 180.089,B 45.134,C 89.845}
+{X -13.734,Y 276.334,Z 280.423,A 179.867,B 44.878,C 90.156}
+{X -13.501,Y 276.601,Z 280.298,A 180.012,B 45.023,C 89.989}`;
+
+            document.getElementById('dataInput').value = example;
+            analyzeData();
+        }
+    </script>
+</body>
+</html>
