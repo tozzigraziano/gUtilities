@@ -655,7 +655,8 @@
 
         // Check if this is a limit analysis file
         function isLimitAnalysisFile(filename) {
-            return filename.toLowerCase().startsWith('lim');
+            const lowerName = filename.toLowerCase();
+            return lowerName.startsWith('lim') || lowerName.includes('plim');
         }
 
         // Analyze limit data in columns
