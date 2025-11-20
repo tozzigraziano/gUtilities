@@ -305,6 +305,28 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .view-cube {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 160px;
+            height: 160px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .view-cube canvas {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #555;
+            border-radius: 8px;
+            background-color: rgba(45, 45, 45, 0.9);
+        }
+
+        .canvas-container {
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -468,7 +490,12 @@ YASKAWA:
                         <button class="secondary" onclick="toggleGrid()" id="toggleGridBtn">Nascondi Griglia</button>
                         <button class="secondary" onclick="toggleSphere()" id="toggleSphereBtn">Mostra Sfera 3σ</button>
                     </div>
-                    <canvas id="canvas3d"></canvas>
+                    <div class="canvas-container">
+                        <canvas id="canvas3d"></canvas>
+                        <div class="view-cube">
+                            <canvas id="viewCube"></canvas>
+                        </div>
+                    </div>
                     <small>Click + Trascina: ruota | Ctrl + Click: sposta | Rotellina: zoom | Tasto dx: reset vista</small>
                 </div>
             </div>
@@ -478,6 +505,7 @@ YASKAWA:
     <script>
         let points = [];
         let canvas, ctx;
+        let viewCubeCanvas, viewCubeCtx;
         let rotation = { x: 0, y: 0 }; // Default: vista XY
         let scale = 1.0;
         let offset = { x: 0, y: 0 };
@@ -490,11 +518,17 @@ YASKAWA:
         let lastMouseY = 0;
         let showGrid = true;
         let showSphere = false;
+        let hoveredZone = null;
 
         window.addEventListener('load', function() {
             canvas = document.getElementById('canvas3d');
             ctx = canvas.getContext('2d');
+            viewCubeCanvas = document.getElementById('viewCube');
+            viewCubeCtx = viewCubeCanvas.getContext('2d');
+            
             resizeCanvas();
+            initViewCube();
+            
             window.addEventListener('resize', resizeCanvas);
             
             canvas.addEventListener('wheel', handleZoom);
@@ -672,6 +706,7 @@ YASKAWA:
                 currentView = 'custom';
                 
                 drawGraph();
+                drawViewCube();
             } else if (isPanning) {
                 const deltaX = event.clientX - lastMouseX;
                 const deltaY = event.clientY - lastMouseY;
@@ -1080,6 +1115,7 @@ YASKAWA:
                     break;
             }
             drawGraph();
+            drawViewCube();
         }
 
         function resetView() {
@@ -1088,6 +1124,7 @@ YASKAWA:
             scale = 1.0;
             offset = { x: 0, y: 0 };
             drawGraph();
+            drawViewCube();
         }
 
         function toggleGrid() {
@@ -1923,6 +1960,533 @@ YASKAWA:
 
             document.getElementById('dataInput').value = example;
             analyzeData();
+        }
+
+        // ===== VIEW CUBE =====
+        function initViewCube() {
+            viewCubeCanvas.width = 160;
+            viewCubeCanvas.height = 160;
+            
+            viewCubeCanvas.addEventListener('mousemove', handleViewCubeHover);
+            viewCubeCanvas.addEventListener('mouseleave', handleViewCubeLeave);
+            viewCubeCanvas.addEventListener('click', handleViewCubeClick);
+            
+            drawViewCube();
+        }
+
+        function drawViewCube() {
+            const size = 160;
+            const ctx = viewCubeCtx;
+            
+            ctx.clearRect(0, 0, size, size);
+            
+            const center = size / 2;
+            const innerSize = 40; // Quadrato centrale TOP
+            const outerMargin = 10;
+            
+            // Definisci le zone
+            const zones = getViewCubeZones();
+            
+            // Disegna ogni zona
+            Object.keys(zones).forEach(key => {
+                const zone = zones[key];
+                const isHovered = hoveredZone === key;
+                const isActive = isViewActive(key);
+                
+                // Colore in base allo stato
+                let fillColor;
+                if (isActive) {
+                    fillColor = '#66b3ff';
+                } else if (isHovered) {
+                    fillColor = '#4da6ff';
+                } else if (zone.type === 'main' || zone.type === 'main-small') {
+                    fillColor = '#2d5a7a';
+                } else if (zone.type === 'edge') {
+                    fillColor = '#cc6600';
+                } else {
+                    fillColor = '#33aa33';
+                }
+                
+                // Disegna in base alla forma
+                if (zone.shape === 'circle') {
+                    // Disegna cerchio
+                    ctx.beginPath();
+                    ctx.arc(zone.center.x, zone.center.y, zone.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = fillColor;
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else {
+                    // Disegna rettangolo/quadrato
+                    ctx.beginPath();
+                    zone.path.forEach((point, i) => {
+                        if (i === 0) ctx.moveTo(point.x, point.y);
+                        else ctx.lineTo(point.x, point.y);
+                    });
+                    ctx.closePath();
+                    ctx.fillStyle = fillColor;
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                    
+                    // Testo label (solo per rettangoli)
+                    if (zone.label) {
+                        ctx.fillStyle = '#ffffff';
+                        if (zone.type === 'main') {
+                            ctx.font = 'bold 11px Arial';
+                        } else if (zone.type === 'main-small') {
+                            ctx.font = 'bold 8px Arial';
+                        } else if (zone.type === 'edge') {
+                            ctx.font = 'bold 7px Arial';
+                        } else {
+                            ctx.font = 'bold 6px Arial';
+                        }
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        
+                        // Ombra per il testo per migliore leggibilità
+                        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                        ctx.shadowBlur = 3;
+                        ctx.shadowOffsetX = 1;
+                        ctx.shadowOffsetY = 1;
+                        
+                        if (zone.rotated) {
+                            ctx.save();
+                            ctx.translate(zone.labelPos.x, zone.labelPos.y);
+                            ctx.rotate(-Math.PI / 2);
+                            ctx.fillText(zone.label, 0, 0);
+                            ctx.restore();
+                        } else {
+                            ctx.fillText(zone.label, zone.labelPos.x, zone.labelPos.y);
+                        }
+                        
+                        // Reset ombra
+                        ctx.shadowColor = 'transparent';
+                        ctx.shadowBlur = 0;
+                        ctx.shadowOffsetX = 0;
+                        ctx.shadowOffsetY = 0;
+                    }
+                }
+            });
+        }
+
+        function getViewCubeZones() {
+            const size = 160;
+            const center = size / 2;
+            const innerSize = 40;
+            const half = innerSize / 2;
+            
+            // Definizione coordinate
+            const margin = 8;
+            const edgeWidth = 18;
+            const cornerRadius = 10;
+            
+            // Quadrato centrale TOP
+            const topLeft = { x: center - half, y: center - half };
+            const topRight = { x: center + half, y: center - half };
+            const bottomLeft = { x: center - half, y: center + half };
+            const bottomRight = { x: center + half, y: center + half };
+            
+            return {
+                // === 6 FACCE PRINCIPALI (quadrati/rettangoli) ===
+                
+                // TOP - quadrato centrale (X verso alto schermo, Y a sinistra schermo, Z verso utente)
+                'top': {
+                    type: 'main',
+                    shape: 'rect',
+                    path: [topLeft, topRight, bottomRight, bottomLeft],
+                    label: 'TOP',
+                    labelPos: { x: center, y: center },
+                    view: { x: 0, y: 90 }
+                },
+                
+                // BOTTOM - piccolo rettangolo spostato in basso a destra
+                'bottom': {
+                    type: 'main-small',
+                    shape: 'rect',
+                    path: [
+                        { x: bottomRight.x + 2, y: bottomRight.y + 2 },
+                        { x: bottomRight.x + 18, y: bottomRight.y + 2 },
+                        { x: bottomRight.x + 18, y: bottomRight.y + 10 },
+                        { x: bottomRight.x + 2, y: bottomRight.y + 10 }
+                    ],
+                    label: 'BOT',
+                    labelPos: { x: bottomRight.x + 10, y: bottomRight.y + 6 },
+                    view: { x: 0, y: -90 }
+                },
+                
+                // FRONT - rettangolo sotto (X+ verso basso schermo)
+                'front': {
+                    type: 'main',
+                    shape: 'rect',
+                    path: [
+                        { x: topLeft.x, y: bottomLeft.y },
+                        { x: topRight.x, y: bottomRight.y },
+                        { x: topRight.x, y: bottomRight.y + edgeWidth },
+                        { x: topLeft.x, y: bottomLeft.y + edgeWidth }
+                    ],
+                    label: 'F',
+                    labelPos: { x: center, y: bottomLeft.y + edgeWidth/2 },
+                    view: { x: 90, y: 90 }
+                },
+                
+                // BACK - rettangolo sopra (X- verso alto schermo)
+                'back': {
+                    type: 'main',
+                    shape: 'rect',
+                    path: [
+                        { x: topLeft.x, y: topLeft.y - edgeWidth },
+                        { x: topRight.x, y: topRight.y - edgeWidth },
+                        { x: topRight.x, y: topRight.y },
+                        { x: topLeft.x, y: topLeft.y }
+                    ],
+                    label: 'B',
+                    labelPos: { x: center, y: topLeft.y - edgeWidth/2 },
+                    view: { x: -90, y: 90 }
+                },
+                
+                // LEFT - rettangolo a sinistra (Y+ verso sinistra schermo)
+                'left': {
+                    type: 'main',
+                    shape: 'rect',
+                    path: [
+                        { x: topLeft.x - edgeWidth, y: topLeft.y },
+                        { x: topLeft.x, y: topLeft.y },
+                        { x: bottomLeft.x, y: bottomLeft.y },
+                        { x: bottomLeft.x - edgeWidth, y: bottomLeft.y }
+                    ],
+                    label: 'L',
+                    labelPos: { x: topLeft.x - edgeWidth/2, y: center },
+                    rotated: true,
+                    view: { x: 0, y: 180 }
+                },
+                
+                // RIGHT - rettangolo a destra (Y- verso destra schermo)
+                'right': {
+                    type: 'main',
+                    shape: 'rect',
+                    path: [
+                        { x: topRight.x, y: topRight.y },
+                        { x: topRight.x + edgeWidth, y: topRight.y },
+                        { x: bottomRight.x + edgeWidth, y: bottomRight.y },
+                        { x: bottomRight.x, y: bottomRight.y }
+                    ],
+                    label: 'R',
+                    labelPos: { x: topRight.x + edgeWidth/2, y: center },
+                    rotated: true,
+                    view: { x: 0, y: 0 }
+                },
+                
+                // === 12 BORDI INTERMEDI (rettangoli) ===
+                
+                // 4 bordi da TOP (viste intermedie a 45°)
+                'edge-top-front': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: center - 10, y: bottomLeft.y },
+                        { x: center + 10, y: bottomLeft.y },
+                        { x: center + 10, y: bottomLeft.y + edgeWidth },
+                        { x: center - 10, y: bottomLeft.y + edgeWidth }
+                    ],
+                    view: { x: 45, y: 90 }
+                },
+                'edge-top-back': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: center - 10, y: topLeft.y - edgeWidth },
+                        { x: center + 10, y: topLeft.y - edgeWidth },
+                        { x: center + 10, y: topLeft.y },
+                        { x: center - 10, y: topLeft.y }
+                    ],
+                    view: { x: -45, y: 90 }
+                },
+                'edge-top-right': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: topRight.x, y: center - 10 },
+                        { x: topRight.x + edgeWidth, y: center - 10 },
+                        { x: topRight.x + edgeWidth, y: center + 10 },
+                        { x: topRight.x, y: center + 10 }
+                    ],
+                    view: { x: 0, y: 45 }
+                },
+                'edge-top-left': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: topLeft.x - edgeWidth, y: center - 10 },
+                        { x: topLeft.x, y: center - 10 },
+                        { x: topLeft.x, y: center + 10 },
+                        { x: topLeft.x - edgeWidth, y: center + 10 }
+                    ],
+                    view: { x: 0, y: 135 }
+                },
+                
+                // 4 bordi centrali verticali
+                'edge-front-right': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: topRight.x, y: bottomRight.y },
+                        { x: topRight.x + edgeWidth, y: bottomRight.y },
+                        { x: topRight.x + edgeWidth, y: bottomRight.y + edgeWidth },
+                        { x: topRight.x, y: bottomRight.y + edgeWidth }
+                    ],
+                    view: { x: 90, y: 45 }
+                },
+                'edge-right-back': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: topRight.x, y: topRight.y - edgeWidth },
+                        { x: topRight.x + edgeWidth, y: topRight.y - edgeWidth },
+                        { x: topRight.x + edgeWidth, y: topRight.y },
+                        { x: topRight.x, y: topRight.y }
+                    ],
+                    view: { x: -90, y: 45 }
+                },
+                'edge-back-left': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: topLeft.x - edgeWidth, y: topLeft.y - edgeWidth },
+                        { x: topLeft.x, y: topLeft.y - edgeWidth },
+                        { x: topLeft.x, y: topLeft.y },
+                        { x: topLeft.x - edgeWidth, y: topLeft.y }
+                    ],
+                    view: { x: -90, y: 135 }
+                },
+                'edge-left-front': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: bottomLeft.x - edgeWidth, y: bottomLeft.y },
+                        { x: bottomLeft.x, y: bottomLeft.y },
+                        { x: bottomLeft.x, y: bottomLeft.y + edgeWidth },
+                        { x: bottomLeft.x - edgeWidth, y: bottomLeft.y + edgeWidth }
+                    ],
+                    view: { x: 90, y: 135 }
+                },
+                
+                // 4 bordi da BOTTOM (Z-)
+                'edge-bottom-front': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: center - 10, y: bottomLeft.y + edgeWidth },
+                        { x: center + 10, y: bottomLeft.y + edgeWidth },
+                        { x: center + 10, y: bottomLeft.y + edgeWidth * 2 },
+                        { x: center - 10, y: bottomLeft.y + edgeWidth * 2 }
+                    ],
+                    view: { x: 45, y: -90 }
+                },
+                'edge-bottom-back': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: center - 10, y: topLeft.y - edgeWidth * 2 },
+                        { x: center + 10, y: topLeft.y - edgeWidth * 2 },
+                        { x: center + 10, y: topLeft.y - edgeWidth },
+                        { x: center - 10, y: topLeft.y - edgeWidth }
+                    ],
+                    view: { x: -45, y: -90 }
+                },
+                'edge-bottom-right': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: topRight.x + edgeWidth, y: center - 10 },
+                        { x: topRight.x + edgeWidth * 2, y: center - 10 },
+                        { x: topRight.x + edgeWidth * 2, y: center + 10 },
+                        { x: topRight.x + edgeWidth, y: center + 10 }
+                    ],
+                    view: { x: 0, y: -45 }
+                },
+                'edge-bottom-left': {
+                    type: 'edge',
+                    shape: 'rect',
+                    path: [
+                        { x: topLeft.x - edgeWidth * 2, y: center - 10 },
+                        { x: topLeft.x - edgeWidth, y: center - 10 },
+                        { x: topLeft.x - edgeWidth, y: center + 10 },
+                        { x: topLeft.x - edgeWidth * 2, y: center + 10 }
+                    ],
+                    view: { x: 0, y: -135 }
+                },
+                
+                // === 8 ANGOLI (cerchi) ===
+                
+                // 4 angoli da TOP (Z+)
+                'corner-top-front-right': {
+                    type: 'corner',
+                    shape: 'circle',
+                    center: { x: bottomRight.x + edgeWidth/2, y: bottomRight.y + edgeWidth/2 },
+                    radius: cornerRadius,
+                    view: { x: 45, y: 45 }
+                },
+                'corner-top-right-back': {
+                    type: 'corner',
+                    shape: 'circle',
+                    center: { x: topRight.x + edgeWidth/2, y: topRight.y - edgeWidth/2 },
+                    radius: cornerRadius,
+                    view: { x: -45, y: 45 }
+                },
+                'corner-top-back-left': {
+                    type: 'corner',
+                    shape: 'circle',
+                    center: { x: topLeft.x - edgeWidth/2, y: topLeft.y - edgeWidth/2 },
+                    radius: cornerRadius,
+                    view: { x: -45, y: 135 }
+                },
+                'corner-top-left-front': {
+                    type: 'corner',
+                    shape: 'circle',
+                    center: { x: bottomLeft.x - edgeWidth/2, y: bottomLeft.y + edgeWidth/2 },
+                    radius: cornerRadius,
+                    view: { x: 45, y: 135 }
+                },
+                
+                // 4 angoli da BOTTOM (Z-)
+                'corner-bottom-front-right': {
+                    type: 'corner',
+                    shape: 'circle',
+                    center: { x: bottomRight.x + edgeWidth * 1.5, y: bottomRight.y + edgeWidth * 1.5 },
+                    radius: cornerRadius,
+                    view: { x: 45, y: -45 }
+                },
+                'corner-bottom-right-back': {
+                    type: 'corner',
+                    shape: 'circle',
+                    center: { x: topRight.x + edgeWidth * 1.5, y: topRight.y - edgeWidth * 1.5 },
+                    radius: cornerRadius,
+                    view: { x: -45, y: -45 }
+                },
+                'corner-bottom-back-left': {
+                    type: 'corner',
+                    shape: 'circle',
+                    center: { x: topLeft.x - edgeWidth * 1.5, y: topLeft.y - edgeWidth * 1.5 },
+                    radius: cornerRadius,
+                    view: { x: -45, y: -135 }
+                },
+                'corner-bottom-left-front': {
+                    type: 'corner',
+                    shape: 'circle',
+                    center: { x: bottomLeft.x - edgeWidth * 1.5, y: bottomLeft.y + edgeWidth * 1.5 },
+                    radius: cornerRadius,
+                    view: { x: 45, y: -135 }
+                }
+            };
+        }
+
+        function isViewActive(zoneKey) {
+            const zones = getViewCubeZones();
+            const zone = zones[zoneKey];
+            if (!zone || !zone.view) return false;
+            
+            // Normalizza gli angoli per il confronto
+            function normalizeAngle(angle) {
+                angle = angle % 360;
+                if (angle > 180) angle -= 360;
+                if (angle < -180) angle += 360;
+                return angle;
+            }
+            
+            const normRotX = normalizeAngle(rotation.x);
+            const normRotY = normalizeAngle(rotation.y);
+            const normViewX = normalizeAngle(zone.view.x);
+            const normViewY = normalizeAngle(zone.view.y);
+            
+            // Tolleranza di 10 gradi
+            const tolerance = 10;
+            return Math.abs(normRotX - normViewX) < tolerance && 
+                   Math.abs(normRotY - normViewY) < tolerance;
+        }
+
+        function handleViewCubeHover(event) {
+            const rect = viewCubeCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            const zone = getZoneAt(x, y);
+            
+            if (zone !== hoveredZone) {
+                hoveredZone = zone;
+                drawViewCube();
+            }
+        }
+
+        function handleViewCubeLeave() {
+            if (hoveredZone !== null) {
+                hoveredZone = null;
+                drawViewCube();
+            }
+        }
+
+        function handleViewCubeClick(event) {
+            const rect = viewCubeCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            const zone = getZoneAt(x, y);
+            
+            if (zone) {
+                const zones = getViewCubeZones();
+                const zoneData = zones[zone];
+                
+                if (zoneData && zoneData.view) {
+                    rotation.x = zoneData.view.x;
+                    rotation.y = zoneData.view.y;
+                    currentView = 'custom';
+                    
+                    drawGraph();
+                    drawViewCube();
+                }
+            }
+        }
+
+        function getZoneAt(x, y) {
+            const zones = getViewCubeZones();
+            
+            // Controlla in ordine inverso (gli ultimi disegnati sono sopra)
+            const keys = Object.keys(zones).reverse();
+            
+            for (const key of keys) {
+                const zone = zones[key];
+                
+                if (zone.shape === 'circle') {
+                    // Test per cerchio
+                    const dx = x - zone.center.x;
+                    const dy = y - zone.center.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance <= zone.radius) {
+                        return key;
+                    }
+                } else {
+                    // Test per poligono (rettangolo)
+                    if (isPointInPolygon(x, y, zone.path)) {
+                        return key;
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function isPointInPolygon(x, y, vertices) {
+            let inside = false;
+            for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+                const xi = vertices[i].x, yi = vertices[i].y;
+                const xj = vertices[j].x, yj = vertices[j].y;
+                
+                const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
         }
     </script>
 </body>
