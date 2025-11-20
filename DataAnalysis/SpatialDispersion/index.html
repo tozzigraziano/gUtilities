@@ -465,9 +465,11 @@ YASKAWA:
                         <button onclick="setView('xz')">Vista XZ</button>
                         <button onclick="setView('yz')">Vista YZ</button>
                         <button class="secondary" onclick="resetView()">Reset</button>
+                        <button class="secondary" onclick="toggleGrid()" id="toggleGridBtn">Nascondi Griglia</button>
+                        <button class="secondary" onclick="toggleSphere()" id="toggleSphereBtn">Mostra Sfera 3σ</button>
                     </div>
                     <canvas id="canvas3d"></canvas>
-                    <small>Click + Trascina: ruota | Rotellina: zoom | Tasto dx: reset vista</small>
+                    <small>Click + Trascina: ruota | Ctrl + Click: sposta | Rotellina: zoom | Tasto dx: reset vista</small>
                 </div>
             </div>
         </div>
@@ -483,8 +485,11 @@ YASKAWA:
         let highlightedPoint = null;
         let currentView = 'xy'; // Default: vista XY
         let isDragging = false;
+        let isPanning = false;
         let lastMouseX = 0;
         let lastMouseY = 0;
+        let showGrid = true;
+        let showSphere = false;
 
         window.addEventListener('load', function() {
             canvas = document.getElementById('canvas3d');
@@ -548,27 +553,42 @@ YASKAWA:
             const zRange = bounds.zMax - bounds.zMin || 1;
             const maxRange = Math.max(xRange, yRange, zRange);
 
-            const centerX = (bounds.xMin + bounds.xMax) / 2;
-            const centerY = (bounds.yMin + bounds.yMax) / 2;
-            const centerZ = (bounds.zMin + bounds.zMax) / 2;
+            // Calcola centroide (come in drawGraph)
+            const centroid = {
+                x: xValues.reduce((a, b) => a + b, 0) / points.length,
+                y: yValues.reduce((a, b) => a + b, 0) / points.length,
+                z: zValues.reduce((a, b) => a + b, 0) / points.length
+            };
 
-            // Funzione di proiezione locale
+            // Funzione di proiezione locale (DEVE essere identica a quella in drawGraph)
             function project3D(x, y, z) {
-                x -= centerX;
-                y -= centerY;
-                z -= centerZ;
+                // Centra sul centroide
+                x -= centroid.x;
+                y -= centroid.y;
+                z -= centroid.z;
+                
+                // Normalizza
                 x = x / maxRange;
                 y = y / maxRange;
                 z = z / maxRange;
+                
+                // Rotazione
                 const radX = rotation.x * Math.PI / 180;
                 const radY = rotation.y * Math.PI / 180;
+                
+                // Rotazione attorno X
                 let y1 = y * Math.cos(radX) - z * Math.sin(radX);
                 let z1 = y * Math.sin(radX) + z * Math.cos(radX);
+                
+                // Rotazione attorno Y
                 let x2 = x * Math.cos(radY) + z1 * Math.sin(radY);
                 let z2 = -x * Math.sin(radY) + z1 * Math.cos(radY);
+                
+                // Scala e centra sul canvas
                 const plotScale = Math.min(canvas.width, canvas.height) * 0.35 * scale;
                 const screenX = canvas.width / 2 + x2 * plotScale + offset.x;
                 const screenY = canvas.height / 2 - y1 * plotScale + offset.y;
+                
                 return { x: screenX, y: screenY, z: z2 };
             }
 
@@ -613,16 +633,24 @@ YASKAWA:
 
         function handleMouseDown(event) {
             if (event.button === 0) { // Left click
-                isDragging = true;
+                if (event.ctrlKey) {
+                    // Ctrl + Click = Pan
+                    isPanning = true;
+                    canvas.style.cursor = 'move';
+                } else {
+                    // Click normale = Rotate
+                    isDragging = true;
+                    canvas.style.cursor = 'grabbing';
+                }
                 lastMouseX = event.clientX;
                 lastMouseY = event.clientY;
-                canvas.style.cursor = 'grabbing';
             }
         }
 
         function handleMouseUp(event) {
             if (event.button === 0) {
                 isDragging = false;
+                isPanning = false;
                 canvas.style.cursor = 'crosshair';
             }
         }
@@ -634,17 +662,26 @@ YASKAWA:
                 
                 // Rotazione: deltaX -> rotazione Y (sinistra/destra)
                 //            deltaY -> rotazione X (su/giù)
-                rotation.y += deltaX * 0.5;
                 rotation.x += deltaY * 0.5;
-                
-                // Limita rotazione X per evitare capovolte strane
-                rotation.x = Math.max(-90, Math.min(90, rotation.x));
+                rotation.y += deltaX * 0.5;
                 
                 lastMouseX = event.clientX;
                 lastMouseY = event.clientY;
                 
                 // Resetta la vista corrente quando si ruota manualmente
                 currentView = 'custom';
+                
+                drawGraph();
+            } else if (isPanning) {
+                const deltaX = event.clientX - lastMouseX;
+                const deltaY = event.clientY - lastMouseY;
+                
+                // Pan: muovi l'offset della vista
+                offset.x += deltaX;
+                offset.y += deltaY;
+                
+                lastMouseX = event.clientX;
+                lastMouseY = event.clientY;
                 
                 drawGraph();
             }
@@ -1053,6 +1090,20 @@ YASKAWA:
             drawGraph();
         }
 
+        function toggleGrid() {
+            showGrid = !showGrid;
+            const btn = document.getElementById('toggleGridBtn');
+            btn.textContent = showGrid ? 'Nascondi Griglia' : 'Mostra Griglia';
+            drawGraph();
+        }
+
+        function toggleSphere() {
+            showSphere = !showSphere;
+            const btn = document.getElementById('toggleSphereBtn');
+            btn.textContent = showSphere ? 'Nascondi Sfera 3σ' : 'Mostra Sfera 3σ';
+            drawGraph();
+        }
+
         function drawGraph() {
             if (!ctx) return;
 
@@ -1085,16 +1136,19 @@ YASKAWA:
             const zRange = bounds.zMax - bounds.zMin || 1;
             const maxRange = Math.max(xRange, yRange, zRange);
 
-            const centerX = (bounds.xMin + bounds.xMax) / 2;
-            const centerY = (bounds.yMin + bounds.yMax) / 2;
-            const centerZ = (bounds.zMin + bounds.zMax) / 2;
+            // Calcola centroide
+            const centroid = {
+                x: xValues.reduce((a, b) => a + b, 0) / points.length,
+                y: yValues.reduce((a, b) => a + b, 0) / points.length,
+                z: zValues.reduce((a, b) => a + b, 0) / points.length
+            };
 
-            // Proiezione 3D -> 2D
+            // Proiezione 3D -> 2D (usa centroide come centro di rotazione)
             function project3D(x, y, z) {
-                // Centra
-                x -= centerX;
-                y -= centerY;
-                z -= centerZ;
+                // Centra sul centroide (non sul centro dei bounds)
+                x -= centroid.x;
+                y -= centroid.y;
+                z -= centroid.z;
 
                 // Normalizza
                 x = x / maxRange;
@@ -1121,14 +1175,7 @@ YASKAWA:
                 return { x: screenX, y: screenY, z: z2 };
             }
 
-            // Calcola centroide
-            const centroid = {
-                x: xValues.reduce((a, b) => a + b, 0) / points.length,
-                y: yValues.reduce((a, b) => a + b, 0) / points.length,
-                z: zValues.reduce((a, b) => a + b, 0) / points.length
-            };
-
-            // Ordina punti per Z (per corretto rendering)
+            // Ordina punti per Z (per corretto rendering in base alla profondità)
             const sortedPoints = points.map((p, i) => ({ ...p, index: i }))
                 .sort((a, b) => {
                     const projA = project3D(a.x, a.y, a.z);
@@ -1136,8 +1183,18 @@ YASKAWA:
                     return projA.z - projB.z;
                 });
 
-            // Disegna assi con origine a 0,0,0
-            drawAxes(project3D, maxRange, 0, 0, 0);
+            // In vista 3D personalizzata, usa il centroide come origine, altrimenti usa 0,0,0
+            const axisOrigin = (currentView === 'custom') ? centroid : { x: 0, y: 0, z: 0 };
+            
+            // Disegna griglia e assi solo se showGrid è true
+            if (showGrid) {
+                drawAxes(project3D, maxRange, axisOrigin.x, axisOrigin.y, axisOrigin.z);
+            }
+            
+            // Disegna sfera di contenimento 3σ se richiesto
+            if (showSphere) {
+                drawContainmentSphere(project3D, centroid, xRange, yRange, zRange);
+            }
 
             // Disegna centroide in rosso
             const centroidProj = project3D(centroid.x, centroid.y, centroid.z);
@@ -1171,11 +1228,12 @@ YASKAWA:
                     Math.pow(p.z - centroid.z, 2)
                 );
 
-                // Colore basato sulla distanza dal centroide
+                // Colore basato sulla distanza dal centroide: verde (vicino) -> giallo -> rosso (lontano)
                 const maxDist = Math.sqrt(
                     Math.pow(xRange/2, 2) + Math.pow(yRange/2, 2) + Math.pow(zRange/2, 2)
                 );
-                const hue = 200 - (dist / maxDist) * 100; // Da blu a rosso
+                const normalizedDist = dist / maxDist; // 0 = vicino, 1 = lontano
+                const hue = 120 - (normalizedDist * 120); // 120° = verde, 0° = rosso
                 
                 const isHighlighted = highlightedPoint === p.index;
                 
@@ -1232,25 +1290,108 @@ YASKAWA:
                 }
             });
 
+            // Calcola dimensione scacchi griglia
+            const gridStep = calculateGridStepForInfo(maxRange, scale);
+            
             // Legenda
             ctx.fillStyle = '#b3b3b3';
             ctx.font = '12px Arial';
             ctx.textAlign = 'left';
             ctx.fillText(`Punti: ${points.length}`, 10, 20);
-            ctx.fillText(`Rotazione: X=${rotation.x}° Y=${rotation.y}°`, 10, 35);
+            ctx.fillText(`Rotazione: X=${rotation.x.toFixed(1)}° Y=${rotation.y.toFixed(1)}°`, 10, 35);
             ctx.fillText(`Zoom: ${scale.toFixed(2)}x`, 10, 50);
+            ctx.fillText(`Griglia: ${gridStep.toFixed(3)} mm`, 10, 65);
             
             // Legenda colore
             ctx.fillText('Colore: ', 10, canvas.height - 30);
             const gradWidth = 100;
             for (let i = 0; i < gradWidth; i++) {
-                const hue = 200 - (i / gradWidth) * 100;
+                const hue = 120 - (i / gradWidth) * 120; // Verde a rosso
                 ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
                 ctx.fillRect(60 + i, canvas.height - 35, 1, 10);
             }
             ctx.fillStyle = '#b3b3b3';
             ctx.fillText('Vicino', 60, canvas.height - 15);
             ctx.fillText('Lontano', 120, canvas.height - 15);
+        }
+
+        function drawContainmentSphere(project3D, centroid, xRange, yRange, zRange) {
+            // Calcola il raggio 3σ
+            const stdX = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.x - centroid.x, 2), 0) / points.length);
+            const stdY = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.y - centroid.y, 2), 0) / points.length);
+            const stdZ = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.z - centroid.z, 2), 0) / points.length);
+            const std3d = Math.sqrt(stdX*stdX + stdY*stdY + stdZ*stdZ);
+            const sphereRadius = 3 * std3d;
+            
+            // Disegna cerchi a diverse altitudini Z per simulare una sfera
+            ctx.strokeStyle = 'rgba(255, 200, 0, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            
+            const numCircles = 12;
+            for (let i = 0; i <= numCircles; i++) {
+                const t = i / numCircles; // 0 a 1
+                const zOffset = (t - 0.5) * 2 * sphereRadius; // -radius a +radius
+                const zPos = centroid.z + zOffset;
+                
+                // Calcola raggio del cerchio a questa altitudine (formula sfera)
+                const circleRadius = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - zOffset * zOffset));
+                
+                // Disegna cerchio
+                const segments = 36;
+                ctx.beginPath();
+                for (let j = 0; j <= segments; j++) {
+                    const angle = (j / segments) * 2 * Math.PI;
+                    const xPos = centroid.x + circleRadius * Math.cos(angle);
+                    const yPos = centroid.y + circleRadius * Math.sin(angle);
+                    const proj = project3D(xPos, yPos, zPos);
+                    
+                    if (j === 0) {
+                        ctx.moveTo(proj.x, proj.y);
+                    } else {
+                        ctx.lineTo(proj.x, proj.y);
+                    }
+                }
+                ctx.stroke();
+            }
+            
+            // Disegna anche alcuni meridiani
+            for (let m = 0; m < 8; m++) {
+                const angle = (m / 8) * 2 * Math.PI;
+                ctx.beginPath();
+                for (let i = 0; i <= numCircles; i++) {
+                    const t = i / numCircles;
+                    const phi = t * Math.PI; // 0 a π
+                    const xPos = centroid.x + sphereRadius * Math.sin(phi) * Math.cos(angle);
+                    const yPos = centroid.y + sphereRadius * Math.sin(phi) * Math.sin(angle);
+                    const zPos = centroid.z + sphereRadius * Math.cos(phi);
+                    const proj = project3D(xPos, yPos, zPos);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(proj.x, proj.y);
+                    } else {
+                        ctx.lineTo(proj.x, proj.y);
+                    }
+                }
+                ctx.stroke();
+            }
+            
+            ctx.setLineDash([]);
+        }
+
+        // Funzione helper per calcolare grid step (usata anche per info)
+        function calculateGridStepForInfo(maxRange, scale) {
+            const visibleRange = maxRange / scale;
+            const magnitude = Math.pow(10, Math.floor(Math.log10(visibleRange)));
+            const normalized = visibleRange / magnitude;
+            
+            let step;
+            if (normalized <= 1.5) step = magnitude * 0.2;
+            else if (normalized <= 3) step = magnitude * 0.5;
+            else if (normalized <= 7) step = magnitude * 1;
+            else step = magnitude * 2;
+            
+            return step;
         }
 
         function drawAxes(project3D, maxRange, originX, originY, originZ) {
@@ -1273,21 +1414,7 @@ YASKAWA:
             
             // Funzione per calcolare step griglia intelligente in base allo zoom
             function calculateGridStep(dataRange, scale) {
-                // Range visibile diminuisce con lo zoom (inversamente proporzionale)
-                const visibleRange = dataRange / scale;
-                
-                // Determina ordine di grandezza
-                const magnitude = Math.pow(10, Math.floor(Math.log10(visibleRange)));
-                const normalized = visibleRange / magnitude;
-                
-                // Scegli step appropriato
-                let step;
-                if (normalized <= 1.5) step = magnitude * 0.2;
-                else if (normalized <= 3) step = magnitude * 0.5;
-                else if (normalized <= 7) step = magnitude * 1;
-                else step = magnitude * 2;
-                
-                return step;
+                return calculateGridStepForInfo(maxRange, scale);
             }
             
             // USA LO STESSO STEP PER TUTTI GLI ASSI per mantenere proporzioni reali
@@ -1483,9 +1610,112 @@ YASKAWA:
                         }
                     }
                 }
+            } else if (currentView === 'custom') {
+                // Vista 3D personalizzata: disegna griglia 3D completa centrata sul centroide
+                const uniformGridStep = calculateGridStep(maxRange, scale);
+                
+                // Calcola il centroide per centrare la griglia
+                const centroid = {
+                    x: (xMin + xMax) / 2,
+                    y: (yMin + yMax) / 2,
+                    z: (zMin + zMax) / 2
+                };
+                
+                // Calcola il numero di linee necessarie per coprire i dati
+                const margin = uniformGridStep * 2;
+                const gridLinesX = Math.ceil((xDataRange / 2 + margin) / uniformGridStep);
+                const gridLinesY = Math.ceil((yDataRange / 2 + margin) / uniformGridStep);
+                const gridLinesZ = Math.ceil((zDataRange / 2 + margin) / uniformGridStep);
+                
+                // Disegna solo UN piano di base (piano XY al zMin) - BLU chiaro per riferimento
+                ctx.strokeStyle = 'rgba(80, 80, 150, 0.1)';
+                ctx.lineWidth = 1;
+                
+                // Linee parallele a X sul piano base
+                for (let yi = -gridLinesY; yi <= gridLinesY; yi += 2) {
+                    const yVal = centroid.y + yi * uniformGridStep;
+                    if (yVal < yMin - margin || yVal > yMax + margin) continue;
+                    
+                    const x1 = project3D(xMin - margin, yVal, zMin);
+                    const x2 = project3D(xMax + margin, yVal, zMin);
+                    ctx.beginPath();
+                    ctx.moveTo(x1.x, x1.y);
+                    ctx.lineTo(x2.x, x2.y);
+                    ctx.stroke();
+                }
+                
+                // Linee parallele a Y sul piano base
+                for (let xi = -gridLinesX; xi <= gridLinesX; xi += 2) {
+                    const xVal = centroid.x + xi * uniformGridStep;
+                    if (xVal < xMin - margin || xVal > xMax + margin) continue;
+                    
+                    const y1 = project3D(xVal, yMin - margin, zMin);
+                    const y2 = project3D(xVal, yMax + margin, zMin);
+                    ctx.beginPath();
+                    ctx.moveTo(y1.x, y1.y);
+                    ctx.lineTo(y2.x, y2.y);
+                    ctx.stroke();
+                }
+                
+                // Linee verticali lungo Z (BLU) - solo alcune selezionate
+                ctx.strokeStyle = 'rgba(80, 80, 255, 0.3)';
+                ctx.lineWidth = 1.5;
+                for (let xi = -gridLinesX; xi <= gridLinesX; xi += 2) {
+                    for (let yi = -gridLinesY; yi <= gridLinesY; yi += 2) {
+                        const xVal = centroid.x + xi * uniformGridStep;
+                        const yVal = centroid.y + yi * uniformGridStep;
+                        if (xVal < xMin - margin || xVal > xMax + margin) continue;
+                        if (yVal < yMin - margin || yVal > yMax + margin) continue;
+                        
+                        const z1 = project3D(xVal, yVal, zMin - margin);
+                        const z2 = project3D(xVal, yVal, zMax + margin);
+                        ctx.beginPath();
+                        ctx.moveTo(z1.x, z1.y);
+                        ctx.lineTo(z2.x, z2.y);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Linee orizzontali lungo X (ROSSO) - solo alcune selezionate
+                ctx.strokeStyle = 'rgba(255, 80, 80, 0.25)';
+                ctx.lineWidth = 1.5;
+                for (let yi = -gridLinesY; yi <= gridLinesY; yi += 3) {
+                    for (let zi = -gridLinesZ; zi <= gridLinesZ; zi += 3) {
+                        const yVal = centroid.y + yi * uniformGridStep;
+                        const zVal = centroid.z + zi * uniformGridStep;
+                        if (yVal < yMin - margin || yVal > yMax + margin) continue;
+                        if (zVal < zMin - margin || zVal > zMax + margin) continue;
+                        
+                        const x1 = project3D(xMin - margin, yVal, zVal);
+                        const x2 = project3D(xMax + margin, yVal, zVal);
+                        ctx.beginPath();
+                        ctx.moveTo(x1.x, x1.y);
+                        ctx.lineTo(x2.x, x2.y);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Linee orizzontali lungo Y (VERDE) - solo alcune selezionate
+                ctx.strokeStyle = 'rgba(80, 255, 80, 0.25)';
+                ctx.lineWidth = 1.5;
+                for (let xi = -gridLinesX; xi <= gridLinesX; xi += 3) {
+                    for (let zi = -gridLinesZ; zi <= gridLinesZ; zi += 3) {
+                        const xVal = centroid.x + xi * uniformGridStep;
+                        const zVal = centroid.z + zi * uniformGridStep;
+                        if (xVal < xMin - margin || xVal > xMax + margin) continue;
+                        if (zVal < zMin - margin || zVal > zMax + margin) continue;
+                        
+                        const y1 = project3D(xVal, yMin - margin, zVal);
+                        const y2 = project3D(xVal, yMax + margin, zVal);
+                        ctx.beginPath();
+                        ctx.moveTo(y1.x, y1.y);
+                        ctx.lineTo(y2.x, y2.y);
+                        ctx.stroke();
+                    }
+                }
             }
             
-            // Asse X (rosso) - parte da 0,0,0
+            // Asse X (rosso) - parte dall'origine specificata
             const xEndAxis = project3D(originX + axisLength, originY, originZ);
             ctx.strokeStyle = '#ff4444';
             ctx.lineWidth = 3;
