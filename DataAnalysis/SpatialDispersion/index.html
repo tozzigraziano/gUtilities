@@ -464,7 +464,6 @@ YASKAWA:
                         <button onclick="setView('xy')">Vista XY</button>
                         <button onclick="setView('xz')">Vista XZ</button>
                         <button onclick="setView('yz')">Vista YZ</button>
-                        <button onclick="setView('iso')">Isometrica</button>
                         <button class="secondary" onclick="resetView()">Reset</button>
                     </div>
                     <canvas id="canvas3d"></canvas>
@@ -477,11 +476,12 @@ YASKAWA:
     <script>
         let points = [];
         let canvas, ctx;
-        let rotation = { x: -30, y: -45 };
+        let rotation = { x: 0, y: 0 }; // Default: vista XY
         let scale = 1.0;
         let offset = { x: 0, y: 0 };
         let autoRotate = false;
         let highlightedPoint = null;
+        let currentView = 'xy'; // Default: vista XY
 
         window.addEventListener('load', function() {
             canvas = document.getElementById('canvas3d');
@@ -985,6 +985,7 @@ YASKAWA:
         }
 
         function setView(view) {
+            currentView = view;
             switch(view) {
                 case 'xy':
                     rotation = { x: 0, y: 0 };
@@ -993,17 +994,15 @@ YASKAWA:
                     rotation = { x: -90, y: 0 };
                     break;
                 case 'yz':
-                    rotation = { x: 0, y: -90 };
-                    break;
-                case 'iso':
-                    rotation = { x: -30, y: -45 };
+                    rotation = { x: -90, y: -90 };
                     break;
             }
             drawGraph();
         }
 
         function resetView() {
-            rotation = { x: -30, y: -45 };
+            currentView = 'xy';
+            rotation = { x: 0, y: 0 };
             scale = 1.0;
             offset = { x: 0, y: 0 };
             drawGraph();
@@ -1221,8 +1220,11 @@ YASKAWA:
                 return step;
             }
             
-            const xGridStep = calculateGridStep(xDataRange, scale);
-            const yGridStep = calculateGridStep(yDataRange, scale);
+            // USA LO STESSO STEP PER TUTTI GLI ASSI per mantenere proporzioni reali
+            const uniformGridStep = calculateGridStep(maxRange, scale);
+            const xGridStep = uniformGridStep;
+            const yGridStep = uniformGridStep;
+            const zGridStep = uniformGridStep;
             
             // Espandi la griglia a tutta l'area visibile del canvas
             // Calcola i limiti estesi proiettando gli angoli del canvas
@@ -1231,59 +1233,188 @@ YASKAWA:
             const xMaxGrid = xMax + gridMargin;
             const yMinGrid = yMin - gridMargin;
             const yMaxGrid = yMax + gridMargin;
+            const zMinGrid = zMin - gridMargin;
+            const zMaxGrid = zMax + gridMargin;
             
-            // Disegna griglia di riferimento sul piano XY con etichette
-            ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';  // Griglia più leggera
+            // Disegna griglia in base alla vista corrente
+            ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';
             ctx.lineWidth = 1;
             ctx.font = '10px Arial';
-            ctx.fillStyle = 'rgba(150, 150, 150, 0.5)';  // Etichette più leggere
+            ctx.fillStyle = 'rgba(150, 150, 150, 0.5)';
             
-            // Griglia parallela all'asse X (linee costanti in Y) - estesa
-            const yStart = Math.floor(yMinGrid / yGridStep) * yGridStep;
-            const yEndGrid = Math.ceil(yMaxGrid / yGridStep) * yGridStep;
-            for (let yVal = yStart; yVal <= yEndGrid; yVal += yGridStep) {
-                const y1 = project3D(xMinGrid, yVal, zMin);
-                const y2 = project3D(xMaxGrid, yVal, zMin);
+            // Sistema anti-sovrapposizione per etichette
+            const label1Positions = []; // Per primo asse (sinistro/verticale)
+            const label2Positions = []; // Per secondo asse (orizzontale)
+            const minLabel1Spacing = 50;
+            const minLabel2Spacing = 60;
+            
+            if (currentView === 'xy') {
+                // Vista XY: disegna griglia sul piano XY (Z costante)
+                // Linee parallele all'asse X (Y costante)
+                const yStart = Math.floor(yMinGrid / yGridStep) * yGridStep;
+                const yEndGrid = Math.ceil(yMaxGrid / yGridStep) * yGridStep;
+                for (let yVal = yStart; yVal <= yEndGrid; yVal += yGridStep) {
+                    const y1 = project3D(xMinGrid, yVal, zMin);
+                    const y2 = project3D(xMaxGrid, yVal, zMin);
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';
+                    ctx.beginPath();
+                    ctx.moveTo(y1.x, y1.y);
+                    ctx.lineTo(y2.x, y2.y);
+                    ctx.stroke();
+                    
+                    if (Math.abs(yVal - yMin) > yGridStep * 0.1) {
+                        const canDrawLabel = label1Positions.every(pos => Math.abs(pos - y1.y) >= minLabel1Spacing);
+                        if (canDrawLabel) {
+                            label1Positions.push(y1.y);
+                            ctx.fillStyle = 'rgba(100, 200, 100, 0.6)';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            ctx.save();
+                            ctx.translate(30, y1.y);
+                            ctx.rotate(-Math.PI / 2);
+                            ctx.fillText(yVal.toFixed(decimals), 0, 0);
+                            ctx.restore();
+                        }
+                    }
+                }
                 
-                ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';  // Griglia più leggera
-                ctx.beginPath();
-                ctx.moveTo(y1.x, y1.y);
-                ctx.lineTo(y2.x, y2.y);
-                ctx.stroke();
+                // Linee parallele all'asse Y (X costante)
+                const xStart = Math.floor(xMinGrid / xGridStep) * xGridStep;
+                const xEndGrid = Math.ceil(xMaxGrid / xGridStep) * xGridStep;
+                for (let xVal = xStart; xVal <= xEndGrid; xVal += xGridStep) {
+                    const x1 = project3D(xVal, yMinGrid, zMin);
+                    const x2 = project3D(xVal, yMaxGrid, zMin);
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';
+                    ctx.beginPath();
+                    ctx.moveTo(x1.x, x1.y);
+                    ctx.lineTo(x2.x, x2.y);
+                    ctx.stroke();
+                    
+                    if (Math.abs(xVal - xMin) > xGridStep * 0.1) {
+                        const canDrawLabel = label2Positions.every(pos => Math.abs(pos - x1.x) >= minLabel2Spacing);
+                        if (canDrawLabel) {
+                            label2Positions.push(x1.x);
+                            ctx.fillStyle = 'rgba(200, 100, 100, 0.6)';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'top';
+                            const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            ctx.fillText(xVal.toFixed(decimals), x1.x, canvas.height - 15);
+                        }
+                    }
+                }
+            } else if (currentView === 'xz') {
+                // Vista XZ: disegna griglia sul piano XZ (Y costante)
+                // Linee parallele all'asse X (Z costante)
+                const zStart = Math.floor(zMinGrid / zGridStep) * zGridStep;
+                const zEndGrid = Math.ceil(zMaxGrid / zGridStep) * zGridStep;
+                for (let zVal = zStart; zVal <= zEndGrid; zVal += zGridStep) {
+                    const z1 = project3D(xMinGrid, yMin, zVal);
+                    const z2 = project3D(xMaxGrid, yMin, zVal);
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';
+                    ctx.beginPath();
+                    ctx.moveTo(z1.x, z1.y);
+                    ctx.lineTo(z2.x, z2.y);
+                    ctx.stroke();
+                    
+                    if (Math.abs(zVal - zMin) > zGridStep * 0.1) {
+                        const canDrawLabel = label1Positions.every(pos => Math.abs(pos - z1.y) >= minLabel1Spacing);
+                        if (canDrawLabel) {
+                            label1Positions.push(z1.y);
+                            ctx.fillStyle = 'rgba(100, 100, 200, 0.6)';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            ctx.save();
+                            ctx.translate(30, z1.y);
+                            ctx.rotate(-Math.PI / 2);
+                            ctx.fillText(zVal.toFixed(decimals), 0, 0);
+                            ctx.restore();
+                        }
+                    }
+                }
                 
-                // Etichetta valore Y sulla griglia
-                if (Math.abs(yVal - yMin) > yGridStep * 0.1) {
-                    ctx.fillStyle = 'rgba(100, 200, 100, 0.4)';  // Etichette più leggere
-                    ctx.textAlign = 'right';
-                    // Più decimali con zoom maggiore
-                    const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
-                    ctx.fillText(yVal.toFixed(decimals), y1.x - 5, y1.y);
+                // Linee parallele all'asse Z (X costante)
+                const xStart = Math.floor(xMinGrid / xGridStep) * xGridStep;
+                const xEndGrid = Math.ceil(xMaxGrid / xGridStep) * xGridStep;
+                for (let xVal = xStart; xVal <= xEndGrid; xVal += xGridStep) {
+                    const x1 = project3D(xVal, yMin, zMinGrid);
+                    const x2 = project3D(xVal, yMin, zMaxGrid);
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';
+                    ctx.beginPath();
+                    ctx.moveTo(x1.x, x1.y);
+                    ctx.lineTo(x2.x, x2.y);
+                    ctx.stroke();
+                    
+                    if (Math.abs(xVal - xMin) > xGridStep * 0.1) {
+                        const canDrawLabel = label2Positions.every(pos => Math.abs(pos - x1.x) >= minLabel2Spacing);
+                        if (canDrawLabel) {
+                            label2Positions.push(x1.x);
+                            ctx.fillStyle = 'rgba(200, 100, 100, 0.6)';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'top';
+                            const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            ctx.fillText(xVal.toFixed(decimals), x1.x, canvas.height - 15);
+                        }
+                    }
+                }
+            } else if (currentView === 'yz') {
+                // Vista YZ: disegna griglia sul piano YZ (X costante)
+                // Linee parallele all'asse Y (Z costante)
+                const zStart = Math.floor(zMinGrid / zGridStep) * zGridStep;
+                const zEndGrid = Math.ceil(zMaxGrid / zGridStep) * zGridStep;
+                for (let zVal = zStart; zVal <= zEndGrid; zVal += zGridStep) {
+                    const z1 = project3D(xMin, yMinGrid, zVal);
+                    const z2 = project3D(xMin, yMaxGrid, zVal);
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';
+                    ctx.beginPath();
+                    ctx.moveTo(z1.x, z1.y);
+                    ctx.lineTo(z2.x, z2.y);
+                    ctx.stroke();
+                    
+                    if (Math.abs(zVal - zMin) > zGridStep * 0.1) {
+                        const canDrawLabel = label1Positions.every(pos => Math.abs(pos - z1.y) >= minLabel1Spacing);
+                        if (canDrawLabel) {
+                            label1Positions.push(z1.y);
+                            ctx.fillStyle = 'rgba(100, 100, 200, 0.6)';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            ctx.save();
+                            ctx.translate(30, z1.y);
+                            ctx.rotate(-Math.PI / 2);
+                            ctx.fillText(zVal.toFixed(decimals), 0, 0);
+                            ctx.restore();
+                        }
+                    }
+                }
+                
+                // Linee parallele all'asse Z (Y costante)
+                const yStart = Math.floor(yMinGrid / yGridStep) * yGridStep;
+                const yEndGrid = Math.ceil(yMaxGrid / yGridStep) * yGridStep;
+                for (let yVal = yStart; yVal <= yEndGrid; yVal += yGridStep) {
+                    const y1 = project3D(xMin, yVal, zMinGrid);
+                    const y2 = project3D(xMin, yVal, zMaxGrid);
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';
+                    ctx.beginPath();
+                    ctx.moveTo(y1.x, y1.y);
+                    ctx.lineTo(y2.x, y2.y);
+                    ctx.stroke();
+                    
+                    if (Math.abs(yVal - yMin) > yGridStep * 0.1) {
+                        const canDrawLabel = label2Positions.every(pos => Math.abs(pos - y1.x) >= minLabel2Spacing);
+                        if (canDrawLabel) {
+                            label2Positions.push(y1.x);
+                            ctx.fillStyle = 'rgba(100, 200, 100, 0.6)';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'top';
+                            const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            ctx.fillText(yVal.toFixed(decimals), y1.x, canvas.height - 15);
+                        }
+                    }
                 }
             }
             
-            // Griglia parallela all'asse Y (linee costanti in X) - estesa
-            const xStart = Math.floor(xMinGrid / xGridStep) * xGridStep;
-            const xEndGrid = Math.ceil(xMaxGrid / xGridStep) * xGridStep;
-            for (let xVal = xStart; xVal <= xEndGrid; xVal += xGridStep) {
-                const x1 = project3D(xVal, yMinGrid, zMin);
-                const x2 = project3D(xVal, yMaxGrid, zMin);
-                
-                ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';  // Griglia più leggera
-                ctx.beginPath();
-                ctx.moveTo(x1.x, x1.y);
-                ctx.lineTo(x2.x, x2.y);
-                ctx.stroke();
-                
-                // Etichetta valore X sulla griglia
-                if (Math.abs(xVal - xMin) > xGridStep * 0.1) {
-                    ctx.fillStyle = 'rgba(200, 100, 100, 0.4)';  // Etichette più leggere
-                    ctx.textAlign = 'center';
-                    // Più decimali con zoom maggiore
-                    const decimals = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
-                    ctx.fillText(xVal.toFixed(decimals), x1.x, x1.y + 12);
-                }
-            }
-
             // Asse X (rosso) - parte da 0,0,0
             const xEndAxis = project3D(originX + axisLength, originY, originZ);
             ctx.strokeStyle = '#ff4444';
@@ -1302,17 +1433,32 @@ YASKAWA:
             const xTickStep = calculateGridStep(xDataRange, scale);
             const xTickStart = Math.floor(xMin / xTickStep) * xTickStep;
             const xTickEnd = Math.ceil(xMax / xTickStep) * xTickStep;
+            
+            // Riutilizza le posizioni già tracciate per evitare sovrapposizioni
+            const xTickLabelPositions = [];
+            const minXTickSpacing = 60;
+            
             for (let xVal = xTickStart; xVal <= xTickEnd; xVal += xTickStep) {
                 const t = (xVal - xMin) / xDataRange;
                 if (t >= 0 && t <= 1) {
                     const tickX = originX - axisLength + (axisLength * 2 * t);
                     const tickPos = project3D(tickX, originY, originZ);
                     
-                    ctx.textAlign = 'center';
-                    const decimalsX = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
-                    ctx.fillText(xVal.toFixed(decimalsX), tickPos.x, tickPos.y + 15);
+                    // Per vista XY o XZ, posiziona al margine inferiore
+                    if (currentView === 'xy' || currentView === 'xz') {
+                        const canDrawLabel = xTickLabelPositions.every(pos => Math.abs(pos - tickPos.x) >= minXTickSpacing);
+                        
+                        if (canDrawLabel) {
+                            xTickLabelPositions.push(tickPos.x);
+                            
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'top';
+                            const decimalsX = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            ctx.fillText(xVal.toFixed(decimalsX), tickPos.x, canvas.height - 15);
+                        }
+                    }
                     
-                    // Tick mark
+                    // Tick mark (sempre visibile)
                     ctx.strokeStyle = '#ff4444';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -1340,16 +1486,50 @@ YASKAWA:
             const yTickStep = calculateGridStep(yDataRange, scale);
             const yTickStart = Math.floor(yMin / yTickStep) * yTickStep;
             const yTickEnd = Math.ceil(yMax / yTickStep) * yTickStep;
+            
+            // Riutilizza le posizioni già tracciate per evitare sovrapposizioni
+            const yTickLabelPositions = [];
+            const minYTickSpacing = 50;
+            
             for (let yVal = yTickStart; yVal <= yTickEnd; yVal += yTickStep) {
                 const t = (yVal - yMin) / yDataRange;
                 if (t >= 0 && t <= 1) {
                     const tickY = originY - axisLength + (axisLength * 2 * t);
                     const tickPos = project3D(originX, tickY, originZ);
                     
-                    ctx.textAlign = 'center';
-                    const decimalsY = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
-                    ctx.fillText(yVal.toFixed(decimalsY), tickPos.x, tickPos.y + 15);
+                    // Per vista YZ, usa posizionamento orizzontale al margine inferiore
+                    if (currentView === 'yz') {
+                        const canDrawLabel = yTickLabelPositions.every(pos => Math.abs(pos - tickPos.x) >= 60);
+                        
+                        if (canDrawLabel) {
+                            yTickLabelPositions.push(tickPos.x);
+                            
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'top';
+                            const decimalsY = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            ctx.fillText(yVal.toFixed(decimalsY), tickPos.x, canvas.height - 15);
+                        }
+                    } else if (currentView === 'xy') {
+                        // Per vista XY, usa rotazione al margine sinistro
+                        const canDrawLabel = yTickLabelPositions.every(pos => Math.abs(pos - tickPos.y) >= minYTickSpacing);
+                        
+                        if (canDrawLabel) {
+                            yTickLabelPositions.push(tickPos.y);
+                            
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            const decimalsY = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            
+                            ctx.save();
+                            const labelX = 30;
+                            ctx.translate(labelX, tickPos.y);
+                            ctx.rotate(-Math.PI / 2);
+                            ctx.fillText(yVal.toFixed(decimalsY), 0, 0);
+                            ctx.restore();
+                        }
+                    }
                     
+                    // Tick mark (sempre visibile)
                     ctx.strokeStyle = '#44ff44';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -1377,16 +1557,38 @@ YASKAWA:
             const zTickStep = calculateGridStep(zDataRange, scale);
             const zTickStart = Math.floor(zMin / zTickStep) * zTickStep;
             const zTickEnd = Math.ceil(zMax / zTickStep) * zTickStep;
+            
+            // Sistema anti-sovrapposizione per tick marks asse Z (solo per vista XZ)
+            const zTickLabelPositions = [];
+            const minZTickSpacing = 50;
+            
             for (let zVal = zTickStart; zVal <= zTickEnd; zVal += zTickStep) {
                 const t = (zVal - zMin) / zDataRange;
                 if (t >= 0 && t <= 1) {
                     const tickZ = originZ - axisLength + (axisLength * 2 * t);
                     const tickPos = project3D(originX, originY, tickZ);
                     
-                    ctx.textAlign = 'center';
-                    const decimalsZ = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
-                    ctx.fillText(zVal.toFixed(decimalsZ), tickPos.x - 20, tickPos.y);
+                    // Per vista XZ o YZ, posiziona etichette al margine sinistro ruotate
+                    if (currentView === 'xz' || currentView === 'yz') {
+                        const canDrawLabel = zTickLabelPositions.every(pos => Math.abs(pos - tickPos.y) >= minZTickSpacing);
+                        
+                        if (canDrawLabel) {
+                            zTickLabelPositions.push(tickPos.y);
+                            
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            const decimalsZ = scale > 3 ? 3 : (scale > 1.5 ? 2 : 1);
+                            
+                            // Ruota il testo di 90°
+                            ctx.save();
+                            ctx.translate(30, tickPos.y);
+                            ctx.rotate(-Math.PI / 2);
+                            ctx.fillText(zVal.toFixed(decimalsZ), 0, 0);
+                            ctx.restore();
+                        }
+                    }
                     
+                    // Tick mark (sempre visibile)
                     ctx.strokeStyle = '#4444ff';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
