@@ -467,7 +467,7 @@ YASKAWA:
                         <button class="secondary" onclick="resetView()">Reset</button>
                     </div>
                     <canvas id="canvas3d"></canvas>
-                    <small>Rotellina: zoom | Tasto dx: reset vista</small>
+                    <small>Click + Trascina: ruota | Rotellina: zoom | Tasto dx: reset vista</small>
                 </div>
             </div>
         </div>
@@ -482,6 +482,9 @@ YASKAWA:
         let autoRotate = false;
         let highlightedPoint = null;
         let currentView = 'xy'; // Default: vista XY
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
 
         window.addEventListener('load', function() {
             canvas = document.getElementById('canvas3d');
@@ -493,6 +496,9 @@ YASKAWA:
             canvas.addEventListener('contextmenu', handleRightClick);
             canvas.addEventListener('mousemove', handleCanvasHover);
             canvas.addEventListener('mouseleave', handleCanvasLeave);
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mousemove', handleMouseDrag);
             
             drawGraph();
         });
@@ -601,6 +607,45 @@ YASKAWA:
             if (highlightedPoint !== null) {
                 highlightedPoint = null;
                 document.querySelectorAll('.points-table tbody tr').forEach(r => r.classList.remove('highlighted'));
+                drawGraph();
+            }
+        }
+
+        function handleMouseDown(event) {
+            if (event.button === 0) { // Left click
+                isDragging = true;
+                lastMouseX = event.clientX;
+                lastMouseY = event.clientY;
+                canvas.style.cursor = 'grabbing';
+            }
+        }
+
+        function handleMouseUp(event) {
+            if (event.button === 0) {
+                isDragging = false;
+                canvas.style.cursor = 'crosshair';
+            }
+        }
+
+        function handleMouseDrag(event) {
+            if (isDragging) {
+                const deltaX = event.clientX - lastMouseX;
+                const deltaY = event.clientY - lastMouseY;
+                
+                // Rotazione: deltaX -> rotazione Y (sinistra/destra)
+                //            deltaY -> rotazione X (su/giù)
+                rotation.y += deltaX * 0.5;
+                rotation.x += deltaY * 0.5;
+                
+                // Limita rotazione X per evitare capovolte strane
+                rotation.x = Math.max(-90, Math.min(90, rotation.x));
+                
+                lastMouseX = event.clientX;
+                lastMouseY = event.clientY;
+                
+                // Resetta la vista corrente quando si ruota manualmente
+                currentView = 'custom';
+                
                 drawGraph();
             }
         }
@@ -1133,6 +1178,31 @@ YASKAWA:
                 const hue = 200 - (dist / maxDist) * 100; // Da blu a rosso
                 
                 const isHighlighted = highlightedPoint === p.index;
+                
+                // Disegna linea dal punto al centroide se evidenziato
+                if (isHighlighted) {
+                    ctx.strokeStyle = '#ffcc00';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(proj.x, proj.y);
+                    ctx.lineTo(centroidProj.x, centroidProj.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Mostra la distanza sulla linea
+                    const midX = (proj.x + centroidProj.x) / 2;
+                    const midY = (proj.y + centroidProj.y) / 2;
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    ctx.font = '10px Arial';
+                    const distText = `${dist.toFixed(2)} mm`;
+                    const distTextWidth = ctx.measureText(distText).width;
+                    ctx.fillRect(midX - distTextWidth/2 - 3, midY - 8, distTextWidth + 6, 14);
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(distText, midX, midY);
+                }
                 
                 ctx.fillStyle = isHighlighted ? '#ffcc00' : `hsl(${hue}, 70%, 60%)`;
                 ctx.strokeStyle = isHighlighted ? '#ffff00' : '#ffffff';
