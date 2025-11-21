@@ -585,6 +585,16 @@
 
         // Check if position is within limits (robot logic)
         function checkPositionInLimits(pPos, limitMin, limitMax) {
+            // Helper function: check if range is 0-360 (all values valid) BEFORE normalization
+            const isFullRange = (min, max) => {
+                return (Math.abs(min) < 0.01 && Math.abs(max - 360) < 0.01);
+            };
+
+            // Check for full range BEFORE normalizing
+            const aFullRange = isFullRange(limitMin.A, limitMax.A);
+            const bFullRange = isFullRange(limitMin.B, limitMax.B);
+            const cFullRange = isFullRange(limitMin.C, limitMax.C);
+
             // Normalize angles
             const pos = {
                 X: pPos.X,
@@ -622,16 +632,28 @@
             let bC, bB, bA;
 
             // C angle check
-            bC = ((fMin.C <= fMax.C) && (pos.C >= fMin.C) && (pos.C <= fMax.C)) ||
-                 ((fMin.C > fMax.C) && ((pos.C >= fMin.C) || (pos.C <= fMax.C)));
+            if (cFullRange) {
+                bC = true; // 0-360 means all values are valid
+            } else {
+                bC = ((fMin.C <= fMax.C) && (pos.C >= fMin.C) && (pos.C <= fMax.C)) ||
+                     ((fMin.C > fMax.C) && ((pos.C >= fMin.C) || (pos.C <= fMax.C)));
+            }
 
             // B angle check
-            bB = ((fMin.B <= fMax.B) && (pos.B >= fMin.B) && (pos.B <= fMax.B)) ||
-                 ((fMin.B > fMax.B) && ((pos.B >= fMin.B) || (pos.B <= fMax.B)));
+            if (bFullRange) {
+                bB = true; // 0-360 means all values are valid
+            } else {
+                bB = ((fMin.B <= fMax.B) && (pos.B >= fMin.B) && (pos.B <= fMax.B)) ||
+                     ((fMin.B > fMax.B) && ((pos.B >= fMin.B) || (pos.B <= fMax.B)));
+            }
 
             // A angle check
-            bA = ((fMin.A <= fMax.A) && (pos.A >= fMin.A) && (pos.A <= fMax.A)) ||
-                 ((fMin.A > fMax.A) && ((pos.A >= fMin.A) || (pos.A <= fMax.A)));
+            if (aFullRange) {
+                bA = true; // 0-360 means all values are valid
+            } else {
+                bA = ((fMin.A <= fMax.A) && (pos.A >= fMin.A) && (pos.A <= fMax.A)) ||
+                     ((fMin.A > fMax.A) && ((pos.A >= fMin.A) || (pos.A <= fMax.A)));
+            }
 
             const result = xOk && yOk && zOk && bA && bB && bC;
 
