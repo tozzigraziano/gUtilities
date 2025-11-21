@@ -310,8 +310,8 @@
             position: absolute;
             bottom: 20px;
             right: 20px;
-            width: 160px;
-            height: 160px;
+            width: 200px;
+            height: 200px;
             cursor: pointer;
             user-select: none;
         }
@@ -1964,8 +1964,8 @@ YASKAWA:
 
         // ===== VIEW CUBE =====
         function initViewCube() {
-            viewCubeCanvas.width = 160;
-            viewCubeCanvas.height = 160;
+            viewCubeCanvas.width = 200;
+            viewCubeCanvas.height = 200;
             
             viewCubeCanvas.addEventListener('mousemove', handleViewCubeHover);
             viewCubeCanvas.addEventListener('mouseleave', handleViewCubeLeave);
@@ -1975,13 +1975,13 @@ YASKAWA:
         }
 
         function drawViewCube() {
-            const size = 160;
+            const size = 200;
             const ctx = viewCubeCtx;
             
             ctx.clearRect(0, 0, size, size);
             
             const center = size / 2;
-            const innerSize = 40; // Quadrato centrale TOP
+            const innerSize = 60; // Quadrato centrale TOP più grande
             const outerMargin = 10;
             
             // Definisci le zone
@@ -1993,46 +1993,75 @@ YASKAWA:
                 const isHovered = hoveredZone === key;
                 const isActive = isViewActive(key);
                 
-                // Colore in base allo stato
-                let fillColor;
+                // Colore in base allo stato e tipo
+                let fillColor, opacity;
+                
                 if (isActive) {
                     fillColor = '#66b3ff';
+                    opacity = 1.0;
                 } else if (isHovered) {
+                    // Al passaggio del mouse, diventa visibile
                     fillColor = '#4da6ff';
-                } else if (zone.type === 'main' || zone.type === 'main-small') {
-                    fillColor = '#2d5a7a';
-                } else if (zone.type === 'edge') {
-                    fillColor = '#cc6600';
+                    opacity = 0.8;
                 } else {
-                    fillColor = '#33aa33';
+                    // Stato normale - tutti con grigio semi-trasparente
+                    fillColor = '#808080';
+                    opacity = 0.3;
                 }
                 
                 // Disegna in base alla forma
                 if (zone.shape === 'circle') {
-                    // Disegna cerchio
+                    // Disegna cerchio (angoli)
                     ctx.beginPath();
                     ctx.arc(zone.center.x, zone.center.y, zone.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = fillColor;
-                    ctx.fill();
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 2;
+                    
+                    if (opacity > 0) {
+                        ctx.fillStyle = fillColor;
+                        ctx.globalAlpha = opacity;
+                        ctx.fill();
+                        ctx.globalAlpha = 1.0;
+                    }
+                    
+                    // Bordo sempre visibile per gli angoli
+                    if (isHovered || isActive) {
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1.5;
+                    } else {
+                        // Bordo sottile semi-trasparente quando non in hover
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                        ctx.lineWidth = 1.0;
+                    }
                     ctx.stroke();
                 } else {
-                    // Disegna rettangolo/quadrato
+                    // Disegna trapezio/rettangolo
                     ctx.beginPath();
                     zone.path.forEach((point, i) => {
                         if (i === 0) ctx.moveTo(point.x, point.y);
                         else ctx.lineTo(point.x, point.y);
                     });
                     ctx.closePath();
-                    ctx.fillStyle = fillColor;
-                    ctx.fill();
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 2.5;
+                    
+                    // Riempimento
+                    if (fillColor !== 'transparent') {
+                        ctx.fillStyle = fillColor;
+                        ctx.globalAlpha = opacity;
+                        ctx.fill();
+                        ctx.globalAlpha = 1.0;
+                    }
+                    
+                    // Bordi - sempre visibili
+                    if (isHovered || isActive) {
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1.5;
+                    } else {
+                        // Bordo sottile semi-trasparente quando non in hover
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                        ctx.lineWidth = 1.0;
+                    }
                     ctx.stroke();
                     
-                    // Testo label (solo per rettangoli)
-                    if (zone.label) {
+                    // Testo label (solo per facce principali o quando in hover)
+                    if (zone.label && (zone.type === 'main' || zone.type === 'main-small' || isHovered || isActive)) {
                         ctx.fillStyle = '#ffffff';
                         if (zone.type === 'main') {
                             ctx.font = 'bold 11px Arial';
@@ -2052,6 +2081,11 @@ YASKAWA:
                         ctx.shadowOffsetX = 1;
                         ctx.shadowOffsetY = 1;
                         
+                        // Opacità del testo per zone trasparenti
+                        if (zone.type === 'edge' && !isHovered && !isActive) {
+                            ctx.globalAlpha = 0.5;
+                        }
+                        
                         if (zone.rotated) {
                             ctx.save();
                             ctx.translate(zone.labelPos.x, zone.labelPos.y);
@@ -2061,6 +2095,8 @@ YASKAWA:
                         } else {
                             ctx.fillText(zone.label, zone.labelPos.x, zone.labelPos.y);
                         }
+                        
+                        ctx.globalAlpha = 1.0;
                         
                         // Reset ombra
                         ctx.shadowColor = 'transparent';
@@ -2073,26 +2109,26 @@ YASKAWA:
         }
 
         function getViewCubeZones() {
-            const size = 160;
+            const size = 200;
             const center = size / 2;
-            const innerSize = 40;
+            const innerSize = 60;
             const half = innerSize / 2;
             
-            // Definizione coordinate
-            const margin = 8;
-            const edgeWidth = 18;
-            const cornerRadius = 10;
+            // Definizione coordinate con spaziatura
+            const gap = 6; // Spaziatura tra i rettangoli colorati
+            const edgeWidth = 28;
+            const cornerRadius = 14;
             
-            // Quadrato centrale TOP
+            // Quadrato centrale TOP con gap
             const topLeft = { x: center - half, y: center - half };
             const topRight = { x: center + half, y: center - half };
             const bottomLeft = { x: center - half, y: center + half };
             const bottomRight = { x: center + half, y: center + half };
             
             return {
-                // === 6 FACCE PRINCIPALI (quadrati/rettangoli) ===
+                // === 5 FACCE PRINCIPALI (quadrati/rettangoli) - SENZA BOTTOM ===
                 
-                // TOP - quadrato centrale (X verso alto schermo, Y a sinistra schermo, Z verso utente)
+                // TOP - quadrato centrale
                 'top': {
                     type: 'main',
                     shape: 'rect',
@@ -2102,94 +2138,79 @@ YASKAWA:
                     view: { x: 0, y: 90 }
                 },
                 
-                // BOTTOM - piccolo rettangolo spostato in basso a destra
-                'bottom': {
-                    type: 'main-small',
-                    shape: 'rect',
-                    path: [
-                        { x: bottomRight.x + 2, y: bottomRight.y + 2 },
-                        { x: bottomRight.x + 18, y: bottomRight.y + 2 },
-                        { x: bottomRight.x + 18, y: bottomRight.y + 10 },
-                        { x: bottomRight.x + 2, y: bottomRight.y + 10 }
-                    ],
-                    label: 'BOT',
-                    labelPos: { x: bottomRight.x + 10, y: bottomRight.y + 6 },
-                    view: { x: 0, y: -90 }
-                },
-                
-                // FRONT - rettangolo sotto (X+ verso basso schermo)
+                // FRONT - rettangolo sotto con gap
                 'front': {
                     type: 'main',
                     shape: 'rect',
                     path: [
-                        { x: topLeft.x, y: bottomLeft.y },
-                        { x: topRight.x, y: bottomRight.y },
-                        { x: topRight.x, y: bottomRight.y + edgeWidth },
-                        { x: topLeft.x, y: bottomLeft.y + edgeWidth }
+                        { x: topLeft.x, y: bottomLeft.y + gap },
+                        { x: topRight.x, y: bottomRight.y + gap },
+                        { x: topRight.x, y: bottomRight.y + gap + edgeWidth },
+                        { x: topLeft.x, y: bottomLeft.y + gap + edgeWidth }
                     ],
                     label: 'F',
-                    labelPos: { x: center, y: bottomLeft.y + edgeWidth/2 },
+                    labelPos: { x: center, y: bottomLeft.y + gap + edgeWidth/2 },
                     view: { x: 90, y: 90 }
                 },
                 
-                // BACK - rettangolo sopra (X- verso alto schermo)
+                // BACK - rettangolo sopra con gap
                 'back': {
                     type: 'main',
                     shape: 'rect',
                     path: [
-                        { x: topLeft.x, y: topLeft.y - edgeWidth },
-                        { x: topRight.x, y: topRight.y - edgeWidth },
-                        { x: topRight.x, y: topRight.y },
-                        { x: topLeft.x, y: topLeft.y }
+                        { x: topLeft.x, y: topLeft.y - gap - edgeWidth },
+                        { x: topRight.x, y: topRight.y - gap - edgeWidth },
+                        { x: topRight.x, y: topRight.y - gap },
+                        { x: topLeft.x, y: topLeft.y - gap }
                     ],
                     label: 'B',
-                    labelPos: { x: center, y: topLeft.y - edgeWidth/2 },
+                    labelPos: { x: center, y: topLeft.y - gap - edgeWidth/2 },
                     view: { x: -90, y: 90 }
                 },
                 
-                // LEFT - rettangolo a sinistra (Y+ verso sinistra schermo)
+                // LEFT - rettangolo a sinistra con gap
                 'left': {
                     type: 'main',
                     shape: 'rect',
                     path: [
-                        { x: topLeft.x - edgeWidth, y: topLeft.y },
-                        { x: topLeft.x, y: topLeft.y },
-                        { x: bottomLeft.x, y: bottomLeft.y },
-                        { x: bottomLeft.x - edgeWidth, y: bottomLeft.y }
+                        { x: topLeft.x - gap - edgeWidth, y: topLeft.y },
+                        { x: topLeft.x - gap, y: topLeft.y },
+                        { x: bottomLeft.x - gap, y: bottomLeft.y },
+                        { x: bottomLeft.x - gap - edgeWidth, y: bottomLeft.y }
                     ],
                     label: 'L',
-                    labelPos: { x: topLeft.x - edgeWidth/2, y: center },
+                    labelPos: { x: topLeft.x - gap - edgeWidth/2, y: center },
                     rotated: true,
                     view: { x: 0, y: 180 }
                 },
                 
-                // RIGHT - rettangolo a destra (Y- verso destra schermo)
+                // RIGHT - rettangolo a destra con gap
                 'right': {
                     type: 'main',
                     shape: 'rect',
                     path: [
-                        { x: topRight.x, y: topRight.y },
-                        { x: topRight.x + edgeWidth, y: topRight.y },
-                        { x: bottomRight.x + edgeWidth, y: bottomRight.y },
-                        { x: bottomRight.x, y: bottomRight.y }
+                        { x: topRight.x + gap, y: topRight.y },
+                        { x: topRight.x + gap + edgeWidth, y: topRight.y },
+                        { x: bottomRight.x + gap + edgeWidth, y: bottomRight.y },
+                        { x: bottomRight.x + gap, y: bottomRight.y }
                     ],
                     label: 'R',
-                    labelPos: { x: topRight.x + edgeWidth/2, y: center },
+                    labelPos: { x: topRight.x + gap + edgeWidth/2, y: center },
                     rotated: true,
                     view: { x: 0, y: 0 }
                 },
                 
-                // === 12 BORDI INTERMEDI (rettangoli) ===
+                // === BORDI INTERMEDI TRASPARENTI NEGLI SPAZI ===
                 
-                // 4 bordi da TOP (viste intermedie a 45°)
+                // 4 bordi tra TOP e le facce laterali (negli spazi gap)
                 'edge-top-front': {
                     type: 'edge',
                     shape: 'rect',
                     path: [
-                        { x: center - 10, y: bottomLeft.y },
-                        { x: center + 10, y: bottomLeft.y },
-                        { x: center + 10, y: bottomLeft.y + edgeWidth },
-                        { x: center - 10, y: bottomLeft.y + edgeWidth }
+                        { x: topLeft.x, y: bottomLeft.y },
+                        { x: topRight.x, y: bottomRight.y },
+                        { x: topRight.x, y: bottomRight.y + gap },
+                        { x: topLeft.x, y: bottomLeft.y + gap }
                     ],
                     view: { x: 45, y: 90 }
                 },
@@ -2197,10 +2218,10 @@ YASKAWA:
                     type: 'edge',
                     shape: 'rect',
                     path: [
-                        { x: center - 10, y: topLeft.y - edgeWidth },
-                        { x: center + 10, y: topLeft.y - edgeWidth },
-                        { x: center + 10, y: topLeft.y },
-                        { x: center - 10, y: topLeft.y }
+                        { x: topLeft.x, y: topLeft.y - gap },
+                        { x: topRight.x, y: topRight.y - gap },
+                        { x: topRight.x, y: topRight.y },
+                        { x: topLeft.x, y: topLeft.y }
                     ],
                     view: { x: -45, y: 90 }
                 },
@@ -2208,10 +2229,10 @@ YASKAWA:
                     type: 'edge',
                     shape: 'rect',
                     path: [
-                        { x: topRight.x, y: center - 10 },
-                        { x: topRight.x + edgeWidth, y: center - 10 },
-                        { x: topRight.x + edgeWidth, y: center + 10 },
-                        { x: topRight.x, y: center + 10 }
+                        { x: topRight.x, y: topRight.y },
+                        { x: topRight.x + gap, y: topRight.y },
+                        { x: bottomRight.x + gap, y: bottomRight.y },
+                        { x: bottomRight.x, y: bottomRight.y }
                     ],
                     view: { x: 0, y: 45 }
                 },
@@ -2219,23 +2240,23 @@ YASKAWA:
                     type: 'edge',
                     shape: 'rect',
                     path: [
-                        { x: topLeft.x - edgeWidth, y: center - 10 },
-                        { x: topLeft.x, y: center - 10 },
-                        { x: topLeft.x, y: center + 10 },
-                        { x: topLeft.x - edgeWidth, y: center + 10 }
+                        { x: topLeft.x - gap, y: topLeft.y },
+                        { x: topLeft.x, y: topLeft.y },
+                        { x: bottomLeft.x, y: bottomLeft.y },
+                        { x: bottomLeft.x - gap, y: bottomLeft.y }
                     ],
                     view: { x: 0, y: 135 }
                 },
                 
-                // 4 bordi centrali verticali
+                // 4 bordi agli angoli esterni (tra facce adiacenti)
                 'edge-front-right': {
                     type: 'edge',
                     shape: 'rect',
                     path: [
-                        { x: topRight.x, y: bottomRight.y },
-                        { x: topRight.x + edgeWidth, y: bottomRight.y },
-                        { x: topRight.x + edgeWidth, y: bottomRight.y + edgeWidth },
-                        { x: topRight.x, y: bottomRight.y + edgeWidth }
+                        { x: bottomRight.x + gap, y: bottomRight.y + gap },
+                        { x: bottomRight.x + gap + edgeWidth, y: bottomRight.y + gap },
+                        { x: bottomRight.x + gap + edgeWidth, y: bottomRight.y + gap + edgeWidth },
+                        { x: bottomRight.x + gap, y: bottomRight.y + gap + edgeWidth }
                     ],
                     view: { x: 90, y: 45 }
                 },
@@ -2243,10 +2264,10 @@ YASKAWA:
                     type: 'edge',
                     shape: 'rect',
                     path: [
-                        { x: topRight.x, y: topRight.y - edgeWidth },
-                        { x: topRight.x + edgeWidth, y: topRight.y - edgeWidth },
-                        { x: topRight.x + edgeWidth, y: topRight.y },
-                        { x: topRight.x, y: topRight.y }
+                        { x: topRight.x + gap, y: topRight.y - gap - edgeWidth },
+                        { x: topRight.x + gap + edgeWidth, y: topRight.y - gap - edgeWidth },
+                        { x: topRight.x + gap + edgeWidth, y: topRight.y - gap },
+                        { x: topRight.x + gap, y: topRight.y - gap }
                     ],
                     view: { x: -90, y: 45 }
                 },
@@ -2254,10 +2275,10 @@ YASKAWA:
                     type: 'edge',
                     shape: 'rect',
                     path: [
-                        { x: topLeft.x - edgeWidth, y: topLeft.y - edgeWidth },
-                        { x: topLeft.x, y: topLeft.y - edgeWidth },
-                        { x: topLeft.x, y: topLeft.y },
-                        { x: topLeft.x - edgeWidth, y: topLeft.y }
+                        { x: topLeft.x - gap - edgeWidth, y: topLeft.y - gap - edgeWidth },
+                        { x: topLeft.x - gap, y: topLeft.y - gap - edgeWidth },
+                        { x: topLeft.x - gap, y: topLeft.y - gap },
+                        { x: topLeft.x - gap - edgeWidth, y: topLeft.y - gap }
                     ],
                     view: { x: -90, y: 135 }
                 },
@@ -2265,120 +2286,43 @@ YASKAWA:
                     type: 'edge',
                     shape: 'rect',
                     path: [
-                        { x: bottomLeft.x - edgeWidth, y: bottomLeft.y },
-                        { x: bottomLeft.x, y: bottomLeft.y },
-                        { x: bottomLeft.x, y: bottomLeft.y + edgeWidth },
-                        { x: bottomLeft.x - edgeWidth, y: bottomLeft.y + edgeWidth }
+                        { x: bottomLeft.x - gap - edgeWidth, y: bottomLeft.y + gap },
+                        { x: bottomLeft.x - gap, y: bottomLeft.y + gap },
+                        { x: bottomLeft.x - gap, y: bottomLeft.y + gap + edgeWidth },
+                        { x: bottomLeft.x - gap - edgeWidth, y: bottomLeft.y + gap + edgeWidth }
                     ],
                     view: { x: 90, y: 135 }
                 },
                 
-                // 4 bordi da BOTTOM (Z-)
-                'edge-bottom-front': {
-                    type: 'edge',
-                    shape: 'rect',
-                    path: [
-                        { x: center - 10, y: bottomLeft.y + edgeWidth },
-                        { x: center + 10, y: bottomLeft.y + edgeWidth },
-                        { x: center + 10, y: bottomLeft.y + edgeWidth * 2 },
-                        { x: center - 10, y: bottomLeft.y + edgeWidth * 2 }
-                    ],
-                    view: { x: 45, y: -90 }
-                },
-                'edge-bottom-back': {
-                    type: 'edge',
-                    shape: 'rect',
-                    path: [
-                        { x: center - 10, y: topLeft.y - edgeWidth * 2 },
-                        { x: center + 10, y: topLeft.y - edgeWidth * 2 },
-                        { x: center + 10, y: topLeft.y - edgeWidth },
-                        { x: center - 10, y: topLeft.y - edgeWidth }
-                    ],
-                    view: { x: -45, y: -90 }
-                },
-                'edge-bottom-right': {
-                    type: 'edge',
-                    shape: 'rect',
-                    path: [
-                        { x: topRight.x + edgeWidth, y: center - 10 },
-                        { x: topRight.x + edgeWidth * 2, y: center - 10 },
-                        { x: topRight.x + edgeWidth * 2, y: center + 10 },
-                        { x: topRight.x + edgeWidth, y: center + 10 }
-                    ],
-                    view: { x: 0, y: -45 }
-                },
-                'edge-bottom-left': {
-                    type: 'edge',
-                    shape: 'rect',
-                    path: [
-                        { x: topLeft.x - edgeWidth * 2, y: center - 10 },
-                        { x: topLeft.x - edgeWidth, y: center - 10 },
-                        { x: topLeft.x - edgeWidth, y: center + 10 },
-                        { x: topLeft.x - edgeWidth * 2, y: center + 10 }
-                    ],
-                    view: { x: 0, y: -135 }
-                },
+                // === 4 ANGOLI (cerchi) - posizionati negli spazi tra i rettangoli ===
                 
-                // === 8 ANGOLI (cerchi) ===
-                
-                // 4 angoli da TOP (Z+)
-                'corner-top-front-right': {
+                'corner-front-right': {
                     type: 'corner',
                     shape: 'circle',
-                    center: { x: bottomRight.x + edgeWidth/2, y: bottomRight.y + edgeWidth/2 },
+                    center: { x: bottomRight.x + gap/2, y: bottomRight.y + gap/2 },
                     radius: cornerRadius,
                     view: { x: 45, y: 45 }
                 },
-                'corner-top-right-back': {
+                'corner-right-back': {
                     type: 'corner',
                     shape: 'circle',
-                    center: { x: topRight.x + edgeWidth/2, y: topRight.y - edgeWidth/2 },
+                    center: { x: topRight.x + gap/2, y: topRight.y - gap/2 },
                     radius: cornerRadius,
                     view: { x: -45, y: 45 }
                 },
-                'corner-top-back-left': {
+                'corner-back-left': {
                     type: 'corner',
                     shape: 'circle',
-                    center: { x: topLeft.x - edgeWidth/2, y: topLeft.y - edgeWidth/2 },
+                    center: { x: topLeft.x - gap/2, y: topLeft.y - gap/2 },
                     radius: cornerRadius,
                     view: { x: -45, y: 135 }
                 },
-                'corner-top-left-front': {
+                'corner-left-front': {
                     type: 'corner',
                     shape: 'circle',
-                    center: { x: bottomLeft.x - edgeWidth/2, y: bottomLeft.y + edgeWidth/2 },
+                    center: { x: bottomLeft.x - gap/2, y: bottomLeft.y + gap/2 },
                     radius: cornerRadius,
                     view: { x: 45, y: 135 }
-                },
-                
-                // 4 angoli da BOTTOM (Z-)
-                'corner-bottom-front-right': {
-                    type: 'corner',
-                    shape: 'circle',
-                    center: { x: bottomRight.x + edgeWidth * 1.5, y: bottomRight.y + edgeWidth * 1.5 },
-                    radius: cornerRadius,
-                    view: { x: 45, y: -45 }
-                },
-                'corner-bottom-right-back': {
-                    type: 'corner',
-                    shape: 'circle',
-                    center: { x: topRight.x + edgeWidth * 1.5, y: topRight.y - edgeWidth * 1.5 },
-                    radius: cornerRadius,
-                    view: { x: -45, y: -45 }
-                },
-                'corner-bottom-back-left': {
-                    type: 'corner',
-                    shape: 'circle',
-                    center: { x: topLeft.x - edgeWidth * 1.5, y: topLeft.y - edgeWidth * 1.5 },
-                    radius: cornerRadius,
-                    view: { x: -45, y: -135 }
-                },
-                'corner-bottom-left-front': {
-                    type: 'corner',
-                    shape: 'circle',
-                    center: { x: bottomLeft.x - edgeWidth * 1.5, y: bottomLeft.y + edgeWidth * 1.5 },
-                    radius: cornerRadius,
-                    view: { x: 45, y: -135 }
                 }
             };
         }
