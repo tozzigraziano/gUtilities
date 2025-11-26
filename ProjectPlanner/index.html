@@ -26,6 +26,7 @@
             --input-disabled: #f0f0f0;
             --table-stripe: #f9f9f9;
             --shadow: rgba(0,0,0,0.1);
+            --gantt-day-width: 40px;
         }
 
         [data-theme="dark"] {
@@ -49,6 +50,7 @@
             --input-disabled: #2a2a2a;
             --table-stripe: #252525;
             --shadow: rgba(0,0,0,0.3);
+            --gantt-day-width: 40px;
         }
 
         * {
@@ -369,6 +371,7 @@
 
         .gantt-timeline {
             display: flex;
+            flex-direction: column;
             border-bottom: 2px solid var(--border-color);
             position: sticky;
             top: 0;
@@ -376,28 +379,90 @@
             z-index: 11;
         }
 
+        .gantt-timeline-row {
+            display: flex;
+        }
+
         .gantt-timeline-label {
+            flex: 0 0 250px;
             width: 250px;
             min-width: 250px;
-            padding: 5px;
+            padding: 2px 5px;
             text-align: center;
             border-right: 2px solid var(--border-color);
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 600;
             background: var(--bg-tertiary);
             position: sticky;
             left: 0;
-            z-index: 12;
+            z-index: 13;
         }
 
         .gantt-timeline-item {
-            flex: 1;
-            min-width: 40px;
-            padding: 5px;
+            flex: 0 0 var(--gantt-day-width);
+            min-width: var(--gantt-day-width);
+            padding: 2px;
             text-align: center;
             border-right: 1px solid var(--border-color);
-            font-size: 11px;
+            font-size: 8px;
             font-weight: 600;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .gantt-timeline-item.year-header,
+        .gantt-timeline-item.month-header {
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .gantt-timeline-item.week-header {
+            font-size: 8px;
+        }
+
+        .gantt-timeline-item.week-header.week-even,
+        .gantt-day.week-even {
+            background-color: var(--bg-secondary);
+            background-image: linear-gradient(rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.02));
+        }
+
+        [data-theme="dark"] .gantt-timeline-item.week-header.week-even,
+        [data-theme="dark"] .gantt-day.week-even {
+            background-color: var(--bg-secondary);
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.02));
+        }
+
+        .gantt-timeline-item.week-header.week-odd,
+        .gantt-day.week-odd {
+            background-color: var(--bg-secondary);
+            background-image: linear-gradient(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05));
+        }
+
+        [data-theme="dark"] .gantt-timeline-item.week-header.week-odd,
+        [data-theme="dark"] .gantt-day.week-odd {
+            background-color: var(--bg-secondary);
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05));
+        }
+
+        .gantt-timeline-item.merged {
+            flex: 0 0 auto;
+            border-left: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .gantt-chart.zoomed-out .gantt-timeline-item:not(.week-header):not(.month-header):not(.year-header) {
+            font-size: 0;
+        }
+
+        .gantt-day.today::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #2196F3;
+            z-index: 10;
         }
 
         .gantt-row {
@@ -412,6 +477,7 @@
         }
 
         .gantt-row-label {
+            flex: 0 0 250px;
             width: 250px;
             min-width: 250px;
             padding: 8px;
@@ -419,7 +485,7 @@
             border-right: 2px solid var(--border-color);
             position: sticky;
             left: 0;
-            z-index: 5;
+            z-index: 6;
             display: flex;
             align-items: center;
             font-size: 12px;
@@ -469,38 +535,93 @@
         }
 
         .gantt-bar.task {
-            background: var(--accent-color);
+            background: #5b8db8; /* blu tenue per "in corso" */
+        }
+
+        .gantt-bar.task.status-none {
+            background: #bdbdbd !important; /* grigio chiaro per "nessuno stato" */
+        }
+
+        .gantt-bar.task.status-completed {
+            background: #6b9c7b !important; /* verde tenue per "completata" */
         }
 
         .gantt-bar.task.status-paused {
-            background: #ff9800;
+            background: #d4b95f !important; /* giallo tenue per "in pausa" */
         }
 
         .gantt-bar.task.status-cancelled {
-            background: var(--danger-color);
-            opacity: 0.5;
+            background: #333333 !important; /* nero per "annullata" */
         }
 
         .gantt-bar.task.not-assigned {
-            background: #ffc107;
+            background: #c9885f !important; /* arancione tenue per "non assegnata" */
         }
 
         .gantt-day {
-            flex: 1;
-            min-width: 40px;
+            flex: 0 0 var(--gantt-day-width);
+            min-width: var(--gantt-day-width);
             border-right: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .gantt-day.week-even {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        [data-theme="dark"] .gantt-day.week-even {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .gantt-day.week-odd {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .gantt-day.week-odd {
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .gantt-day.weekend {
-            background: var(--table-stripe);
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 4px,
+                rgba(0, 0, 0, 0.08) 4px,
+                rgba(0, 0, 0, 0.08) 8px
+            ) !important;
+        }
+
+        [data-theme="dark"] .gantt-day.weekend {
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 4px,
+                rgba(255, 255, 255, 0.08) 4px,
+                rgba(255, 255, 255, 0.08) 8px
+            ) !important;
         }
 
         .gantt-day.holiday {
-            background: var(--warning-bg);
+            background: var(--warning-bg) !important;
         }
 
-        .gantt-day.today {
-            background: rgba(33, 150, 243, 0.1);
+        .gantt-day.absence {
+            background: #ffcdd2 !important;
+        }
+
+        [data-theme="dark"] .gantt-day.absence {
+            background: #7d2626 !important;
+        }
+
+        .gantt-day.today::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #2196F3;
+            z-index: 10;
         }
 
         /* Resource View Styles */
@@ -704,6 +825,7 @@
         }
 
         .action-bar {
+            margin-top: 15px;
             margin-bottom: 20px;
             display: flex;
             gap: 10px;
@@ -793,12 +915,6 @@
             
             <div class="action-bar">
                 <button onclick="openProjectModal()">➕ Nuovo Progetto</button>
-                <div style="flex: 1;"></div>
-                <label style="margin-right: 10px;">Applica template:</label>
-                <select id="applyTemplateSelect" style="width: 250px;">
-                    <option value="">-- Seleziona Template --</option>
-                </select>
-                <button onclick="applyTemplateFromSelect()" class="secondary">📋 Applica a Progetto Selezionato</button>
             </div>
 
             <h3>Elenco Progetti</h3>
@@ -824,10 +940,6 @@
                 <h2>Dettagli Progetto: <span id="currentProjectName"></span></h2>
                 
                 <!-- Punti di Controllo -->
-                <div class="action-bar">
-                    <button onclick="openMilestoneModal()">➕ Nuovo Punto di Controllo</button>
-                </div>
-
                 <h3>Punti di Controllo</h3>
                 <table id="milestonesTable">
                     <thead>
@@ -840,11 +952,11 @@
                     <tbody></tbody>
                 </table>
 
-                <!-- Attività -->
                 <div class="action-bar">
-                    <button onclick="openTaskModal()">➕ Nuova Attività</button>
+                    <button onclick="openMilestoneModal()">➕ Nuovo Punto di Controllo</button>
                 </div>
 
+                <!-- Attività -->
                 <h3>Attività</h3>
                 <table id="tasksTable">
                     <thead>
@@ -861,6 +973,10 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+
+                <div class="action-bar">
+                    <button onclick="openTaskModal()">➕ Nuova Attività</button>
+                </div>
 
                 <button onclick="closeProjectDetails()" class="secondary">← Torna ai Progetti</button>
             </div>
@@ -892,10 +1008,6 @@
                 <h2>Dettagli Template: <span id="currentTemplateName"></span></h2>
                 
                 <!-- Punti di Controllo Template -->
-                <div class="action-bar">
-                    <button onclick="openTemplateMilestoneModal()">➕ Nuovo Punto di Controllo</button>
-                </div>
-
                 <h3>Punti di Controllo</h3>
                 <table id="templateMilestonesTable">
                     <thead>
@@ -908,11 +1020,11 @@
                     <tbody></tbody>
                 </table>
 
-                <!-- Attività Template -->
                 <div class="action-bar">
-                    <button onclick="openTemplateTaskModal()">➕ Nuova Attività</button>
+                    <button onclick="openTemplateMilestoneModal()">➕ Nuovo Punto di Controllo</button>
                 </div>
 
+                <!-- Attività Template -->
                 <h3>Attività</h3>
                 <table id="templateTasksTable">
                     <thead>
@@ -927,6 +1039,10 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+
+                <div class="action-bar">
+                    <button onclick="openTemplateTaskModal()">➕ Nuova Attività</button>
+                </div>
 
                 <button onclick="closeTemplateDetails()" class="secondary">← Torna ai Template</button>
             </div>
@@ -991,16 +1107,28 @@
 
             <div class="gantt-legend">
                 <div class="legend-item">
-                    <div class="legend-color" style="background: var(--accent-color);"></div>
-                    <span>Attività in corso</span>
+                    <div class="legend-color" style="background: #bdbdbd;"></div>
+                    <span>Nessuno stato</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <div class="legend-color" style="background: #6b9c7b;"></div>
+                    <span>Completata</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #5b8db8;"></div>
+                    <span>In corso</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #d4b95f;"></div>
                     <span>In pausa</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #ffc107;"></div>
+                    <div class="legend-color" style="background: #c9885f;"></div>
                     <span>Non assegnata</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #333333;"></div>
+                    <span>Annullata</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: var(--info-color); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
@@ -1026,8 +1154,19 @@
                 </div>
                 <div class="filter-group">
                     <label>Periodo:</label>
+                    <select id="resourceViewPeriod" onchange="updateResourceViewPeriod()">
+                        <option value="today">Oggi</option>
+                        <option value="week">Settimana</option>
+                        <option value="month" selected>Mese</option>
+                        <option value="quarter">Trimestre</option>
+                        <option value="year">Anno</option>
+                        <option value="custom">Personalizzato</option>
+                    </select>
+                </div>
+                <div class="filter-group" id="customDateRange" style="display: none;">
+                    <label>Da:</label>
                     <input type="date" id="resourceViewStartDate" onchange="renderResourceView()">
-                    <span> - </span>
+                    <label>A:</label>
                     <input type="date" id="resourceViewEndDate" onchange="renderResourceView()">
                 </div>
                 <button onclick="renderResourceView()" class="secondary">🔄 Aggiorna</button>
@@ -1142,6 +1281,12 @@
                     <label>Descrizione:</label>
                     <textarea id="projectDescription" placeholder="Descrizione del progetto"></textarea>
                 </div>
+                <div class="form-group">
+                    <label>Template (opzionale):</label>
+                    <select id="projectTemplateSelect">
+                        <option value="">-- Nessun Template --</option>
+                    </select>
+                </div>
             </div>
             <div class="modal-footer">
                 <button onclick="closeProjectModal()" class="secondary">Annulla</button>
@@ -1217,7 +1362,8 @@
                 <div class="form-group">
                     <label>Stato:</label>
                     <select id="taskStatus">
-                        <option value="in-corso">In Corso</option>
+                        <option value="nessuno">Nessuno</option>
+                        <option value="in-corso" selected>In Corso</option>
                         <option value="pausa">In Pausa</option>
                         <option value="completata">Completata</option>
                         <option value="annullata">Annullata</option>
@@ -1247,10 +1393,6 @@
                             <button type="button" onclick="addTaskResource()">+ Aggiungi Risorsa</button>
                         </div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Data Fine Calcolata:</label>
-                    <input type="date" id="taskEndDate" readonly style="background: var(--input-disabled);">
                 </div>
             </div>
             <div class="modal-footer">
@@ -1612,6 +1754,18 @@
             const modal = document.getElementById('projectModal');
             const title = document.getElementById('projectModalTitle');
             
+            // Popola select template
+            const templateSelect = document.getElementById('projectTemplateSelect');
+            templateSelect.innerHTML = '<option value="">-- Nessun Template --</option>';
+            if (templates && templates.length > 0) {
+                templates.forEach(template => {
+                    const option = document.createElement('option');
+                    option.value = template.id;
+                    option.textContent = template.name;
+                    templateSelect.appendChild(option);
+                });
+            }
+            
             if (id) {
                 title.textContent = 'Modifica Progetto';
                 const project = projects.find(p => p.id === id);
@@ -1620,9 +1774,13 @@
                     document.getElementById('projectCode').value = project.code;
                     document.getElementById('projectDescription').value = project.description;
                 }
+                // Nascondi select template in modalità modifica
+                templateSelect.parentElement.style.display = 'none';
             } else {
                 title.textContent = 'Nuovo Progetto';
                 clearProjectForm();
+                // Mostra select template in modalità nuovo
+                templateSelect.parentElement.style.display = 'block';
             }
             
             modal.classList.add('active');
@@ -1662,6 +1820,8 @@
         }
 
         function openTaskModal(id = null) {
+            console.log('=== OPEN TASK MODAL ===');
+            console.log('Task ID:', id);
             editingTaskId = id;
             const modal = document.getElementById('taskModal');
             const title = document.getElementById('taskModalTitle');
@@ -1671,6 +1831,7 @@
                 const project = projects.find(p => p.id === currentProjectId);
                 if (project) {
                     const task = project.tasks.find(t => t.id === id);
+                    console.log('Task found:', task ? JSON.stringify(task) : 'NOT FOUND');
                     if (task) {
                         document.getElementById('taskName').value = task.name;
                         document.getElementById('taskStartDate').value = task.startDate || '';
@@ -1682,31 +1843,25 @@
                         document.getElementById('taskEndDate').value = task.endDate;
 
                         const container = document.getElementById('taskResources');
+                        console.log('Clearing resource container');
                         container.innerHTML = '';
 
                         if (task.resources && task.resources.length > 0) {
+                            console.log('Loading', task.resources.length, 'resources');
                             task.resources.forEach((res, index) => {
-                                const newResource = document.createElement('div');
-                                newResource.className = 'resource-item';
-                                
-                                let options = '<option value="">-- Seleziona Risorsa --</option>';
-                                resources.forEach(r => {
-                                    const selected = r.id === res.resourceId ? 'selected' : '';
-                                    options += `<option value="${r.id}" ${selected}>${r.firstName} ${r.lastName}</option>`;
-                                });
-
-                                newResource.innerHTML = `
-                                    <select class="task-resource-select">${options}</select>
-                                    <label>Coinvolgimento:</label>
-                                    <input type="number" class="task-resource-percentage" min="1" max="100" value="${res.percentage}" placeholder="%">
-                                    <span>%</span>
-                                    ${index === 0 ? 
-                                        '<button type="button" onclick="addTaskResource()">+ Aggiungi Risorsa</button>' :
-                                        '<button type="button" onclick="removeTaskResource(this)" class="delete">Rimuovi</button>'}
-                                `;
-                                container.appendChild(newResource);
+                                console.log(`Loading resource ${index}:`, JSON.stringify(res));
+                                addTaskResourceRow();
+                                const items = container.querySelectorAll('.resource-item');
+                                const item = items[items.length - 1];
+                                const selectElement = item.querySelector('.task-resource-select');
+                                const percentageElement = item.querySelector('.task-resource-percentage');
+                                console.log(`Setting select to resourceId: ${res.resourceId}`);
+                                selectElement.value = res.resourceId;
+                                percentageElement.value = res.percentage;
+                                console.log(`After setting - select value: ${selectElement.value}, percentage: ${percentageElement.value}`);
                             });
                         } else {
+                            console.log('No resources to load, adding empty row');
                             addTaskResourceRow();
                         }
                     }
@@ -1717,6 +1872,7 @@
             }
             
             updateResourceSelects();
+            console.log('=== OPEN TASK MODAL END ===');
             modal.classList.add('active');
         }
 
@@ -2148,6 +2304,7 @@
             const client = document.getElementById('projectClient').value.trim();
             const code = document.getElementById('projectCode').value.trim();
             const description = document.getElementById('projectDescription').value.trim();
+            const templateId = document.getElementById('projectTemplateSelect').value;
             
             if (!client || !code) {
                 alert('Cliente e Codice sono obbligatori');
@@ -2167,6 +2324,67 @@
                 const index = projects.findIndex(p => p.id === currentProjectId);
                 projects[index] = project;
             } else {
+                // Applica template se selezionato per nuovi progetti
+                if (templateId) {
+                    const template = templates.find(t => t.id == templateId); // Usa == per conversione automatica
+                    if (template) {
+                        const baseDate = new Date();
+                        // Usa date locali invece di ISO per evitare problemi di timezone
+                        const year = baseDate.getFullYear();
+                        const month = String(baseDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(baseDate.getDate()).padStart(2, '0');
+                        const baseDateStr = `${year}-${month}-${day}`;
+                        
+                        // Converti milestone template in milestone reali
+                        if (template.milestones && template.milestones.length > 0) {
+                            project.milestones = template.milestones.map(m => {
+                                const milestoneDate = new Date(year, baseDate.getMonth(), baseDate.getDate());
+                                milestoneDate.setDate(milestoneDate.getDate() + (m.dayOffset || 0));
+                                const mYear = milestoneDate.getFullYear();
+                                const mMonth = String(milestoneDate.getMonth() + 1).padStart(2, '0');
+                                const mDay = String(milestoneDate.getDate()).padStart(2, '0');
+                                return {
+                                    id: Date.now() + Math.random(),
+                                    name: m.name,
+                                    date: `${mYear}-${mMonth}-${mDay}`
+                                };
+                            });
+                        }
+                        
+                        // Converti task template in task reali
+                        if (template.tasks && template.tasks.length > 0) {
+                            project.tasks = template.tasks.map(t => {
+                                const taskStartDate = new Date(year, baseDate.getMonth(), baseDate.getDate());
+                                taskStartDate.setDate(taskStartDate.getDate() + (t.startDayOffset || 0));
+                                const tYear = taskStartDate.getFullYear();
+                                const tMonth = String(taskStartDate.getMonth() + 1).padStart(2, '0');
+                                const tDay = String(taskStartDate.getDate()).padStart(2, '0');
+                                const taskStartDateStr = `${tYear}-${tMonth}-${tDay}`;
+                                
+                                // Calcola la data di fine
+                                const taskEndDate = calculateEndDateForTask(
+                                    taskStartDateStr,
+                                    t.duration,
+                                    t.saturdayWork,
+                                    t.sundayWork
+                                );
+                                
+                                return {
+                                    id: Date.now() + Math.random(),
+                                    name: t.name,
+                                    startDate: taskStartDateStr,
+                                    duration: t.duration,
+                                    completion: 0,
+                                    status: 'in-corso',
+                                    saturdayWork: t.saturdayWork,
+                                    sundayWork: t.sundayWork,
+                                    endDate: taskEndDate,
+                                    resources: []
+                                };                            });
+                        }
+                    }
+                }
+                
                 projects.push(project);
             }
 
@@ -2203,6 +2421,7 @@
             document.getElementById('projectClient').value = '';
             document.getElementById('projectCode').value = '';
             document.getElementById('projectDescription').value = '';
+            document.getElementById('projectTemplateSelect').value = '';
         }
 
         function openProjectDetails(id) {
@@ -2247,7 +2466,6 @@
                     <td>${stats.endDate || '-'}</td>
                     <td>${stats.completion}%</td>
                     <td class="action-buttons">
-                        <button onclick="selectProject(${project.id})" class="secondary">✓ Seleziona</button>
                         <button onclick="openProjectModal(${project.id})" class="secondary">✏️ Modifica</button>
                         <button onclick="openProjectDetails(${project.id})" class="secondary">📋 Dettagli</button>
                         <button onclick="deleteProject(${project.id})" class="delete">🗑️ Elimina</button>
@@ -2434,12 +2652,16 @@
                 return;
             }
 
-            let currentDate = new Date(startDate + 'T00:00:00');
+            const parts = startDate.split('-');
+            let currentDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             let workDaysAdded = 0;
 
             while (workDaysAdded < duration) {
                 const dayOfWeek = currentDate.getDay();
-                const dateStr = currentDate.toISOString().split('T')[0];
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
                 const isHoliday = holidays.some(h => h.date === dateStr);
 
                 // Check if it's a working day
@@ -2459,7 +2681,10 @@
                 currentDate.setDate(currentDate.getDate() + 1);
             }
 
-            document.getElementById('taskEndDate').value = currentDate.toISOString().split('T')[0];
+            const endYear = currentDate.getFullYear();
+            const endMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const endDay = String(currentDate.getDate()).padStart(2, '0');
+            document.getElementById('taskEndDate').value = `${endYear}-${endMonth}-${endDay}`;
         }
 
         function calculateStartDate() {
@@ -2473,12 +2698,16 @@
                 return;
             }
 
-            let currentDate = new Date(endDate + 'T00:00:00');
+            const parts = endDate.split('-');
+            let currentDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             let workDaysAdded = 0;
 
             while (workDaysAdded < duration) {
                 const dayOfWeek = currentDate.getDay();
-                const dateStr = currentDate.toISOString().split('T')[0];
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
                 const isHoliday = holidays.some(h => h.date === dateStr);
 
                 // Check if it's a working day
@@ -2498,7 +2727,10 @@
                 currentDate.setDate(currentDate.getDate() - 1);
             }
 
-            document.getElementById('taskStartDate').value = currentDate.toISOString().split('T')[0];
+            const startYear = currentDate.getFullYear();
+            const startMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const startDay = String(currentDate.getDate()).padStart(2, '0');
+            document.getElementById('taskStartDate').value = `${startYear}-${startMonth}-${startDay}`;
         }
 
         function onCalcMethodChange() {
@@ -2526,11 +2758,14 @@
         });
 
         function saveTask() {
+            console.log('=== SAVE TASK START ===');
+            console.log('editingTaskId:', editingTaskId);
             const name = document.getElementById('taskName').value.trim();
             const startDate = document.getElementById('taskStartDate').value;
             const duration = parseInt(document.getElementById('taskDuration').value);
             const completion = parseInt(document.getElementById('taskCompletion').value);
             const status = document.getElementById('taskStatus').value;
+            console.log('Task name:', name);
             const saturdayWork = document.getElementById('taskSaturdayWork').checked;
             const sundayWork = document.getElementById('taskSundayWork').checked;
             const endDate = document.getElementById('taskEndDate').value;
@@ -2541,13 +2776,25 @@
             }
 
             const assignedResources = [];
-            document.querySelectorAll('.resource-item').forEach(item => {
-                const resourceId = parseInt(item.querySelector('.task-resource-select').value);
-                const percentage = parseInt(item.querySelector('.task-resource-percentage').value);
+            const resourceItems = document.querySelectorAll('.resource-item');
+            console.log('Resource items found:', resourceItems.length);
+            resourceItems.forEach((item, index) => {
+                const selectElement = item.querySelector('.task-resource-select');
+                const percentageElement = item.querySelector('.task-resource-percentage');
+                console.log(`Resource ${index} - select:`, selectElement, 'value:', selectElement?.value);
+                console.log(`Resource ${index} - percentage:`, percentageElement, 'value:', percentageElement?.value);
+                const resourceId = selectElement.value; // NON usare parseInt per mantenere i decimali!
+                const percentage = parseInt(percentageElement.value);
+                console.log(`Resource ${index} - parsed:`, { resourceId, percentage });
                 if (resourceId && percentage) {
                     assignedResources.push({ resourceId, percentage });
+                    console.log(`Resource ${index} - ADDED to array`);
+                } else {
+                    console.log(`Resource ${index} - SKIPPED (invalid data)`);
                 }
             });
+            console.log('Total assigned resources:', assignedResources.length);
+            console.log('Assigned resources array:', JSON.stringify(assignedResources));
 
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
@@ -2566,29 +2813,49 @@
                 endDate,
                 resources: assignedResources
             };
+            console.log('Task object created:', JSON.stringify(task));
 
             if (editingTaskId) {
                 const index = project.tasks.findIndex(t => t.id === editingTaskId);
+                console.log('UPDATING existing task at index:', index);
+                console.log('BEFORE update:', JSON.stringify(project.tasks[index]));
                 project.tasks[index] = task;
+                console.log('AFTER update:', JSON.stringify(project.tasks[index]));
             } else {
+                console.log('CREATING new task');
                 project.tasks.push(task);
             }
+            console.log('All project tasks:', JSON.stringify(project.tasks.map(t => ({ id: t.id, name: t.name, resources: t.resources }))));
 
+            console.log('Saving to IndexedDB...');
             saveToIndexedDBAll();
+            console.log('=== SAVE TASK END ===');
             calculateHolidays();
             renderHolidays();
             renderTasks();
+            renderGantt(); // Aggiorna vista Gantt
             closeTaskModal();
         }
 
         function editTask(id) {
+            console.log('=== EDIT TASK START ===');
+            console.log('Task ID to edit:', id);
             const project = projects.find(p => p.id === currentProjectId);
-            if (!project) return;
+            if (!project) {
+                console.log('Project NOT FOUND');
+                return;
+            }
 
             const task = project.tasks.find(t => t.id === id);
-            if (!task) return;
+            if (!task) {
+                console.log('Task NOT FOUND');
+                return;
+            }
+            console.log('Task found:', JSON.stringify(task));
+            console.log('Task resources:', JSON.stringify(task.resources));
 
             editingTaskId = id;
+            console.log('editingTaskId set to:', editingTaskId);
             document.getElementById('taskName').value = task.name;
             document.getElementById('taskStartDate').value = task.startDate || '';
             document.getElementById('taskDuration').value = task.duration;
@@ -2600,33 +2867,28 @@
 
             // Clear and rebuild resource assignments
             const container = document.getElementById('taskResources');
+            console.log('Clearing resource container');
             container.innerHTML = '';
 
             if (task.resources && task.resources.length > 0) {
+                console.log('Loading', task.resources.length, 'resources');
                 task.resources.forEach((res, index) => {
-                    const newResource = document.createElement('div');
-                    newResource.className = 'resource-item';
-                    
-                    let options = '<option value="">-- Seleziona Risorsa --</option>';
-                    resources.forEach(r => {
-                        const selected = r.id === res.resourceId ? 'selected' : '';
-                        options += `<option value="${r.id}" ${selected}>${r.firstName} ${r.lastName}</option>`;
-                    });
-
-                    newResource.innerHTML = `
-                        <select class="task-resource-select">${options}</select>
-                        <label>Coinvolgimento:</label>
-                        <input type="number" class="task-resource-percentage" min="1" max="100" value="${res.percentage}" placeholder="%">
-                        <span>%</span>
-                        ${index === 0 ? 
-                            '<button type="button" onclick="addTaskResource()">+ Aggiungi Risorsa</button>' :
-                            '<button type="button" onclick="removeTaskResource(this)" class="delete">Rimuovi</button>'}
-                    `;
-                    container.appendChild(newResource);
+                    console.log(`Loading resource ${index}:`, JSON.stringify(res));
+                    addTaskResourceRow();
+                    const items = container.querySelectorAll('.resource-item');
+                    const item = items[items.length - 1];
+                    const selectElement = item.querySelector('.task-resource-select');
+                    const percentageElement = item.querySelector('.task-resource-percentage');
+                    console.log(`Setting select to resourceId: ${res.resourceId}`);
+                    selectElement.value = res.resourceId;
+                    percentageElement.value = res.percentage;
+                    console.log(`After setting - select value: ${selectElement.value}, percentage: ${percentageElement.value}`);
                 });
             } else {
+                console.log('No resources to load, adding empty row');
                 addTaskResource();
             }
+            console.log('=== EDIT TASK END ===');
 
             document.getElementById('taskName').scrollIntoView({ behavior: 'smooth' });
         }
@@ -2696,7 +2958,7 @@
                 let resourcesStr = '-';
                 if (task.resources && task.resources.length > 0) {
                     resourcesStr = task.resources.map(r => {
-                        const resource = resources.find(res => res.id === r.resourceId);
+                        const resource = resources.find(res => res.id == r.resourceId);
                         if (resource) {
                             return `${resource.firstName} ${resource.lastName} (${r.percentage}%)`;
                         }
@@ -2804,13 +3066,13 @@
             updateTemplateSelects();
         }
 
-        function applyTemplateToProject(templateId, projectId) {
+        function applyTemplateToProject(templateId, projectId, skipConfirm = false) {
             const template = templates.find(t => t.id === templateId);
             const project = projects.find(p => p.id === projectId);
 
             if (!template || !project) return;
 
-            if (!confirm('Questo sovrascriverà i punti di controllo e le attività del progetto. Continuare?')) {
+            if (!skipConfirm && !confirm('Questo sovrascriverà i punti di controllo e le attività del progetto. Continuare?')) {
                 return;
             }
 
@@ -3144,12 +3406,17 @@
         }
 
         function calculateEndDateForTask(startDate, duration, saturdayWork, sundayWork) {
-            let currentDate = new Date(startDate + 'T00:00:00');
+            // Parse della data in formato locale
+            const parts = startDate.split('-');
+            let currentDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             let workDaysLeft = duration;
 
             while (workDaysLeft > 0) {
                 const dayOfWeek = currentDate.getDay();
-                const dateStr = currentDate.toISOString().split('T')[0];
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
                 const isHoliday = holidays.some(h => h.date === dateStr);
 
                 const isSaturday = dayOfWeek === 6;
@@ -3167,7 +3434,10 @@
                 }
             }
 
-            return currentDate.toISOString().split('T')[0];
+            const endYear = currentDate.getFullYear();
+            const endMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const endDay = String(currentDate.getDate()).padStart(2, '0');
+            return `${endYear}-${endMonth}-${endDay}`;
         }
 
         // === IMPORT/EXPORT ===
@@ -3413,25 +3683,270 @@
             const timeline = document.createElement('div');
             timeline.className = 'gantt-timeline';
             
-            // Aggiungi cella vuota per allineare con le label
-            const labelCell = document.createElement('div');
-            labelCell.className = 'gantt-timeline-label';
-            labelCell.textContent = 'Progetto / Attività';
-            timeline.appendChild(labelCell);
+            // Calcola larghezza giorno per le celle unite
+            const computedDayWidth = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gantt-day-width'));
+            
+            // Riga 1: Anno
+            const yearRow = document.createElement('div');
+            yearRow.className = 'gantt-timeline-row';
+            const yearLabelCell = document.createElement('div');
+            yearLabelCell.className = 'gantt-timeline-label';
+            yearLabelCell.textContent = 'Anno';
+            yearRow.appendChild(yearLabelCell);
+            
+            let currentYear = null;
+            let yearSpanStart = 0;
+            days.forEach((day, index) => {
+                const year = day.getFullYear();
+                if (year !== currentYear) {
+                    if (currentYear !== null) {
+                        // Crea elemento per anno precedente
+                        const item = document.createElement('div');
+                        item.className = 'gantt-timeline-item year-header merged';
+                        item.textContent = currentYear;
+                        const spanDays = index - yearSpanStart;
+                        item.style.width = `calc(${spanDays} * var(--gantt-day-width))`;
+                        item.style.minWidth = `calc(${spanDays} * var(--gantt-day-width))`;
+                        yearRow.appendChild(item);
+                    }
+                    currentYear = year;
+                    yearSpanStart = index;
+                }
+            });
+            // Aggiungi ultimo anno
+            if (currentYear !== null) {
+                const item = document.createElement('div');
+                item.className = 'gantt-timeline-item year-header merged';
+                item.textContent = currentYear;
+                const spanDays = days.length - yearSpanStart;
+                item.style.width = `calc(${spanDays} * var(--gantt-day-width))`;
+                item.style.minWidth = `calc(${spanDays} * var(--gantt-day-width))`;
+                yearRow.appendChild(item);
+            }
+            timeline.appendChild(yearRow);
+            
+            // Riga 2: Mese
+            const monthRow = document.createElement('div');
+            monthRow.className = 'gantt-timeline-row';
+            const monthLabelCell = document.createElement('div');
+            monthLabelCell.className = 'gantt-timeline-label';
+            monthLabelCell.textContent = 'Mese';
+            monthRow.appendChild(monthLabelCell);
+            
+            const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+            let currentMonth = null;
+            let monthSpanStart = 0;
+            days.forEach((day, index) => {
+                const monthKey = `${day.getFullYear()}-${day.getMonth()}`;
+                if (monthKey !== currentMonth) {
+                    if (currentMonth !== null) {
+                        // Crea elemento per mese precedente
+                        const prevMonthIndex = parseInt(currentMonth.split('-')[1]);
+                        const item = document.createElement('div');
+                        item.className = 'gantt-timeline-item month-header merged';
+                        item.textContent = monthNames[prevMonthIndex];
+                        const spanDays = index - monthSpanStart;
+                        item.style.width = `calc(${spanDays} * var(--gantt-day-width))`;
+                        item.style.minWidth = `calc(${spanDays} * var(--gantt-day-width))`;
+                        monthRow.appendChild(item);
+                    }
+                    currentMonth = monthKey;
+                    monthSpanStart = index;
+                }
+            });
+            // Aggiungi ultimo mese
+            if (currentMonth !== null) {
+                const lastMonthIndex = parseInt(currentMonth.split('-')[1]);
+                const item = document.createElement('div');
+                item.className = 'gantt-timeline-item month-header merged';
+                item.textContent = monthNames[lastMonthIndex];
+                const spanDays = days.length - monthSpanStart;
+                item.style.width = `calc(${spanDays} * var(--gantt-day-width))`;
+                item.style.minWidth = `calc(${spanDays} * var(--gantt-day-width))`;
+                monthRow.appendChild(item);
+            }
+            timeline.appendChild(monthRow);
+            
+            // Riga 3: Settimana
+            const weekRow = document.createElement('div');
+            weekRow.className = 'gantt-timeline-row';
+            const weekLabelCell = document.createElement('div');
+            weekLabelCell.className = 'gantt-timeline-label';
+            weekLabelCell.textContent = 'Sett';
+            weekRow.appendChild(weekLabelCell);
+            
+            let currentWeek = null;
+            let weekSpanStart = 0;
+            days.forEach((day, index) => {
+                const weekNum = getWeekNumber(day);
+                if (weekNum !== currentWeek) {
+                    if (currentWeek !== null) {
+                        // Crea elemento per settimana precedente
+                        const item = document.createElement('div');
+                        item.className = 'gantt-timeline-item week-header merged';
+                        // Aggiungi classe per settimane alternate
+                        if (currentWeek % 2 === 0) {
+                            item.classList.add('week-even');
+                        } else {
+                            item.classList.add('week-odd');
+                        }
+                        item.textContent = `S${currentWeek}`;
+                        const spanDays = index - weekSpanStart;
+                        item.style.width = `calc(${spanDays} * var(--gantt-day-width))`;
+                        item.style.minWidth = `calc(${spanDays} * var(--gantt-day-width))`;
+                        weekRow.appendChild(item);
+                    }
+                    currentWeek = weekNum;
+                    weekSpanStart = index;
+                }
+            });
+            // Aggiungi ultima settimana
+            if (currentWeek !== null) {
+                const item = document.createElement('div');
+                item.className = 'gantt-timeline-item week-header merged';
+                // Aggiungi classe per settimane alternate
+                if (currentWeek % 2 === 0) {
+                    item.classList.add('week-even');
+                } else {
+                    item.classList.add('week-odd');
+                }
+                item.textContent = `S${currentWeek}`;
+                const spanDays = days.length - weekSpanStart;
+                item.style.width = `calc(${spanDays} * var(--gantt-day-width))`;
+                item.style.minWidth = `calc(${spanDays} * var(--gantt-day-width))`;
+                weekRow.appendChild(item);
+            }
+            timeline.appendChild(weekRow);
+            
+            // Riga 4: Giorno
+            const dayRow = document.createElement('div');
+            dayRow.className = 'gantt-timeline-row';
+            const dayLabelCell = document.createElement('div');
+            dayLabelCell.className = 'gantt-timeline-label';
+            dayLabelCell.textContent = 'Progetto';
+            dayRow.appendChild(dayLabelCell);
             
             days.forEach(day => {
                 const item = document.createElement('div');
                 item.className = 'gantt-timeline-item';
-                item.textContent = `${day.getDate()}/${day.getMonth() + 1}`;
-                timeline.appendChild(item);
+                item.textContent = day.getDate();
+                dayRow.appendChild(item);
             });
+            timeline.appendChild(dayRow);
+            
             container.appendChild(timeline);
+
+            // Calcola e imposta zoom di default per visualizzare tutto il range
+            const totalDays = days.length;
+            const containerWidth = container.clientWidth - 250; // Sottrai larghezza label
+            const defaultDayWidth = Math.max(15, Math.min(80, Math.floor(containerWidth / totalDays)));
+            document.documentElement.style.setProperty('--gantt-day-width', `${defaultDayWidth}px`);
+            
+            // Aggiungi classe per nascondere giorni se zoom troppo piccolo
+            if (defaultDayWidth < 30) {
+                container.classList.add('zoomed-out');
+            } else {
+                container.classList.remove('zoomed-out');
+            }
+
+            // Aggiungi gestione scroll e zoom
+            setupGanttInteractions(container);
 
             if (viewFilter === 'projects') {
                 renderGanttByProjects(container, filteredProjects, days, minDate, maxDate);
             } else {
                 renderGanttByResources(container, filteredProjects, days, minDate, maxDate);
             }
+        }
+
+        function setupGanttInteractions(container) {
+            // Rimuovi listener esistenti se presenti
+            if (container._wheelHandler) {
+                container.removeEventListener('wheel', container._wheelHandler);
+            }
+            if (container._mouseDownHandler) {
+                container.removeEventListener('mousedown', container._mouseDownHandler);
+            }
+
+            const wheelHandler = function(e) {
+                if (e.shiftKey && e.deltaY !== 0) {
+                    // Zoom con Shift + rotellina verticale
+                    e.preventDefault();
+                    
+                    const currentWidth = parseFloat(getComputedStyle(document.documentElement)
+                        .getPropertyValue('--gantt-day-width'));
+                    const delta = e.deltaY > 0 ? -5 : 5;
+                    const newWidth = Math.max(15, Math.min(200, currentWidth + delta));
+                    
+                    document.documentElement.style.setProperty('--gantt-day-width', `${newWidth}px`);
+                    
+                    // Aggiorna classe zoomed-out
+                    if (newWidth < 30) {
+                        container.classList.add('zoomed-out');
+                    } else {
+                        container.classList.remove('zoomed-out');
+                    }
+                    
+                    // Ridisegna tutte le barre con la nuova larghezza
+                    updateGanttBarsWidth(container);
+                }
+                // Lascia che e.deltaY scorra normalmente la pagina se non c'è Shift
+            };
+
+            // Drag to scroll
+            let isDragging = false;
+            let startX;
+            let scrollLeft;
+
+            const mouseDownHandler = function(e) {
+                // Solo se click su gantt-row-bars o gantt-timeline
+                if (e.target.closest('.gantt-row-bars') || e.target.closest('.gantt-timeline')) {
+                    isDragging = true;
+                    startX = e.pageX - container.offsetLeft;
+                    scrollLeft = container.scrollLeft;
+                    container.style.cursor = 'grabbing';
+                    e.preventDefault();
+                }
+            };
+
+            const mouseMoveHandler = function(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                const x = e.pageX - container.offsetLeft;
+                const walk = (x - startX) * 1.5; // Moltiplica per velocità
+                container.scrollLeft = scrollLeft - walk;
+            };
+
+            const mouseUpHandler = function() {
+                isDragging = false;
+                container.style.cursor = 'default';
+            };
+
+            container._wheelHandler = wheelHandler;
+            container._mouseDownHandler = mouseDownHandler;
+            
+            container.addEventListener('wheel', wheelHandler, { passive: false });
+            container.addEventListener('mousedown', mouseDownHandler);
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+        }
+
+        function updateGanttBarsWidth(container) {
+            const dayWidth = parseFloat(getComputedStyle(document.documentElement)
+                .getPropertyValue('--gantt-day-width'));
+            
+            container.querySelectorAll('.gantt-bar').forEach(bar => {
+                // Recupera gli indici salvati
+                if (bar._startIndex !== undefined && bar._endIndex !== undefined) {
+                    bar.style.left = `${bar._startIndex * dayWidth}px`;
+                    
+                    if (bar.classList.contains('milestone')) {
+                        bar.style.left = `${bar._startIndex * dayWidth + 10}px`;
+                    } else {
+                        bar.style.width = `${(bar._endIndex - bar._startIndex + 1) * dayWidth}px`;
+                    }
+                }
+            });
         }
 
         function renderGanttByProjects(container, filteredProjects, days, minDate, maxDate) {
@@ -3443,7 +3958,7 @@
                 // Calcola barra progetto (dall'inizio alla fine)
                 const stats = calculateProjectStats(project);
                 if (stats.startDate && stats.endDate) {
-                    addGanttBar(projectRow, stats.startDate, stats.endDate, project.client, days, minDate, 'project');
+                    addGanttBar(projectRow, stats.startDate, stats.endDate, project.client, days, minDate, 'project', null, null);
                 }
 
                 // Milestone
@@ -3451,7 +3966,7 @@
                     project.milestones.forEach(milestone => {
                         const milestoneRow = createGanttRow(`  ◆ ${milestone.name}`, days, 'milestone', project.id);
                         container.appendChild(milestoneRow);
-                        addGanttBar(milestoneRow, milestone.date, milestone.date, milestone.name, days, minDate, 'milestone');
+                        addGanttBar(milestoneRow, milestone.date, milestone.date, milestone.name, days, minDate, 'milestone', null, null);
                     });
                 }
 
@@ -3463,6 +3978,8 @@
                             container.appendChild(taskRow);
                             
                             let barClass = 'task';
+                            if (task.status === 'nessuno') barClass += ' status-none';
+                            if (task.status === 'completata') barClass += ' status-completed';
                             if (task.status === 'pausa') barClass += ' status-paused';
                             if (task.status === 'annullata') barClass += ' status-cancelled';
                             if (!task.resources || task.resources.length === 0) barClass += ' not-assigned';
@@ -3470,7 +3987,7 @@
                             addGanttBar(taskRow, task.startDate, task.endDate, task.name, days, minDate, barClass, () => {
                                 currentProjectId = project.id;
                                 openTaskModal(task.id);
-                            });
+                            }, task);
                         }
                     });
                 }
@@ -3486,7 +4003,7 @@
                     project.tasks.forEach(task => {
                         if (task.resources && task.startDate && task.endDate) {
                             task.resources.forEach(res => {
-                                const resource = resources.find(r => r.id === res.resourceId);
+                                const resource = resources.find(r => r.id == res.resourceId);
                                 if (resource) {
                                     const key = resource.id;
                                     if (!resourceTasks[key]) {
@@ -3509,26 +4026,28 @@
 
             // Renderizza per risorsa
             Object.values(resourceTasks).forEach(({ resource, tasks }) => {
-                const resourceRow = createGanttRow(`👤 ${resource.firstName} ${resource.lastName}`, days);
+                const resourceRow = createGanttRow(`👤 ${resource.firstName} ${resource.lastName}`, days, null, null, resource.id);
                 container.appendChild(resourceRow);
 
                 tasks.forEach(task => {
-                    const taskRow = createGanttRow(`  ${task.project.code}: ${task.name} (${task.percentage}%)`, days);
+                    const taskRow = createGanttRow(`  ${task.project.code}: ${task.name} (${task.percentage}%)`, days, null, null, resource.id);
                     container.appendChild(taskRow);
                     
                     let barClass = 'task';
+                    if (task.status === 'nessuno') barClass += ' status-none';
+                    if (task.status === 'completata') barClass += ' status-completed';
                     if (task.status === 'pausa') barClass += ' status-paused';
                     if (task.status === 'annullata') barClass += ' status-cancelled';
                     
                     addGanttBar(taskRow, task.startDate, task.endDate, task.name, days, minDate, barClass, () => {
                         currentProjectId = task.project.id;
                         openTaskModal(task.id);
-                    });
+                    }, task);
                 });
             });
         }
 
-        function createGanttRow(label, days, rowType, projectId) {
+        function createGanttRow(label, days, rowType, projectId, resourceId) {
             const row = document.createElement('div');
             row.className = 'gantt-row';
             if (rowType) row.dataset.rowType = rowType;
@@ -3561,9 +4080,20 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
+            // Trova la risorsa se specificata
+            const resource = resourceId ? resources.find(r => r.id === resourceId) : null;
+
             days.forEach(day => {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'gantt-day';
+                
+                // Alterna settimane
+                const weekNum = getWeekNumber(day);
+                if (weekNum % 2 === 0) {
+                    dayDiv.classList.add('week-even');
+                } else {
+                    dayDiv.classList.add('week-odd');
+                }
                 
                 const dayOfWeek = day.getDay();
                 if (dayOfWeek === 0 || dayOfWeek === 6) {
@@ -3574,9 +4104,27 @@
                 if (holidays.some(h => h.date === dateStr)) {
                     dayDiv.classList.add('holiday');
                 }
-
-                if (dateStr === today.toISOString().split('T')[0]) {
+                
+                // Segna oggi
+                if (day.getTime() === today.getTime()) {
                     dayDiv.classList.add('today');
+                }
+
+                // Evidenzia assenze per la risorsa
+                if (resource && resource.absences && resource.absences.length > 0) {
+                    const dayDate = new Date(day);
+                    dayDate.setHours(0, 0, 0, 0);
+                    
+                    resource.absences.forEach(absence => {
+                        const absenceStart = new Date(absence.start);
+                        const absenceEnd = new Date(absence.end);
+                        absenceStart.setHours(0, 0, 0, 0);
+                        absenceEnd.setHours(0, 0, 0, 0);
+                        
+                        if (dayDate.getTime() >= absenceStart.getTime() && dayDate.getTime() <= absenceEnd.getTime()) {
+                            dayDiv.classList.add('absence');
+                        }
+                    });
                 }
 
                 barsDiv.appendChild(dayDiv);
@@ -3584,6 +4132,14 @@
 
             row.appendChild(barsDiv);
             return row;
+        }
+
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
         }
 
         function toggleGanttProject(projectId) {
@@ -3608,7 +4164,7 @@
             icon.textContent = isCollapsed ? '▼' : '▶';
         }
 
-        function addGanttBar(row, startDate, endDate, label, days, minDate, className, onClickCallback) {
+        function addGanttBar(row, startDate, endDate, label, days, minDate, className, onClickCallback, task) {
             const start = new Date(startDate);
             const end = new Date(endDate);
             const firstDay = days[0];
@@ -3634,10 +4190,61 @@
             // Se ancora non trovati, esci
             if (startIndex === -1 || endIndex === -1) return;
 
+            // Usa larghezza fissa in pixel invece di percentuale per supportare zoom
+            const dayWidth = parseFloat(getComputedStyle(document.documentElement)
+                .getPropertyValue('--gantt-day-width'));
+
+            // Crea segmenti separati per giorni lavorativi
+            let segmentStart = null;
+            
+            for (let i = startIndex; i <= endIndex; i++) {
+                const day = days[i];
+                const dayOfWeek = day.getDay();
+                const dateStr = day.toISOString().split('T')[0];
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isHoliday = holidays.some(h => h.date === dateStr);
+                
+                // Determina se il giorno è lavorativo considerando le impostazioni del task
+                let isNonWorking = isHoliday;
+                if (isSaturday && !(task && task.saturdayWork)) {
+                    isNonWorking = true;
+                }
+                if (isSunday && !(task && task.sundayWork)) {
+                    isNonWorking = true;
+                }
+                
+                if (!isNonWorking) {
+                    // Giorno lavorativo
+                    if (segmentStart === null) {
+                        segmentStart = i;
+                    }
+                } else {
+                    // Giorno non lavorativo - chiudi segmento se aperto
+                    if (segmentStart !== null) {
+                        createBarSegment(row, segmentStart, i - 1, label, startDate, endDate, className, onClickCallback, dayWidth);
+                        segmentStart = null;
+                    }
+                }
+            }
+            
+            // Chiudi ultimo segmento se aperto
+            if (segmentStart !== null) {
+                createBarSegment(row, segmentStart, endIndex, label, startDate, endDate, className, onClickCallback, dayWidth);
+            }
+        }
+
+        function createBarSegment(row, startIndex, endIndex, label, originalStart, originalEnd, className, onClickCallback, dayWidth) {
             const bar = document.createElement('div');
             bar.className = `gantt-bar ${className}`;
             bar.textContent = label;
-            bar.title = `${label}\n${startDate} - ${endDate}`;
+            bar.title = `${label}\n${originalStart} - ${originalEnd}`;
+            
+            // Salva gli indici E le date originali per il ridimensionamento
+            bar._startIndex = startIndex;
+            bar._endIndex = endIndex;
+            bar._startDate = originalStart;
+            bar._endDate = originalEnd;
             
             // Aggiungi click handler se fornito
             if (onClickCallback) {
@@ -3645,13 +4252,12 @@
                 bar.onclick = onClickCallback;
             }
             
-            const dayWidth = 100 / days.length;
-            bar.style.left = `${startIndex * dayWidth}%`;
+            bar.style.left = `${startIndex * dayWidth}px`;
             
             if (className === 'milestone') {
-                bar.style.left = `calc(${startIndex * dayWidth}% + 10px)`;
+                bar.style.left = `${startIndex * dayWidth + 10}px`;
             } else {
-                bar.style.width = `${(endIndex - startIndex + 1) * dayWidth}%`;
+                bar.style.width = `${(endIndex - startIndex + 1) * dayWidth}px`;
             }
 
             row.querySelector('.gantt-row-bars').appendChild(bar);
@@ -3673,8 +4279,61 @@
         }
 
         // === VISTA RISORSE ===
+        function updateResourceViewPeriod() {
+            const period = document.getElementById('resourceViewPeriod').value;
+            const customRange = document.getElementById('customDateRange');
+            const startDateInput = document.getElementById('resourceViewStartDate');
+            const endDateInput = document.getElementById('resourceViewEndDate');
+            
+            const today = new Date();
+            let startDate, endDate;
+            
+            if (period === 'custom') {
+                customRange.style.display = 'flex';
+                return; // Non aggiorna automaticamente, aspetta che l'utente selezioni le date
+            } else {
+                customRange.style.display = 'none';
+                
+                switch(period) {
+                    case 'today':
+                        startDate = new Date(today);
+                        endDate = new Date(today);
+                        break;
+                    case 'week':
+                        startDate = new Date(today);
+                        endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'month':
+                        startDate = new Date(today);
+                        endDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'quarter':
+                        startDate = new Date(today);
+                        endDate = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'year':
+                        startDate = new Date(today);
+                        endDate = new Date(today.getTime() + 365 * 24 * 60 * 60 * 1000);
+                        break;
+                }
+                
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+                
+                startDateInput.value = formatDate(startDate);
+                endDateInput.value = formatDate(endDate);
+            }
+            
+            renderResourceView();
+        }
+
         function renderResourceView() {
             const resourceFilter = document.getElementById('resourceViewFilter')?.value;
+            const period = document.getElementById('resourceViewPeriod')?.value;
             const startDateInput = document.getElementById('resourceViewStartDate')?.value;
             const endDateInput = document.getElementById('resourceViewEndDate')?.value;
             const container = document.getElementById('resourceViewContainer');
@@ -3683,9 +4342,16 @@
             
             container.innerHTML = '';
 
-            // Default: prossimi 30 giorni
-            const startDate = startDateInput ? new Date(startDateInput) : new Date();
-            const endDate = endDateInput ? new Date(endDateInput) : new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+            // Calcola date in base al periodo se non sono custom
+            let startDate, endDate;
+            if (period === 'custom' && startDateInput && endDateInput) {
+                startDate = new Date(startDateInput);
+                endDate = new Date(endDateInput);
+            } else {
+                // Default: mese (30 giorni)
+                startDate = new Date();
+                endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+            }
 
             const filteredResources = resourceFilter ? 
                 resources.filter(r => r.id == resourceFilter) : 
@@ -3712,7 +4378,7 @@
                 if (project.tasks) {
                     project.tasks.forEach(task => {
                         if (task.resources && task.startDate && task.endDate) {
-                            const res = task.resources.find(r => r.resourceId === resource.id);
+                            const res = task.resources.find(r => r.resourceId == resource.id);
                             if (res) {
                                 const taskStart = new Date(task.startDate);
                                 const taskEnd = new Date(task.endDate);
@@ -3786,35 +4452,68 @@
                 // Ordina per data
                 assignments.sort((a, b) => a.startDate.localeCompare(b.startDate));
 
+                // Raggruppa per stato
+                const statusGroups = {
+                    'in-corso': { label: 'In Corso', assignments: [] },
+                    'pausa': { label: 'In Pausa', assignments: [] },
+                    'completata': { label: 'Completata', assignments: [] },
+                    'non-assegnata': { label: 'Non Assegnata', assignments: [] },
+                    'annullata': { label: 'Annullata', assignments: [] },
+                    'nessuno': { label: 'Nessuno Stato', assignments: [] }
+                };
+
                 assignments.forEach(assignment => {
-                    const assignDiv = document.createElement('div');
-                    assignDiv.className = 'resource-assignment';
-
-                    // Verifica conflitti (sovrapposizioni)
-                    const hasConflict = checkDateOverlap(assignment, assignments);
-                    if (hasConflict) {
-                        assignDiv.classList.add('conflict');
+                    const status = assignment.task.status || 'nessuno';
+                    if (statusGroups[status]) {
+                        statusGroups[status].assignments.push(assignment);
+                    } else {
+                        statusGroups['nessuno'].assignments.push(assignment);
                     }
+                });
 
-                    const assignHeader = document.createElement('div');
-                    assignHeader.className = 'assignment-header';
-                    assignHeader.innerHTML = `
-                        <span>${assignment.project.client} - ${assignment.task.name}</span>
-                        <span>${assignment.percentage}%</span>
-                    `;
-                    assignDiv.appendChild(assignHeader);
+                // Renderizza gruppi
+                Object.entries(statusGroups).forEach(([statusKey, group]) => {
+                    if (group.assignments.length > 0) {
+                        const groupHeader = document.createElement('div');
+                        groupHeader.style.fontWeight = 'bold';
+                        groupHeader.style.marginTop = '10px';
+                        groupHeader.style.marginBottom = '5px';
+                        groupHeader.style.padding = '5px';
+                        groupHeader.style.backgroundColor = 'var(--bg-secondary)';
+                        groupHeader.style.borderRadius = '4px';
+                        groupHeader.textContent = `${group.label} (${group.assignments.length})`;
+                        timeline.appendChild(groupHeader);
 
-                    const assignDetails = document.createElement('div');
-                    assignDetails.className = 'assignment-details';
-                    assignDetails.innerHTML = `
-                        ${assignment.startDate} → ${assignment.endDate} | 
-                        Stato: ${assignment.task.status} | 
-                        Completamento: ${assignment.task.completion}%
-                        ${hasConflict ? ' | <strong style="color: var(--danger-color);">⚠️ SOVRAPPOSIZIONE</strong>' : ''}
-                    `;
-                    assignDiv.appendChild(assignDetails);
+                        group.assignments.forEach(assignment => {
+                            const assignDiv = document.createElement('div');
+                            assignDiv.className = 'resource-assignment';
 
-                    timeline.appendChild(assignDiv);
+                            // Verifica conflitti (sovrapposizioni)
+                            const hasConflict = checkDateOverlap(assignment, assignments);
+                            if (hasConflict) {
+                                assignDiv.classList.add('conflict');
+                            }
+
+                            const assignHeader = document.createElement('div');
+                            assignHeader.className = 'assignment-header';
+                            assignHeader.innerHTML = `
+                                <span>${assignment.project.client} - ${assignment.task.name}</span>
+                                <span>${assignment.percentage}%</span>
+                            `;
+                            assignDiv.appendChild(assignHeader);
+
+                            const assignDetails = document.createElement('div');
+                            assignDetails.className = 'assignment-details';
+                            assignDetails.innerHTML = `
+                                ${assignment.startDate} → ${assignment.endDate} | 
+                                Completamento: ${assignment.task.completion}%
+                                ${hasConflict ? ' | <strong style="color: var(--danger-color);">⚠️ SOVRAPPOSIZIONE</strong>' : ''}
+                            `;
+                            assignDiv.appendChild(assignDetails);
+
+                            timeline.appendChild(assignDiv);
+                        });
+                    }
                 });
 
                 card.appendChild(timeline);
