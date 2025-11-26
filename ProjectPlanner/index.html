@@ -1,0 +1,2149 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pianificazione Risorse e Progetti</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #444;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4CAF50;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .tab:hover {
+            background: #e0e0e0;
+        }
+
+        .tab.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: inline-block;
+            width: 180px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        select,
+        textarea {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 300px;
+        }
+
+        input[type="checkbox"] {
+            margin-left: 10px;
+        }
+
+        textarea {
+            width: 600px;
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button.delete {
+            background-color: #f44336;
+        }
+
+        button.delete:hover {
+            background-color: #da190b;
+        }
+
+        button.secondary {
+            background-color: #2196F3;
+        }
+
+        button.secondary:hover {
+            background-color: #0b7dda;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+
+        .action-buttons button {
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .form-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .inline-group {
+            display: inline-block;
+            margin-right: 20px;
+        }
+
+        .inline-group label {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .inline-group input[type="text"],
+        .inline-group input[type="date"],
+        .inline-group input[type="number"] {
+            width: 150px;
+        }
+
+        .status-not-assigned {
+            background-color: #ffeb3b !important;
+        }
+
+        .status-paused {
+            background-color: #ff9800 !important;
+        }
+
+        .status-in-progress {
+            background-color: #4caf50 !important;
+            color: white;
+        }
+
+        .status-cancelled {
+            background-color: #f44336 !important;
+            color: white;
+        }
+
+        .resource-allocation {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .resource-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .resource-item select {
+            width: 200px;
+        }
+
+        .resource-item input[type="number"] {
+            width: 80px;
+        }
+
+        .absence-range {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .project-item {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .project-item.selected {
+            background-color: #e3f2fd !important;
+        }
+
+        .holidays-info {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Pianificazione Risorse e Progetti</h1>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('resources')">Risorse</button>
+            <button class="tab" onclick="switchTab('holidays')">Festività</button>
+            <button class="tab" onclick="switchTab('projects')">Progetti</button>
+            <button class="tab" onclick="switchTab('templates')">Template</button>
+            <button class="tab" onclick="switchTab('data')">Import/Export</button>
+        </div>
+
+        <!-- TAB RISORSE -->
+        <div id="resources" class="tab-content active">
+            <h2>Gestione Risorse</h2>
+            
+            <div class="form-section">
+                <h3>Aggiungi/Modifica Risorsa</h3>
+                <div class="form-group">
+                    <label>Nome:</label>
+                    <input type="text" id="resourceFirstName" placeholder="Nome">
+                </div>
+                <div class="form-group">
+                    <label>Cognome:</label>
+                    <input type="text" id="resourceLastName" placeholder="Cognome">
+                </div>
+                <div class="form-group">
+                    <label>Giorni di Assenza:</label>
+                    <div id="absenceDays">
+                        <div class="absence-range">
+                            <input type="date" class="absence-start">
+                            <span>-</span>
+                            <input type="date" class="absence-end">
+                            <button type="button" onclick="addAbsenceRange()">+ Aggiungi Periodo</button>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="saveResource()">💾 Salva Risorsa</button>
+                <button onclick="clearResourceForm()" class="secondary">🔄 Nuovo</button>
+            </div>
+
+            <h3>Elenco Risorse</h3>
+            <table id="resourcesTable">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Cognome</th>
+                        <th>Giorni di Assenza</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB FESTIVITÀ -->
+        <div id="holidays" class="tab-content">
+            <h2>Festività</h2>
+            
+            <div class="holidays-info">
+                <strong>ℹ️ Festività Italiane</strong><br>
+                Le festività italiane standard vengono calcolate automaticamente in base ai progetti inseriti (dalla data più vecchia a quella più recente).
+                Puoi aggiungere festività locali ricorrenti (es. Santo Patrono).
+            </div>
+
+            <div class="form-section">
+                <h3>Aggiungi Festività Locale Ricorrente</h3>
+                <div class="form-group">
+                    <label>Nome Festività:</label>
+                    <input type="text" id="localHolidayName" placeholder="Es: San Giovanni (Patrono)">
+                </div>
+                <div class="form-group">
+                    <label>Giorno:</label>
+                    <input type="number" id="localHolidayDay" min="1" max="31" placeholder="Giorno">
+                </div>
+                <div class="form-group">
+                    <label>Mese:</label>
+                    <select id="localHolidayMonth">
+                        <option value="1">Gennaio</option>
+                        <option value="2">Febbraio</option>
+                        <option value="3">Marzo</option>
+                        <option value="4">Aprile</option>
+                        <option value="5">Maggio</option>
+                        <option value="6">Giugno</option>
+                        <option value="7">Luglio</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Settembre</option>
+                        <option value="10">Ottobre</option>
+                        <option value="11">Novembre</option>
+                        <option value="12">Dicembre</option>
+                    </select>
+                </div>
+                <button onclick="saveLocalHoliday()">💾 Salva Festività Locale</button>
+                <button onclick="clearLocalHolidayForm()" class="secondary">🔄 Nuovo</button>
+            </div>
+
+            <h3>Festività Locali Ricorrenti</h3>
+            <table id="localHolidaysTable">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Data</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h3>Festività Caricate</h3>
+            <table id="holidaysTable">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Festività</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB PROGETTI -->
+        <div id="projects" class="tab-content">
+            <h2>Gestione Progetti</h2>
+            
+            <div class="form-section">
+                <h3>Aggiungi/Modifica Progetto</h3>
+                <div class="form-group">
+                    <label>Cliente:</label>
+                    <input type="text" id="projectClient" placeholder="Nome Cliente">
+                </div>
+                <div class="form-group">
+                    <label>Codice Lavoro:</label>
+                    <input type="text" id="projectCode" placeholder="Codice">
+                </div>
+                <div class="form-group">
+                    <label>Descrizione:</label>
+                    <textarea id="projectDescription" placeholder="Descrizione del progetto"></textarea>
+                </div>
+                <button onclick="saveProject()">💾 Salva Progetto</button>
+                <button onclick="clearProjectForm()" class="secondary">🔄 Nuovo</button>
+            </div>
+
+            <h3>Elenco Progetti</h3>
+            <table id="projectsTable">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Codice</th>
+                        <th>Descrizione</th>
+                        <th>Data Inizio</th>
+                        <th>Data Fine</th>
+                        <th>Completamento</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <!-- Sezione Punti di Controllo e Attività -->
+            <div id="projectDetails" style="display: none;">
+                <h2>Dettagli Progetto: <span id="currentProjectName"></span></h2>
+                
+                <!-- Punti di Controllo -->
+                <div class="form-section">
+                    <h3>Aggiungi Punto di Controllo</h3>
+                    <div class="form-group">
+                        <label>Nome Milestone:</label>
+                        <input type="text" id="milestoneName" placeholder="Nome del punto di controllo">
+                    </div>
+                    <div class="form-group">
+                        <label>Data:</label>
+                        <input type="date" id="milestoneDate">
+                    </div>
+                    <button onclick="saveMilestone()">💾 Salva Milestone</button>
+                    <button onclick="clearMilestoneForm()" class="secondary">🔄 Nuovo</button>
+                </div>
+
+                <h3>Punti di Controllo</h3>
+                <table id="milestonesTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Data</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <!-- Attività -->
+                <div class="form-section">
+                    <h3>Aggiungi Attività</h3>
+                    <div class="form-group">
+                        <label>Nome Attività:</label>
+                        <input type="text" id="taskName" placeholder="Nome dell'attività">
+                    </div>
+                    <div class="form-group">
+                        <label>Data Inizio:</label>
+                        <input type="date" id="taskStartDate">
+                        <small>(lascia vuoto se legata ad altra attività)</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Durata (giorni):</label>
+                        <input type="number" id="taskDuration" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Completamento (%):</label>
+                        <input type="number" id="taskCompletion" min="0" max="100" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Stato:</label>
+                        <select id="taskStatus">
+                            <option value="in-corso">In Corso</option>
+                            <option value="pausa">In Pausa</option>
+                            <option value="annullata">Annullata</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label></label>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskSaturdayWork">
+                            <label for="taskSaturdayWork">Sabato Lavorativo</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskSundayWork">
+                            <label for="taskSundayWork">Domenica Lavorativa</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Risorse Assegnate:</label>
+                        <div class="resource-allocation" id="taskResources">
+                            <div class="resource-item">
+                                <select class="task-resource-select">
+                                    <option value="">-- Seleziona Risorsa --</option>
+                                </select>
+                                <label>Coinvolgimento:</label>
+                                <input type="number" class="task-resource-percentage" min="1" max="100" value="100" placeholder="%">
+                                <span>%</span>
+                                <button type="button" onclick="addTaskResource()">+ Aggiungi Risorsa</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Fine Calcolata:</label>
+                        <input type="date" id="taskEndDate" readonly style="background: #f0f0f0;">
+                    </div>
+                    <button onclick="saveTask()">💾 Salva Attività</button>
+                    <button onclick="clearTaskForm()" class="secondary">🔄 Nuova</button>
+                </div>
+
+                <h3>Attività</h3>
+                <table id="tasksTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Risorse</th>
+                            <th>Data Inizio</th>
+                            <th>Data Fine</th>
+                            <th>Durata</th>
+                            <th>Completamento</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <button onclick="closeProjectDetails()" class="secondary">← Torna ai Progetti</button>
+            </div>
+        </div>
+
+        <!-- TAB TEMPLATE -->
+        <div id="templates" class="tab-content">
+            <h2>Template Progetti</h2>
+            
+            <div class="form-section">
+                <h3>Crea/Modifica Template</h3>
+                <div class="form-group">
+                    <label>Nome Template:</label>
+                    <input type="text" id="templateName" placeholder="Nome del template">
+                </div>
+                <button onclick="saveTemplateStandalone()">💾 Salva Template</button>
+                <button onclick="clearTemplateForm()" class="secondary">🔄 Nuovo</button>
+            </div>
+
+            <h3>Template Disponibili</h3>
+            <table id="templatesTable">
+                <thead>
+                    <tr>
+                        <th>Nome Template</th>
+                        <th>Milestone</th>
+                        <th>Attività</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <!-- Sezione Dettagli Template -->
+            <div id="templateDetails" style="display: none;">
+                <h2>Dettagli Template: <span id="currentTemplateName"></span></h2>
+                
+                <!-- Punti di Controllo Template -->
+                <div class="form-section">
+                    <h3>Aggiungi Punto di Controllo</h3>
+                    <div class="form-group">
+                        <label>Nome Milestone:</label>
+                        <input type="text" id="templateMilestoneName" placeholder="Nome del punto di controllo">
+                    </div>
+                    <div class="form-group">
+                        <label>Giorni dall'inizio:</label>
+                        <input type="number" id="templateMilestoneDay" min="0" value="0" placeholder="Giorni dall'inizio progetto">
+                    </div>
+                    <button onclick="saveTemplateMilestone()">💾 Salva Milestone</button>
+                    <button onclick="clearTemplateMilestoneForm()" class="secondary">🔄 Nuovo</button>
+                </div>
+
+                <h3>Punti di Controllo</h3>
+                <table id="templateMilestonesTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Giorni dall'inizio</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <!-- Attività Template -->
+                <div class="form-section">
+                    <h3>Aggiungi Attività</h3>
+                    <div class="form-group">
+                        <label>Nome Attività:</label>
+                        <input type="text" id="templateTaskName" placeholder="Nome dell'attività">
+                    </div>
+                    <div class="form-group">
+                        <label>Giorni dall'inizio:</label>
+                        <input type="number" id="templateTaskStartDay" min="0" value="0" placeholder="Giorni dall'inizio progetto">
+                    </div>
+                    <div class="form-group">
+                        <label>Durata (giorni):</label>
+                        <input type="number" id="templateTaskDuration" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label></label>
+                        <div class="inline-group">
+                            <input type="checkbox" id="templateTaskSaturdayWork">
+                            <label for="templateTaskSaturdayWork">Sabato Lavorativo</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="templateTaskSundayWork">
+                            <label for="templateTaskSundayWork">Domenica Lavorativa</label>
+                        </div>
+                    </div>
+                    <button onclick="saveTemplateTask()">💾 Salva Attività</button>
+                    <button onclick="clearTemplateTaskForm()" class="secondary">🔄 Nuova</button>
+                </div>
+
+                <h3>Attività</h3>
+                <table id="templateTasksTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Giorni dall'inizio</th>
+                            <th>Durata</th>
+                            <th>Sab</th>
+                            <th>Dom</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <button onclick="closeTemplateDetails()" class="secondary">← Torna ai Template</button>
+            </div>
+        </div>
+
+        <!-- TAB IMPORT/EXPORT -->
+        <div id="data" class="tab-content">
+            <h2>Import/Export Dati</h2>
+            
+            <div class="form-section">
+                <h3>Esporta Dati</h3>
+                <p>Esporta tutti i dati (risorse, progetti, festività locali, template) in un file JSON.</p>
+                <button onclick="exportData()">💾 Esporta Tutti i Dati</button>
+            </div>
+
+            <div class="form-section">
+                <h3>Importa Dati</h3>
+                <p>Importa dati da un file JSON precedentemente esportato.</p>
+                <input type="file" id="importFile" accept=".json" style="margin-bottom: 10px;">
+                <br>
+                <button onclick="importData()">📂 Importa Dati</button>
+                <button onclick="importDataMerge()" class="secondary">📂 Importa e Unisci</button>
+            </div>
+
+            <div class="holidays-info">
+                <strong>⚠️ Attenzione</strong><br>
+                <strong>Importa Dati</strong>: sostituisce completamente tutti i dati correnti.<br>
+                <strong>Importa e Unisci</strong>: aggiunge i dati importati a quelli esistenti.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Strutture dati
+        let resources = [];
+        let holidays = [];
+        let localHolidays = []; // Festività locali ricorrenti
+        let projects = [];
+        let templates = [];
+        let currentProjectId = null;
+        let currentTemplateId = null;
+        let editingResourceId = null;
+        let editingMilestoneId = null;
+        let editingTaskId = null;
+        let editingLocalHolidayId = null;
+        let editingTemplateMilestoneId = null;
+        let editingTemplateTaskId = null;
+
+        // Inizializzazione
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+            calculateHolidays();
+            renderResources();
+            renderLocalHolidays();
+            renderHolidays();
+            renderProjects();
+            renderTemplates();
+            updateResourceSelects();
+            updateProjectSelects();
+            updateTemplateSelects();
+        });
+
+        // Funzioni per il cambio tab
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // === GESTIONE RISORSE ===
+        function addAbsenceRange() {
+            const container = document.getElementById('absenceDays');
+            const newRange = document.createElement('div');
+            newRange.className = 'absence-range';
+            newRange.innerHTML = `
+                <input type="date" class="absence-start">
+                <span>-</span>
+                <input type="date" class="absence-end">
+                <button type="button" onclick="removeAbsenceRange(this)" class="delete">Rimuovi</button>
+            `;
+            container.appendChild(newRange);
+        }
+
+        function removeAbsenceRange(button) {
+            button.parentElement.remove();
+        }
+
+        function saveResource() {
+            const firstName = document.getElementById('resourceFirstName').value.trim();
+            const lastName = document.getElementById('resourceLastName').value.trim();
+            
+            if (!firstName || !lastName) {
+                alert('Nome e Cognome sono obbligatori');
+                return;
+            }
+
+            const absences = [];
+            document.querySelectorAll('.absence-range').forEach(range => {
+                const start = range.querySelector('.absence-start').value;
+                const end = range.querySelector('.absence-end').value || start;
+                if (start) {
+                    absences.push({ start, end });
+                }
+            });
+
+            const resource = {
+                id: editingResourceId || Date.now(),
+                firstName,
+                lastName,
+                absences
+            };
+
+            if (editingResourceId) {
+                const index = resources.findIndex(r => r.id === editingResourceId);
+                resources[index] = resource;
+            } else {
+                resources.push(resource);
+            }
+
+            saveToLocalStorage();
+            renderResources();
+            updateResourceSelects();
+            clearResourceForm();
+        }
+
+        function editResource(id) {
+            const resource = resources.find(r => r.id === id);
+            if (!resource) return;
+
+            editingResourceId = id;
+            document.getElementById('resourceFirstName').value = resource.firstName;
+            document.getElementById('resourceLastName').value = resource.lastName;
+
+            // Clear existing absence ranges
+            const container = document.getElementById('absenceDays');
+            container.innerHTML = '';
+
+            // Add absence ranges
+            if (resource.absences && resource.absences.length > 0) {
+                resource.absences.forEach((absence, index) => {
+                    const newRange = document.createElement('div');
+                    newRange.className = 'absence-range';
+                    newRange.innerHTML = `
+                        <input type="date" class="absence-start" value="${absence.start}">
+                        <span>-</span>
+                        <input type="date" class="absence-end" value="${absence.end}">
+                        ${index === 0 ? 
+                            '<button type="button" onclick="addAbsenceRange()">+ Aggiungi Periodo</button>' :
+                            '<button type="button" onclick="removeAbsenceRange(this)" class="delete">Rimuovi</button>'}
+                    `;
+                    container.appendChild(newRange);
+                });
+            } else {
+                addAbsenceRange();
+            }
+
+            document.getElementById('resourceFirstName').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteResource(id) {
+            if (!confirm('Sei sicuro di voler eliminare questa risorsa?')) return;
+            resources = resources.filter(r => r.id !== id);
+            saveToLocalStorage();
+            renderResources();
+            updateResourceSelects();
+        }
+
+        function clearResourceForm() {
+            editingResourceId = null;
+            document.getElementById('resourceFirstName').value = '';
+            document.getElementById('resourceLastName').value = '';
+            const container = document.getElementById('absenceDays');
+            container.innerHTML = `
+                <div class="absence-range">
+                    <input type="date" class="absence-start">
+                    <span>-</span>
+                    <input type="date" class="absence-end">
+                    <button type="button" onclick="addAbsenceRange()">+ Aggiungi Periodo</button>
+                </div>
+            `;
+        }
+
+        function renderResources() {
+            const tbody = document.querySelector('#resourcesTable tbody');
+            tbody.innerHTML = '';
+
+            resources.forEach(resource => {
+                const tr = document.createElement('tr');
+                const absencesStr = resource.absences.map(a => {
+                    if (a.start === a.end) return a.start;
+                    return `${a.start} - ${a.end}`;
+                }).join(', ') || 'Nessuna';
+
+                tr.innerHTML = `
+                    <td>${resource.firstName}</td>
+                    <td>${resource.lastName}</td>
+                    <td>${absencesStr}</td>
+                    <td class="action-buttons">
+                        <button onclick="editResource(${resource.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="deleteResource(${resource.id})" class="delete">🗑️ Elimina</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // === GESTIONE FESTIVITÀ LOCALI ===
+        function saveLocalHoliday() {
+            const name = document.getElementById('localHolidayName').value.trim();
+            const day = parseInt(document.getElementById('localHolidayDay').value);
+            const month = parseInt(document.getElementById('localHolidayMonth').value);
+            
+            if (!name || !day || !month) {
+                alert('Tutti i campi sono obbligatori');
+                return;
+            }
+
+            if (day < 1 || day > 31) {
+                alert('Giorno non valido');
+                return;
+            }
+
+            const localHoliday = {
+                id: editingLocalHolidayId || Date.now(),
+                name,
+                day,
+                month
+            };
+
+            if (editingLocalHolidayId) {
+                const index = localHolidays.findIndex(h => h.id === editingLocalHolidayId);
+                localHolidays[index] = localHoliday;
+            } else {
+                localHolidays.push(localHoliday);
+            }
+
+            saveToLocalStorage();
+            calculateHolidays();
+            renderLocalHolidays();
+            renderHolidays();
+            clearLocalHolidayForm();
+        }
+
+        function editLocalHoliday(id) {
+            const holiday = localHolidays.find(h => h.id === id);
+            if (!holiday) return;
+
+            editingLocalHolidayId = id;
+            document.getElementById('localHolidayName').value = holiday.name;
+            document.getElementById('localHolidayDay').value = holiday.day;
+            document.getElementById('localHolidayMonth').value = holiday.month;
+
+            document.getElementById('localHolidayName').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteLocalHoliday(id) {
+            if (!confirm('Sei sicuro di voler eliminare questa festività locale?')) return;
+            localHolidays = localHolidays.filter(h => h.id !== id);
+            saveToLocalStorage();
+            calculateHolidays();
+            renderLocalHolidays();
+            renderHolidays();
+        }
+
+        function clearLocalHolidayForm() {
+            editingLocalHolidayId = null;
+            document.getElementById('localHolidayName').value = '';
+            document.getElementById('localHolidayDay').value = '';
+            document.getElementById('localHolidayMonth').value = '1';
+        }
+
+        function renderLocalHolidays() {
+            const tbody = document.querySelector('#localHolidaysTable tbody');
+            tbody.innerHTML = '';
+
+            localHolidays.forEach(holiday => {
+                const tr = document.createElement('tr');
+                const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+                tr.innerHTML = `
+                    <td>${holiday.name}</td>
+                    <td>${holiday.day} ${monthNames[holiday.month - 1]}</td>
+                    <td class="action-buttons">
+                        <button onclick="editLocalHoliday(${holiday.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="deleteLocalHoliday(${holiday.id})" class="delete">🗑️ Elimina</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // === GESTIONE FESTIVITÀ ===
+        function getItalianHolidays(year) {
+            const holidays = [];
+            
+            // Festività fisse
+            holidays.push({ date: `${year}-01-01`, name: 'Capodanno' });
+            holidays.push({ date: `${year}-01-06`, name: 'Epifania' });
+            holidays.push({ date: `${year}-04-25`, name: 'Festa della Liberazione' });
+            holidays.push({ date: `${year}-05-01`, name: 'Festa dei Lavoratori' });
+            holidays.push({ date: `${year}-06-02`, name: 'Festa della Repubblica' });
+            holidays.push({ date: `${year}-08-15`, name: 'Ferragosto' });
+            holidays.push({ date: `${year}-11-01`, name: 'Tutti i Santi' });
+            holidays.push({ date: `${year}-12-08`, name: 'Immacolata Concezione' });
+            holidays.push({ date: `${year}-12-25`, name: 'Natale' });
+            holidays.push({ date: `${year}-12-26`, name: 'Santo Stefano' });
+
+            // Calcolo Pasqua (algoritmo di Gauss)
+            const a = year % 19;
+            const b = Math.floor(year / 100);
+            const c = year % 100;
+            const d = Math.floor(b / 4);
+            const e = b % 4;
+            const f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3);
+            const h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4);
+            const k = c % 4;
+            const l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const month = Math.floor((h + l - 7 * m + 114) / 31);
+            const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+            const easter = new Date(year, month - 1, day);
+            holidays.push({ 
+                date: easter.toISOString().split('T')[0], 
+                name: 'Pasqua' 
+            });
+
+            // Lunedì dell'Angelo (Pasquetta)
+            const easterMonday = new Date(easter);
+            easterMonday.setDate(easter.getDate() + 1);
+            holidays.push({ 
+                date: easterMonday.toISOString().split('T')[0], 
+                name: "Lunedì dell'Angelo" 
+            });
+
+            return holidays.sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        function calculateHolidays() {
+            // Trova il range di anni necessario dai progetti
+            let minYear = new Date().getFullYear();
+            let maxYear = minYear;
+
+            projects.forEach(project => {
+                if (project.milestones) {
+                    project.milestones.forEach(m => {
+                        if (m.date) {
+                            const year = new Date(m.date).getFullYear();
+                            if (year < minYear) minYear = year;
+                            if (year > maxYear) maxYear = year;
+                        }
+                    });
+                }
+                if (project.tasks) {
+                    project.tasks.forEach(t => {
+                        if (t.startDate) {
+                            const year = new Date(t.startDate).getFullYear();
+                            if (year < minYear) minYear = year;
+                            if (year > maxYear) maxYear = year;
+                        }
+                        if (t.endDate) {
+                            const year = new Date(t.endDate).getFullYear();
+                            if (year < minYear) minYear = year;
+                            if (year > maxYear) maxYear = year;
+                        }
+                    });
+                }
+            });
+
+            // Genera festività per tutti gli anni nel range
+            holidays = [];
+            for (let year = minYear; year <= maxYear; year++) {
+                holidays = holidays.concat(getItalianHolidays(year));
+                
+                // Aggiungi festività locali per questo anno
+                localHolidays.forEach(lh => {
+                    const month = lh.month.toString().padStart(2, '0');
+                    const day = lh.day.toString().padStart(2, '0');
+                    holidays.push({
+                        date: `${year}-${month}-${day}`,
+                        name: lh.name
+                    });
+                });
+            }
+
+            holidays.sort((a, b) => a.date.localeCompare(b.date));
+            saveToLocalStorage();
+        }
+
+        function renderHolidays() {
+            const tbody = document.querySelector('#holidaysTable tbody');
+            tbody.innerHTML = '';
+
+            holidays.forEach(holiday => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${holiday.date}</td>
+                    <td>${holiday.name}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // === GESTIONE PROGETTI ===
+        function saveProject() {
+            const client = document.getElementById('projectClient').value.trim();
+            const code = document.getElementById('projectCode').value.trim();
+            const description = document.getElementById('projectDescription').value.trim();
+            
+            if (!client || !code) {
+                alert('Cliente e Codice sono obbligatori');
+                return;
+            }
+
+            const project = {
+                id: currentProjectId || Date.now(),
+                client,
+                code,
+                description,
+                milestones: currentProjectId ? projects.find(p => p.id === currentProjectId).milestones : [],
+                tasks: currentProjectId ? projects.find(p => p.id === currentProjectId).tasks : []
+            };
+
+            if (currentProjectId) {
+                const index = projects.findIndex(p => p.id === currentProjectId);
+                projects[index] = project;
+            } else {
+                projects.push(project);
+            }
+
+            saveToLocalStorage();
+            calculateHolidays();
+            renderHolidays();
+            renderProjects();
+            updateProjectSelects();
+            clearProjectForm();
+        }
+
+        function editProject(id) {
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+
+            currentProjectId = id;
+            document.getElementById('projectClient').value = project.client;
+            document.getElementById('projectCode').value = project.code;
+            document.getElementById('projectDescription').value = project.description;
+
+            document.getElementById('projectClient').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteProject(id) {
+            if (!confirm('Sei sicuro di voler eliminare questo progetto?')) return;
+            projects = projects.filter(p => p.id !== id);
+            saveToLocalStorage();
+            renderProjects();
+            updateProjectSelects();
+        }
+
+        function clearProjectForm() {
+            currentProjectId = null;
+            document.getElementById('projectClient').value = '';
+            document.getElementById('projectCode').value = '';
+            document.getElementById('projectDescription').value = '';
+        }
+
+        function openProjectDetails(id) {
+            currentProjectId = id;
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+
+            document.getElementById('currentProjectName').textContent = `${project.client} - ${project.code}`;
+            document.getElementById('projectDetails').style.display = 'block';
+            document.querySelector('#projects > .form-section').style.display = 'none';
+            document.querySelector('#projects > h3').style.display = 'none';
+            document.querySelector('#projectsTable').style.display = 'none';
+
+            renderMilestones();
+            renderTasks();
+            updateResourceSelects();
+        }
+
+        function closeProjectDetails() {
+            document.getElementById('projectDetails').style.display = 'none';
+            document.querySelector('#projects > .form-section').style.display = 'block';
+            document.querySelector('#projects > h3').style.display = 'block';
+            document.querySelector('#projectsTable').style.display = 'table';
+            currentProjectId = null;
+            renderProjects();
+        }
+
+        function renderProjects() {
+            const tbody = document.querySelector('#projectsTable tbody');
+            tbody.innerHTML = '';
+
+            projects.forEach(project => {
+                const stats = calculateProjectStats(project);
+                const tr = document.createElement('tr');
+                tr.className = 'project-item';
+                
+                tr.innerHTML = `
+                    <td>${project.client}</td>
+                    <td>${project.code}</td>
+                    <td>${project.description}</td>
+                    <td>${stats.startDate || '-'}</td>
+                    <td>${stats.endDate || '-'}</td>
+                    <td>${stats.completion}%</td>
+                    <td class="action-buttons">
+                        <button onclick="editProject(${project.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="openProjectDetails(${project.id})" class="secondary">📋 Dettagli</button>
+                        <button onclick="showApplyTemplateDialog(${project.id})" class="secondary">📋 Applica Template</button>
+                        <button onclick="deleteProject(${project.id})" class="delete">🗑️ Elimina</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function calculateProjectStats(project) {
+            let startDate = null;
+            let endDate = null;
+            let totalCompletion = 0;
+            let taskCount = 0;
+
+            // Calculate from milestones
+            if (project.milestones && project.milestones.length > 0) {
+                project.milestones.forEach(m => {
+                    if (!startDate || m.date < startDate) startDate = m.date;
+                    if (!endDate || m.date > endDate) endDate = m.date;
+                });
+            }
+
+            // Calculate from tasks
+            if (project.tasks && project.tasks.length > 0) {
+                project.tasks.forEach(task => {
+                    if (task.startDate) {
+                        if (!startDate || task.startDate < startDate) startDate = task.startDate;
+                    }
+                    if (task.endDate) {
+                        if (!endDate || task.endDate > endDate) endDate = task.endDate;
+                    }
+                    totalCompletion += parseInt(task.completion || 0);
+                    taskCount++;
+                });
+            }
+
+            const completion = taskCount > 0 ? Math.round(totalCompletion / taskCount) : 0;
+
+            return { startDate, endDate, completion };
+        }
+
+        // === GESTIONE MILESTONE ===
+        function saveMilestone() {
+            const name = document.getElementById('milestoneName').value.trim();
+            const date = document.getElementById('milestoneDate').value;
+            
+            if (!name || !date) {
+                alert('Nome e Data sono obbligatori');
+                return;
+            }
+
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            if (!project.milestones) project.milestones = [];
+
+            const milestone = {
+                id: editingMilestoneId || Date.now(),
+                name,
+                date
+            };
+
+            if (editingMilestoneId) {
+                const index = project.milestones.findIndex(m => m.id === editingMilestoneId);
+                project.milestones[index] = milestone;
+            } else {
+                project.milestones.push(milestone);
+            }
+
+            saveToLocalStorage();
+            calculateHolidays();
+            renderHolidays();
+            renderMilestones();
+            clearMilestoneForm();
+        }
+
+        function editMilestone(id) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            const milestone = project.milestones.find(m => m.id === id);
+            if (!milestone) return;
+
+            editingMilestoneId = id;
+            document.getElementById('milestoneName').value = milestone.name;
+            document.getElementById('milestoneDate').value = milestone.date;
+
+            document.getElementById('milestoneName').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteMilestone(id) {
+            if (!confirm('Sei sicuro di voler eliminare questo punto di controllo?')) return;
+            
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            project.milestones = project.milestones.filter(m => m.id !== id);
+            saveToLocalStorage();
+            renderMilestones();
+        }
+
+        function clearMilestoneForm() {
+            editingMilestoneId = null;
+            document.getElementById('milestoneName').value = '';
+            document.getElementById('milestoneDate').value = '';
+        }
+
+        function renderMilestones() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            const tbody = document.querySelector('#milestonesTable tbody');
+            tbody.innerHTML = '';
+
+            if (!project.milestones) project.milestones = [];
+
+            project.milestones.forEach(milestone => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${milestone.name}</td>
+                    <td>${milestone.date}</td>
+                    <td class="action-buttons">
+                        <button onclick="editMilestone(${milestone.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="deleteMilestone(${milestone.id})" class="delete">🗑️ Elimina</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // === GESTIONE ATTIVITÀ ===
+        function addTaskResource() {
+            const container = document.getElementById('taskResources');
+            const newResource = document.createElement('div');
+            newResource.className = 'resource-item';
+            
+            let options = '<option value="">-- Seleziona Risorsa --</option>';
+            resources.forEach(r => {
+                options += `<option value="${r.id}">${r.firstName} ${r.lastName}</option>`;
+            });
+
+            newResource.innerHTML = `
+                <select class="task-resource-select">${options}</select>
+                <label>Coinvolgimento:</label>
+                <input type="number" class="task-resource-percentage" min="1" max="100" value="100" placeholder="%">
+                <span>%</span>
+                <button type="button" onclick="removeTaskResource(this)" class="delete">Rimuovi</button>
+            `;
+            container.appendChild(newResource);
+        }
+
+        function removeTaskResource(button) {
+            button.parentElement.remove();
+        }
+
+        function calculateEndDate() {
+            const startDate = document.getElementById('taskStartDate').value;
+            const duration = parseInt(document.getElementById('taskDuration').value);
+            const saturdayWork = document.getElementById('taskSaturdayWork').checked;
+            const sundayWork = document.getElementById('taskSundayWork').checked;
+
+            if (!startDate || !duration) {
+                document.getElementById('taskEndDate').value = '';
+                return;
+            }
+
+            let currentDate = new Date(startDate + 'T00:00:00');
+            let workDaysLeft = duration;
+
+            while (workDaysLeft > 0) {
+                const dayOfWeek = currentDate.getDay();
+                const dateStr = currentDate.toISOString().split('T')[0];
+                const isHoliday = holidays.some(h => h.date === dateStr);
+
+                // Check if it's a working day
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isWorkingDay = !isHoliday && 
+                                    (!isSaturday || saturdayWork) && 
+                                    (!isSunday || sundayWork);
+
+                if (isWorkingDay) {
+                    workDaysLeft--;
+                }
+
+                if (workDaysLeft > 0) {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
+
+            document.getElementById('taskEndDate').value = currentDate.toISOString().split('T')[0];
+        }
+
+        // Auto-calculate end date when inputs change
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('taskStartDate')?.addEventListener('change', calculateEndDate);
+            document.getElementById('taskDuration')?.addEventListener('input', calculateEndDate);
+            document.getElementById('taskSaturdayWork')?.addEventListener('change', calculateEndDate);
+            document.getElementById('taskSundayWork')?.addEventListener('change', calculateEndDate);
+        });
+
+        function saveTask() {
+            const name = document.getElementById('taskName').value.trim();
+            const startDate = document.getElementById('taskStartDate').value;
+            const duration = parseInt(document.getElementById('taskDuration').value);
+            const completion = parseInt(document.getElementById('taskCompletion').value);
+            const status = document.getElementById('taskStatus').value;
+            const saturdayWork = document.getElementById('taskSaturdayWork').checked;
+            const sundayWork = document.getElementById('taskSundayWork').checked;
+            const endDate = document.getElementById('taskEndDate').value;
+            
+            if (!name || !duration) {
+                alert('Nome e Durata sono obbligatori');
+                return;
+            }
+
+            const assignedResources = [];
+            document.querySelectorAll('.resource-item').forEach(item => {
+                const resourceId = parseInt(item.querySelector('.task-resource-select').value);
+                const percentage = parseInt(item.querySelector('.task-resource-percentage').value);
+                if (resourceId && percentage) {
+                    assignedResources.push({ resourceId, percentage });
+                }
+            });
+
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            if (!project.tasks) project.tasks = [];
+
+            const task = {
+                id: editingTaskId || Date.now(),
+                name,
+                startDate,
+                duration,
+                completion,
+                status,
+                saturdayWork,
+                sundayWork,
+                endDate,
+                resources: assignedResources
+            };
+
+            if (editingTaskId) {
+                const index = project.tasks.findIndex(t => t.id === editingTaskId);
+                project.tasks[index] = task;
+            } else {
+                project.tasks.push(task);
+            }
+
+            saveToLocalStorage();
+            calculateHolidays();
+            renderHolidays();
+            renderTasks();
+            clearTaskForm();
+        }
+
+        function editTask(id) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            const task = project.tasks.find(t => t.id === id);
+            if (!task) return;
+
+            editingTaskId = id;
+            document.getElementById('taskName').value = task.name;
+            document.getElementById('taskStartDate').value = task.startDate || '';
+            document.getElementById('taskDuration').value = task.duration;
+            document.getElementById('taskCompletion').value = task.completion;
+            document.getElementById('taskStatus').value = task.status;
+            document.getElementById('taskSaturdayWork').checked = task.saturdayWork;
+            document.getElementById('taskSundayWork').checked = task.sundayWork;
+            document.getElementById('taskEndDate').value = task.endDate;
+
+            // Clear and rebuild resource assignments
+            const container = document.getElementById('taskResources');
+            container.innerHTML = '';
+
+            if (task.resources && task.resources.length > 0) {
+                task.resources.forEach((res, index) => {
+                    const newResource = document.createElement('div');
+                    newResource.className = 'resource-item';
+                    
+                    let options = '<option value="">-- Seleziona Risorsa --</option>';
+                    resources.forEach(r => {
+                        const selected = r.id === res.resourceId ? 'selected' : '';
+                        options += `<option value="${r.id}" ${selected}>${r.firstName} ${r.lastName}</option>`;
+                    });
+
+                    newResource.innerHTML = `
+                        <select class="task-resource-select">${options}</select>
+                        <label>Coinvolgimento:</label>
+                        <input type="number" class="task-resource-percentage" min="1" max="100" value="${res.percentage}" placeholder="%">
+                        <span>%</span>
+                        ${index === 0 ? 
+                            '<button type="button" onclick="addTaskResource()">+ Aggiungi Risorsa</button>' :
+                            '<button type="button" onclick="removeTaskResource(this)" class="delete">Rimuovi</button>'}
+                    `;
+                    container.appendChild(newResource);
+                });
+            } else {
+                addTaskResource();
+            }
+
+            document.getElementById('taskName').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteTask(id) {
+            if (!confirm('Sei sicuro di voler eliminare questa attività?')) return;
+            
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            project.tasks = project.tasks.filter(t => t.id !== id);
+            saveToLocalStorage();
+            renderTasks();
+        }
+
+        function clearTaskForm() {
+            editingTaskId = null;
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskStartDate').value = '';
+            document.getElementById('taskDuration').value = '1';
+            document.getElementById('taskCompletion').value = '0';
+            document.getElementById('taskStatus').value = 'in-corso';
+            document.getElementById('taskSaturdayWork').checked = false;
+            document.getElementById('taskSundayWork').checked = false;
+            document.getElementById('taskEndDate').value = '';
+
+            const container = document.getElementById('taskResources');
+            container.innerHTML = `
+                <div class="resource-item">
+                    <select class="task-resource-select">
+                        <option value="">-- Seleziona Risorsa --</option>
+                    </select>
+                    <label>Coinvolgimento:</label>
+                    <input type="number" class="task-resource-percentage" min="1" max="100" value="100" placeholder="%">
+                    <span>%</span>
+                    <button type="button" onclick="addTaskResource()">+ Aggiungi Risorsa</button>
+                </div>
+            `;
+            updateResourceSelects();
+        }
+
+        function renderTasks() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            const tbody = document.querySelector('#tasksTable tbody');
+            tbody.innerHTML = '';
+
+            if (!project.tasks) project.tasks = [];
+
+            project.tasks.forEach(task => {
+                const tr = document.createElement('tr');
+                
+                // Determine row class based on status and resource assignment
+                let rowClass = '';
+                if (!task.resources || task.resources.length === 0) {
+                    rowClass = 'status-not-assigned';
+                } else if (task.status === 'pausa') {
+                    rowClass = 'status-paused';
+                } else if (task.status === 'in-corso') {
+                    rowClass = 'status-in-progress';
+                } else if (task.status === 'annullata') {
+                    rowClass = 'status-cancelled';
+                }
+                tr.className = rowClass;
+
+                // Get resource names
+                let resourcesStr = '-';
+                if (task.resources && task.resources.length > 0) {
+                    resourcesStr = task.resources.map(r => {
+                        const resource = resources.find(res => res.id === r.resourceId);
+                        if (resource) {
+                            return `${resource.firstName} ${resource.lastName} (${r.percentage}%)`;
+                        }
+                        return '';
+                    }).filter(s => s).join(', ');
+                }
+
+                const statusLabels = {
+                    'in-corso': 'In Corso',
+                    'pausa': 'In Pausa',
+                    'annullata': 'Annullata'
+                };
+
+                tr.innerHTML = `
+                    <td>${task.name}</td>
+                    <td>${resourcesStr}</td>
+                    <td>${task.startDate || '-'}</td>
+                    <td>${task.endDate || '-'}</td>
+                    <td>${task.duration} giorni</td>
+                    <td>${task.completion}%</td>
+                    <td>${statusLabels[task.status]}</td>
+                    <td class="action-buttons">
+                        <button onclick="editTask(${task.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="deleteTask(${task.id})" class="delete">🗑️ Elimina</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // === GESTIONE TEMPLATE ===
+        function saveTemplateStandalone() {
+            const templateName = document.getElementById('templateName').value.trim();
+            
+            if (!templateName) {
+                alert('Nome template obbligatorio');
+                return;
+            }
+
+            const template = {
+                id: currentTemplateId || Date.now(),
+                name: templateName,
+                milestones: currentTemplateId ? templates.find(t => t.id === currentTemplateId).milestones : [],
+                tasks: currentTemplateId ? templates.find(t => t.id === currentTemplateId).tasks : []
+            };
+
+            if (currentTemplateId) {
+                const index = templates.findIndex(t => t.id === currentTemplateId);
+                templates[index] = template;
+            } else {
+                templates.push(template);
+            }
+
+            saveToLocalStorage();
+            renderTemplates();
+            updateTemplateSelects();
+            clearTemplateForm();
+        }
+
+        function editTemplate(id) {
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            currentTemplateId = id;
+            document.getElementById('templateName').value = template.name;
+            document.getElementById('templateName').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function openTemplateDetails(id) {
+            currentTemplateId = id;
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+
+            document.getElementById('currentTemplateName').textContent = template.name;
+            document.getElementById('templateDetails').style.display = 'block';
+            document.querySelector('#templates > .form-section').style.display = 'none';
+            document.querySelector('#templates > h3').style.display = 'none';
+            document.querySelector('#templatesTable').style.display = 'none';
+
+            renderTemplateMilestones();
+            renderTemplateTasks();
+        }
+
+        function closeTemplateDetails() {
+            document.getElementById('templateDetails').style.display = 'none';
+            document.querySelector('#templates > .form-section').style.display = 'block';
+            document.querySelector('#templates > h3').style.display = 'block';
+            document.querySelector('#templatesTable').style.display = 'table';
+            currentTemplateId = null;
+            clearTemplateForm();
+        }
+
+        function clearTemplateForm() {
+            currentTemplateId = null;
+            document.getElementById('templateName').value = '';
+        }
+
+        function deleteTemplate(id) {
+            if (!confirm('Sei sicuro di voler eliminare questo template?')) return;
+            templates = templates.filter(t => t.id !== id);
+            saveToLocalStorage();
+            renderTemplates();
+            updateTemplateSelects();
+        }
+
+        function applyTemplateToProject(templateId, projectId) {
+            const template = templates.find(t => t.id === templateId);
+            const project = projects.find(p => p.id === projectId);
+
+            if (!template || !project) return;
+
+            if (!confirm('Questo sovrascriverà i punti di controllo e le attività del progetto. Continuare?')) {
+                return;
+            }
+
+            // Trova la data di inizio del progetto (se esiste)
+            let projectStartDate = null;
+            if (project.milestones && project.milestones.length > 0) {
+                projectStartDate = project.milestones[0].date;
+            } else if (project.tasks && project.tasks.length > 0) {
+                projectStartDate = project.tasks[0].startDate;
+            }
+
+            // Se non c'è data di inizio, usa oggi
+            if (!projectStartDate) {
+                projectStartDate = new Date().toISOString().split('T')[0];
+            }
+
+            const baseDate = new Date(projectStartDate + 'T00:00:00');
+
+            // Converti milestone template in milestone reali
+            project.milestones = template.milestones.map(m => {
+                const milestoneDate = new Date(baseDate);
+                milestoneDate.setDate(baseDate.getDate() + (m.dayOffset || 0));
+                return {
+                    id: Date.now() + Math.random(),
+                    name: m.name,
+                    date: milestoneDate.toISOString().split('T')[0]
+                };
+            });
+
+            // Converti task template in task reali
+            project.tasks = template.tasks.map(t => {
+                const taskStartDate = new Date(baseDate);
+                taskStartDate.setDate(baseDate.getDate() + (t.startDayOffset || 0));
+                
+                // Calcola la data di fine
+                const taskEndDate = calculateEndDateForTask(
+                    taskStartDate.toISOString().split('T')[0],
+                    t.duration,
+                    t.saturdayWork,
+                    t.sundayWork
+                );
+
+                return {
+                    id: Date.now() + Math.random(),
+                    name: t.name,
+                    startDate: taskStartDate.toISOString().split('T')[0],
+                    duration: t.duration,
+                    completion: 0,
+                    status: 'in-corso',
+                    saturdayWork: t.saturdayWork,
+                    sundayWork: t.sundayWork,
+                    endDate: taskEndDate,
+                    resources: []
+                };
+            });
+
+            saveToLocalStorage();
+            calculateHolidays();
+            renderHolidays();
+            renderProjects();
+            alert('Template applicato con successo!');
+        }
+
+        function renderTemplates() {
+            const tbody = document.querySelector('#templatesTable tbody');
+            tbody.innerHTML = '';
+
+            templates.forEach(template => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${template.name}</td>
+                    <td>${template.milestones ? template.milestones.length : 0}</td>
+                    <td>${template.tasks ? template.tasks.length : 0}</td>
+                    <td class="action-buttons">
+                        <button onclick="editTemplate(${template.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="openTemplateDetails(${template.id})" class="secondary">📋 Dettagli</button>
+                        <button onclick="deleteTemplate(${template.id})" class="delete">🗑️ Elimina</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // === HELPER FUNCTIONS ===
+        function updateResourceSelects() {
+            const selects = document.querySelectorAll('.task-resource-select');
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- Seleziona Risorsa --</option>';
+                resources.forEach(r => {
+                    const option = document.createElement('option');
+                    option.value = r.id;
+                    option.textContent = `${r.firstName} ${r.lastName}`;
+                    if (r.id == currentValue) option.selected = true;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function updateProjectSelects() {
+            const select = document.getElementById('projectSelectForTemplate');
+            if (select) {
+                select.innerHTML = '<option value="">-- Seleziona Progetto --</option>';
+                projects.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = `${p.client} - ${p.code}`;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        function updateTemplateSelects() {
+            const select = document.getElementById('templateSelect');
+            if (select) {
+                select.innerHTML = '<option value="">-- Seleziona Template --</option>';
+                templates.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.id;
+                    option.textContent = t.name;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        // === GESTIONE TEMPLATE MILESTONE E TASK ===
+        function saveTemplateMilestone() {
+            const name = document.getElementById('templateMilestoneName').value.trim();
+            const dayOffset = parseInt(document.getElementById('templateMilestoneDay').value);
+            
+            if (!name || isNaN(dayOffset)) {
+                alert('Nome e Giorni sono obbligatori');
+                return;
+            }
+
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+
+            if (!template.milestones) template.milestones = [];
+
+            const milestone = {
+                id: editingTemplateMilestoneId || Date.now(),
+                name,
+                dayOffset
+            };
+
+            if (editingTemplateMilestoneId) {
+                const index = template.milestones.findIndex(m => m.id === editingTemplateMilestoneId);
+                template.milestones[index] = milestone;
+            } else {
+                template.milestones.push(milestone);
+            }
+
+            saveToLocalStorage();
+            renderTemplateMilestones();
+            clearTemplateMilestoneForm();
+        }
+
+        function editTemplateMilestone(id) {
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+
+            const milestone = template.milestones.find(m => m.id === id);
+            if (!milestone) return;
+
+            editingTemplateMilestoneId = id;
+            document.getElementById('templateMilestoneName').value = milestone.name;
+            document.getElementById('templateMilestoneDay').value = milestone.dayOffset;
+
+            document.getElementById('templateMilestoneName').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteTemplateMilestone(id) {
+            if (!confirm('Sei sicuro di voler eliminare questo punto di controllo?')) return;
+            
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+
+            template.milestones = template.milestones.filter(m => m.id !== id);
+            saveToLocalStorage();
+            renderTemplateMilestones();
+        }
+
+        function clearTemplateMilestoneForm() {
+            editingTemplateMilestoneId = null;
+            document.getElementById('templateMilestoneName').value = '';
+            document.getElementById('templateMilestoneDay').value = '0';
+        }
+
+        function renderTemplateMilestones() {
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+
+            const tbody = document.querySelector('#templateMilestonesTable tbody');
+            tbody.innerHTML = '';
+
+            if (!template.milestones) template.milestones = [];
+
+            template.milestones.forEach(milestone => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${milestone.name}</td>
+                    <td>${milestone.dayOffset}</td>
+                    <td class="action-buttons">
+                        <button onclick="editTemplateMilestone(${milestone.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="deleteTemplateMilestone(${milestone.id})" class="delete">🗑️ Elimina</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function saveTemplateTask() {
+            const name = document.getElementById('templateTaskName').value.trim();
+            const startDayOffset = parseInt(document.getElementById('templateTaskStartDay').value);
+            const duration = parseInt(document.getElementById('templateTaskDuration').value);
+            const saturdayWork = document.getElementById('templateTaskSaturdayWork').checked;
+            const sundayWork = document.getElementById('templateTaskSundayWork').checked;
+            
+            if (!name || isNaN(startDayOffset) || !duration) {
+                alert('Nome, Giorni dall\'inizio e Durata sono obbligatori');
+                return;
+            }
+
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+
+            if (!template.tasks) template.tasks = [];
+
+            const task = {
+                id: editingTemplateTaskId || Date.now(),
+                name,
+                startDayOffset,
+                duration,
+                saturdayWork,
+                sundayWork
+            };
+
+            if (editingTemplateTaskId) {
+                const index = template.tasks.findIndex(t => t.id === editingTemplateTaskId);
+                template.tasks[index] = task;
+            } else {
+                template.tasks.push(task);
+            }
+
+            saveToLocalStorage();
+            renderTemplateTasks();
+            clearTemplateTaskForm();
+        }
+
+        function editTemplateTask(id) {
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+
+            const task = template.tasks.find(t => t.id === id);
+            if (!task) return;
+
+            editingTemplateTaskId = id;
+            document.getElementById('templateTaskName').value = task.name;
+            document.getElementById('templateTaskStartDay').value = task.startDayOffset;
+            document.getElementById('templateTaskDuration').value = task.duration;
+            document.getElementById('templateTaskSaturdayWork').checked = task.saturdayWork;
+            document.getElementById('templateTaskSundayWork').checked = task.sundayWork;
+
+            document.getElementById('templateTaskName').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteTemplateTask(id) {
+            if (!confirm('Sei sicuro di voler eliminare questa attività?')) return;
+            
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+
+            template.tasks = template.tasks.filter(t => t.id !== id);
+            saveToLocalStorage();
+            renderTemplateTasks();
+        }
+
+        function clearTemplateTaskForm() {
+            editingTemplateTaskId = null;
+            document.getElementById('templateTaskName').value = '';
+            document.getElementById('templateTaskStartDay').value = '0';
+            document.getElementById('templateTaskDuration').value = '1';
+            document.getElementById('templateTaskSaturdayWork').checked = false;
+            document.getElementById('templateTaskSundayWork').checked = false;
+        }
+
+        function renderTemplateTasks() {
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+
+            const tbody = document.querySelector('#templateTasksTable tbody');
+            tbody.innerHTML = '';
+
+            if (!template.tasks) template.tasks = [];
+
+            template.tasks.forEach(task => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${task.name}</td>
+                    <td>${task.startDayOffset}</td>
+                    <td>${task.duration} giorni</td>
+                    <td>${task.saturdayWork ? '✓' : '-'}</td>
+                    <td>${task.sundayWork ? '✓' : '-'}</td>
+                    <td class="action-buttons">
+                        <button onclick="editTemplateTask(${task.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="deleteTemplateTask(${task.id})" class="delete">🗑️ Elimina</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showApplyTemplateDialog(projectId) {
+            if (templates.length === 0) {
+                alert('Nessun template disponibile. Crea prima un template.');
+                return;
+            }
+
+            const templateOptions = templates.map(t => `${t.id}. ${t.name}`).join('\n');
+            const templateId = prompt('Seleziona template da applicare:\n\n' + templateOptions + '\n\nInserisci il numero del template:');
+            
+            if (templateId) {
+                const id = parseInt(templateId);
+                if (templates.find(t => t.id === id)) {
+                    applyTemplateToProject(id, projectId);
+                } else {
+                    alert('Template non valido');
+                }
+            }
+        }
+
+        function calculateEndDateForTask(startDate, duration, saturdayWork, sundayWork) {
+            let currentDate = new Date(startDate + 'T00:00:00');
+            let workDaysLeft = duration;
+
+            while (workDaysLeft > 0) {
+                const dayOfWeek = currentDate.getDay();
+                const dateStr = currentDate.toISOString().split('T')[0];
+                const isHoliday = holidays.some(h => h.date === dateStr);
+
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isWorkingDay = !isHoliday && 
+                                    (!isSaturday || saturdayWork) && 
+                                    (!isSunday || sundayWork);
+
+                if (isWorkingDay) {
+                    workDaysLeft--;
+                }
+
+                if (workDaysLeft > 0) {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
+
+            return currentDate.toISOString().split('T')[0];
+        }
+
+        // === IMPORT/EXPORT ===
+        function exportData() {
+            const data = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                resources,
+                localHolidays,
+                projects,
+                templates
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `project-planner-export-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Seleziona un file da importare');
+                return;
+            }
+
+            if (!confirm('Questo sostituirà TUTTI i dati correnti. Sei sicuro?')) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    resources = data.resources || [];
+                    localHolidays = data.localHolidays || [];
+                    projects = data.projects || [];
+                    templates = data.templates || [];
+                    
+                    saveToLocalStorage();
+                    calculateHolidays();
+                    renderResources();
+                    renderLocalHolidays();
+                    renderHolidays();
+                    renderProjects();
+                    renderTemplates();
+                    updateResourceSelects();
+                    updateProjectSelects();
+                    updateTemplateSelects();
+                    
+                    alert('Dati importati con successo!');
+                    fileInput.value = '';
+                } catch (error) {
+                    alert('Errore nell\'importazione: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importDataMerge() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Seleziona un file da importare');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Merge data with new IDs
+                    if (data.resources) {
+                        data.resources.forEach(r => {
+                            r.id = Date.now() + Math.random();
+                            resources.push(r);
+                        });
+                    }
+                    
+                    if (data.localHolidays) {
+                        data.localHolidays.forEach(h => {
+                            h.id = Date.now() + Math.random();
+                            localHolidays.push(h);
+                        });
+                    }
+                    
+                    if (data.projects) {
+                        data.projects.forEach(p => {
+                            p.id = Date.now() + Math.random();
+                            projects.push(p);
+                        });
+                    }
+                    
+                    if (data.templates) {
+                        data.templates.forEach(t => {
+                            t.id = Date.now() + Math.random();
+                            templates.push(t);
+                        });
+                    }
+                    
+                    saveToLocalStorage();
+                    calculateHolidays();
+                    renderResources();
+                    renderLocalHolidays();
+                    renderHolidays();
+                    renderProjects();
+                    renderTemplates();
+                    updateResourceSelects();
+                    updateProjectSelects();
+                    updateTemplateSelects();
+                    
+                    alert('Dati uniti con successo!');
+                    fileInput.value = '';
+                } catch (error) {
+                    alert('Errore nell\'importazione: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // === LOCAL STORAGE ===
+        function saveToLocalStorage() {
+            localStorage.setItem('projectPlanner_resources', JSON.stringify(resources));
+            localStorage.setItem('projectPlanner_holidays', JSON.stringify(holidays));
+            localStorage.setItem('projectPlanner_localHolidays', JSON.stringify(localHolidays));
+            localStorage.setItem('projectPlanner_projects', JSON.stringify(projects));
+            localStorage.setItem('projectPlanner_templates', JSON.stringify(templates));
+        }
+
+        function loadFromLocalStorage() {
+            const savedResources = localStorage.getItem('projectPlanner_resources');
+            const savedHolidays = localStorage.getItem('projectPlanner_holidays');
+            const savedLocalHolidays = localStorage.getItem('projectPlanner_localHolidays');
+            const savedProjects = localStorage.getItem('projectPlanner_projects');
+            const savedTemplates = localStorage.getItem('projectPlanner_templates');
+
+            if (savedResources) resources = JSON.parse(savedResources);
+            if (savedHolidays) holidays = JSON.parse(savedHolidays);
+            if (savedLocalHolidays) localHolidays = JSON.parse(savedLocalHolidays);
+            if (savedProjects) projects = JSON.parse(savedProjects);
+            if (savedTemplates) templates = JSON.parse(savedTemplates);
+        }
+    </script>
+</body>
+</html>
