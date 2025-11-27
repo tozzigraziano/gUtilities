@@ -1149,10 +1149,10 @@
                     <label>Periodo:</label>
                     <select id="ganttPeriodFilter" onchange="renderGantt()">
                         <option value="week">Settimana</option>
-                        <option value="month" selected>Mese</option>
+                        <option value="month">Mese</option>
                         <option value="quarter">Trimestre</option>
                         <option value="year">Anno</option>
-                        <option value="all">Tutti</option>
+                        <option value="all" selected>Tutti</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -1788,6 +1788,15 @@
             
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
+            
+            // Renderizza il Gantt quando si apre la tab
+            if (tabName === 'gantt') {
+                renderGantt();
+            }
+            // Renderizza la Vista Risorse quando si apre la tab
+            if (tabName === 'resourceView') {
+                renderResourceView();
+            }
         }
 
         // === MODAL MANAGEMENT ===
@@ -2543,7 +2552,7 @@
                                     startDate: taskStartDateStr,
                                     duration: t.duration,
                                     completion: 0,
-                                    status: 'in-corso',
+                                    status: 'nessuno',
                                     saturdayWork: t.saturdayWork,
                                     sundayWork: t.sundayWork,
                                     endDate: taskEndDate,
@@ -4319,6 +4328,9 @@
                     minDate = new Date(today.getFullYear(), 0, 1);
                     maxDate = new Date(today.getFullYear(), 11, 31); // 31 dicembre
                     break;
+                case 'all':
+                    // Mantieni i valori calcolati dai progetti
+                    break;
             }
 
             // Genera timeline
@@ -4860,11 +4872,19 @@
         function addGanttBar(row, startDate, endDate, label, days, minDate, className, onClickCallback, task) {
             const start = new Date(startDate);
             const end = new Date(endDate);
-            const firstDay = days[0];
-            const lastDay = days[days.length - 1];
+            start.setHours(0, 0, 0, 0);
+            end.setHours(0, 0, 0, 0);
+            
+            const firstDay = new Date(days[0]);
+            const lastDay = new Date(days[days.length - 1]);
+            firstDay.setHours(0, 0, 0, 0);
+            lastDay.setHours(0, 0, 0, 0);
             
             // Se l'attività è completamente fuori dal range visibile, non disegnarla
-            if (end < firstDay || start > lastDay) return;
+            if (end < firstDay || start > lastDay) {
+                console.log(`[addGanttBar] "${label}": SKIPPED - out of range (${startDate} - ${endDate}, range: ${formatDateLocal(days[0])} - ${formatDateLocal(days[days.length - 1])})`);
+                return;
+            }
             
             // Clampa le date ai limiti visibili
             let startIndex = days.findIndex(d => formatDateLocal(d) === startDate);
@@ -4881,7 +4901,10 @@
             }
             
             // Se ancora non trovati, esci
-            if (startIndex === -1 || endIndex === -1) return;
+            if (startIndex === -1 || endIndex === -1) {
+                console.log(`[addGanttBar] "${label}": SKIPPED - indices not found (start=${startIndex}, end=${endIndex}, dates=${startDate}-${endDate}, firstDay=${formatDateLocal(days[0])}, lastDay=${formatDateLocal(days[days.length - 1])})`);
+                return;
+            }
 
             // Usa larghezza fissa in pixel invece di percentuale per supportare zoom
             const dayWidth = parseFloat(getComputedStyle(document.documentElement)
@@ -4936,8 +4959,9 @@
             bar.textContent = label;
             bar.title = `${label}\n${originalStart} - ${originalEnd}`;
             
-            const calculatedWidth = (endIndex - startIndex + 1) * dayWidth;
-            console.log(`[SEGMENT] "${label}": startIndex=${startIndex}, endIndex=${endIndex}, width=${calculatedWidth}px (${endIndex - startIndex + 1} days)`);
+            const numDays = endIndex - startIndex + 1;
+            const calculatedWidth = numDays * dayWidth;
+            console.log(`[SEGMENT] "${label}": startIndex=${startIndex}, endIndex=${endIndex}, width=${calculatedWidth}px (${numDays} days)`);
             
             // Salva gli indici E le date originali per il ridimensionamento
             bar._startIndex = startIndex;
@@ -4956,7 +4980,11 @@
             if (className === 'milestone') {
                 bar.style.left = `${startIndex * dayWidth + 10}px`;
             } else {
-                bar.style.width = `${(endIndex - startIndex + 1) * dayWidth}px`;
+                // Imposta larghezza minima per attività di 1 giorno
+                const barWidth = numDays * dayWidth;
+                const minWidth = Math.max(barWidth, dayWidth * 0.8); // Almeno 80% della larghezza di un giorno
+                bar.style.width = `${barWidth}px`;
+                bar.style.minWidth = `${minWidth}px`;
                 
                 // Aggiungi barra di completamento se è un task con percentuale
                 if (task && task.completion > 0) {
