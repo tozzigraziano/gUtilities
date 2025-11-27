@@ -1026,6 +1026,7 @@
                             <th>Data Inizio</th>
                             <th>Data Fine</th>
                             <th>Durata</th>
+                            <th>Collegamenti</th>
                             <th>Completamento</th>
                             <th>Stato</th>
                             <th>Azioni</th>
@@ -3631,12 +3632,72 @@
                     'annullata': 'Annullata'
                 };
 
+                // Costruisci la stringa dei collegamenti
+                let linksStr = '-';
+                
+                if (task.startLinkedTo || task.endLinkedTo) {
+                    const links = [];
+                    
+                    // Collegamento data inizio
+                    if (task.startLinkedTo) {
+                        // Gestisce sia formato "type-id" che "type:id", e "start:id" come "task-id"
+                        let [type, id] = task.startLinkedTo.includes(':') ? 
+                            task.startLinkedTo.split(':') : 
+                            task.startLinkedTo.split('-');
+                        
+                        // "start:" significa task
+                        if (type === 'start' || type === 'end') type = 'task';
+                        
+                        if (type === 'milestone') {
+                            const milestone = project.milestones?.find(m => m.id == id);
+                            if (milestone) {
+                                const offsetStr = task.startOffset ? ` ${task.startOffset > 0 ? '+' : ''}${task.startOffset}gg` : '';
+                                links.push(`Inizio: 📍${milestone.name}${offsetStr}`);
+                            }
+                        } else if (type === 'task') {
+                            const linkedTask = project.tasks?.find(t => t.id == id);
+                            if (linkedTask) {
+                                const offsetStr = task.startOffset ? ` ${task.startOffset > 0 ? '+' : ''}${task.startOffset}gg` : '';
+                                links.push(`Inizio: 📋${linkedTask.name}${offsetStr}`);
+                            }
+                        }
+                    }
+                    
+                    // Collegamento data fine
+                    if (task.endLinkedTo) {
+                        // Gestisce sia formato "type-id" che "type:id", e "start:id" come "task-id"
+                        let [type, id] = task.endLinkedTo.includes(':') ? 
+                            task.endLinkedTo.split(':') : 
+                            task.endLinkedTo.split('-');
+                        
+                        // "start:" o "end:" significa task
+                        if (type === 'start' || type === 'end') type = 'task';
+                        
+                        if (type === 'milestone') {
+                            const milestone = project.milestones?.find(m => m.id == id);
+                            if (milestone) {
+                                const offsetStr = task.endOffset ? ` ${task.endOffset > 0 ? '+' : ''}${task.endOffset}gg` : '';
+                                links.push(`Fine: 📍${milestone.name}${offsetStr}`);
+                            }
+                        } else if (type === 'task') {
+                            const linkedTask = project.tasks?.find(t => t.id == id);
+                            if (linkedTask) {
+                                const offsetStr = task.endOffset ? ` ${task.endOffset > 0 ? '+' : ''}${task.endOffset}gg` : '';
+                                links.push(`Fine: 📋${linkedTask.name}${offsetStr}`);
+                            }
+                        }
+                    }
+                    
+                    linksStr = links.join(' | ') || '-';
+                }
+
                 tr.innerHTML = `
                     <td>${task.name}</td>
                     <td>${resourcesStr}</td>
                     <td>${task.startDate || '-'}</td>
                     <td>${task.endDate || '-'}</td>
                     <td>${task.duration} giorni</td>
+                    <td>${linksStr}</td>
                     <td>${task.completion}%</td>
                     <td>${statusLabels[task.status]}</td>
                     <td class="action-buttons">
