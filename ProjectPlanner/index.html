@@ -213,7 +213,7 @@
         }
 
         th {
-            background-color: var(--accent-color);
+            background-color: #37474f;
             color: white;
             font-weight: 600;
             font-size: 12px;
@@ -285,8 +285,28 @@
             color: white;
         }
 
+        .status-none {
+            background-color: #bdbdbd !important;
+            color: white;
+        }
+
         .status-completed {
-            background-color: #2196f3 !important;
+            background-color: #6b9c7b !important;
+            color: white;
+        }
+
+        .status-in-progress {
+            background-color: #5b8db8 !important;
+            color: white;
+        }
+
+        .status-paused {
+            background-color: #d4b95f !important;
+            color: white;
+        }
+
+        .status-not-assigned {
+            background-color: #c9885f !important;
             color: white;
         }
 
@@ -297,7 +317,7 @@
         }
 
         .status-cancelled {
-            background-color: #f44336 !important;
+            background-color: #333333 !important;
             color: white;
         }
 
@@ -521,6 +541,17 @@
             box-shadow: 0 2px 4px var(--shadow);
         }
 
+        .gantt-completion-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 0 0 4px 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
         .gantt-bar.project {
             background: var(--accent-color);
             opacity: 0.3;
@@ -687,6 +718,30 @@
         .resource-assignment.conflict {
             border-left-color: var(--danger-color);
             background: rgba(244, 67, 54, 0.1);
+        }
+
+        .resource-assignment.status-none {
+            border-left-color: #bdbdbd !important;
+        }
+
+        .resource-assignment.status-completed {
+            border-left-color: #6b9c7b !important;
+        }
+
+        .resource-assignment.status-in-progress {
+            border-left-color: #5b8db8 !important;
+        }
+
+        .resource-assignment.status-paused {
+            border-left-color: #d4b95f !important;
+        }
+
+        .resource-assignment.status-not-assigned {
+            border-left-color: #c9885f !important;
+        }
+
+        .resource-assignment.status-cancelled {
+            border-left-color: #333333 !important;
         }
 
         .assignment-header {
@@ -1344,12 +1399,27 @@
                 </div>
                 <div class="form-group">
                     <label>Data Inizio:</label>
-                    <input type="date" id="taskStartDate">
-                    <small>(lascia vuoto se legata ad altra attività)</small>
+                    <div class="inline-group">
+                        <input type="date" id="taskStartDate">
+                        <label style="margin-left: 10px;">oppure collegata a:</label>
+                        <select id="taskStartLinkedTo" style="margin-left: 5px;">
+                            <option value="">-- Nessun Collegamento --</option>
+                        </select>
+                        <label style="margin-left: 5px;">+ offset giorni:</label>
+                        <input type="number" id="taskStartOffset" value="0" min="-365" max="365" style="width: 70px; margin-left: 5px;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Data Fine:</label>
-                    <input type="date" id="taskEndDate">
+                    <div class="inline-group">
+                        <input type="date" id="taskEndDate">
+                        <label style="margin-left: 10px;">oppure collegata a:</label>
+                        <select id="taskEndLinkedTo" style="margin-left: 5px;">
+                            <option value="">-- Nessun Collegamento --</option>
+                        </select>
+                        <label style="margin-left: 5px;">+ offset giorni:</label>
+                        <input type="number" id="taskEndOffset" value="0" min="-365" max="365" style="width: 70px; margin-left: 5px;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Durata (giorni):</label>
@@ -1362,8 +1432,8 @@
                 <div class="form-group">
                     <label>Stato:</label>
                     <select id="taskStatus">
-                        <option value="nessuno">Nessuno</option>
-                        <option value="in-corso" selected>In Corso</option>
+                        <option value="">-- Nessuno --</option>
+                        <option value="in-corso">In Corso</option>
                         <option value="pausa">In Pausa</option>
                         <option value="completata">Completata</option>
                         <option value="annullata">Annullata</option>
@@ -1379,6 +1449,10 @@
                         <input type="checkbox" id="taskSundayWork">
                         <label for="taskSundayWork">Domenica Lavorativa</label>
                     </div>
+                    <div class="inline-group">
+                        <input type="checkbox" id="taskHolidayWork">
+                        <label for="taskHolidayWork">Festivi Lavorativi</label>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Risorse Assegnate:</label>
@@ -1393,6 +1467,10 @@
                             <button type="button" onclick="addTaskResource()">+ Aggiungi Risorsa</button>
                         </div>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Note:</label>
+                    <textarea id="taskNotes" rows="4" placeholder="Inserisci note aggiuntive sull'attività..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1629,6 +1707,14 @@
         let editingTemplateMilestoneId = null;
         let editingTemplateTaskId = null;
 
+        // Helper per formattare date in locale (evita problemi UTC)
+        function formatDateLocal(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         // Inizializzazione
         document.addEventListener('DOMContentLoaded', async function() {
             try {
@@ -1647,6 +1733,11 @@
                 
                 // Carica dati
                 await loadFromIndexedDBAll();
+                
+                // Se c'è un progetto aperto, applica i collegamenti
+                if (currentProjectId) {
+                    applyTaskLinks();
+                }
                 
                 // Calcola e renderizza
                 calculateHolidays();
@@ -1826,6 +1917,9 @@
             const modal = document.getElementById('taskModal');
             const title = document.getElementById('taskModalTitle');
             
+            // Popola i dropdown di collegamento
+            updateTaskLinkSelects(id);
+            
             if (id) {
                 title.textContent = 'Modifica Attività';
                 const project = projects.find(p => p.id === currentProjectId);
@@ -1838,9 +1932,60 @@
                         document.getElementById('taskDuration').value = task.duration;
                         document.getElementById('taskCompletion').value = task.completion;
                         document.getElementById('taskStatus').value = task.status;
+                        document.getElementById('taskNotes').value = task.notes || '';
                         document.getElementById('taskSaturdayWork').checked = task.saturdayWork;
                         document.getElementById('taskSundayWork').checked = task.sundayWork;
+                        document.getElementById('taskHolidayWork').checked = task.holidayWork || false;
                         document.getElementById('taskEndDate').value = task.endDate;
+                        
+                        // Imposta collegamenti
+                        document.getElementById('taskStartLinkedTo').value = task.startLinkedTo || '';
+                        document.getElementById('taskEndLinkedTo').value = task.endLinkedTo || '';
+                        document.getElementById('taskStartOffset').value = task.startOffset || 0;
+                        document.getElementById('taskEndOffset').value = task.endOffset || 0;
+                        
+                        // Gestisci stato campi in base ai collegamenti
+                        const startDateField = document.getElementById('taskStartDate');
+                        const endDateField = document.getElementById('taskEndDate');
+                        const calcFromStart = document.getElementById('calcFromStart');
+                        const calcFromEnd = document.getElementById('calcFromEnd');
+                        const startLinkedSelect = document.getElementById('taskStartLinkedTo');
+                        const endLinkedSelect = document.getElementById('taskEndLinkedTo');
+                        const startOffsetField = document.getElementById('taskStartOffset');
+                        const endOffsetField = document.getElementById('taskEndOffset');
+                        
+                        if (task.startLinkedTo) {
+                            // Collegamento Dopo: imposta Inizio + durata, disabilita tutto tranne Dopo e suo offset
+                            calcFromStart.checked = true;
+                            calcFromStart.disabled = true;
+                            calcFromEnd.disabled = true;
+                            startDateField.disabled = true;
+                            endDateField.disabled = true;
+                            endLinkedSelect.disabled = true;
+                            endOffsetField.disabled = true;
+                        } else if (task.endLinkedTo) {
+                            // Collegamento Prima: imposta Fine + durata, disabilita tutto tranne Prima e suo offset
+                            calcFromEnd.checked = true;
+                            calcFromStart.disabled = true;
+                            calcFromEnd.disabled = true;
+                            startDateField.disabled = true;
+                            endDateField.disabled = true;
+                            startLinkedSelect.disabled = true;
+                            startOffsetField.disabled = true;
+                        } else {
+                            // Nessun collegamento: abilita tutto
+                            calcFromStart.disabled = false;
+                            calcFromEnd.disabled = false;
+                            startDateField.disabled = false;
+                            endDateField.disabled = false;
+                            startLinkedSelect.disabled = false;
+                            endLinkedSelect.disabled = false;
+                            startOffsetField.disabled = false;
+                            endOffsetField.disabled = false;
+                        }
+                        
+                        // Calcola e mostra le date risultanti
+                        updateLinkedDates();
 
                         const container = document.getElementById('taskResources');
                         console.log('Clearing resource container');
@@ -2436,6 +2581,10 @@
             document.querySelector('#projectsTable').style.display = 'none';
 
             renderMilestones();
+            
+            // Applica collegamenti prima di renderizzare le attività
+            applyTaskLinks();
+            
             renderTasks();
             updateResourceSelects();
         }
@@ -2540,7 +2689,11 @@
             calculateHolidays();
             renderHolidays();
             renderMilestones();
+            renderGantt();
             closeMilestoneModal();
+            
+            // Applica collegamenti tra attività (propaga cambiamenti date)
+            applyTaskLinks();
         }
 
         function editMilestone(id) {
@@ -2583,7 +2736,15 @@
 
             if (!project.milestones) project.milestones = [];
 
-            project.milestones.forEach(milestone => {
+            // Ordina i milestone per data
+            const sortedMilestones = [...project.milestones].sort((a, b) => {
+                if (!a.date && !b.date) return 0;
+                if (!a.date) return 1;
+                if (!b.date) return -1;
+                return a.date.localeCompare(b.date);
+            });
+
+            sortedMilestones.forEach(milestone => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${milestone.name}</td>
@@ -2646,6 +2807,7 @@
             const duration = parseInt(document.getElementById('taskDuration').value);
             const saturdayWork = document.getElementById('taskSaturdayWork').checked;
             const sundayWork = document.getElementById('taskSundayWork').checked;
+            const holidayWork = document.getElementById('taskHolidayWork').checked;
 
             if (!startDate || !duration) {
                 document.getElementById('taskEndDate').value = '';
@@ -2667,7 +2829,7 @@
                 // Check if it's a working day
                 const isSaturday = dayOfWeek === 6;
                 const isSunday = dayOfWeek === 0;
-                const isWorkingDay = !isHoliday && 
+                const isWorkingDay = (!isHoliday || holidayWork) && 
                                     (!isSaturday || saturdayWork) && 
                                     (!isSunday || sundayWork);
 
@@ -2692,6 +2854,7 @@
             const duration = parseInt(document.getElementById('taskDuration').value);
             const saturdayWork = document.getElementById('taskSaturdayWork').checked;
             const sundayWork = document.getElementById('taskSundayWork').checked;
+            const holidayWork = document.getElementById('taskHolidayWork').checked;
 
             if (!endDate || !duration) {
                 document.getElementById('taskStartDate').value = '';
@@ -2713,7 +2876,7 @@
                 // Check if it's a working day
                 const isSaturday = dayOfWeek === 6;
                 const isSunday = dayOfWeek === 0;
-                const isWorkingDay = !isHoliday && 
+                const isWorkingDay = (!isHoliday || holidayWork) && 
                                     (!isSaturday || saturdayWork) && 
                                     (!isSunday || sundayWork);
 
@@ -2753,9 +2916,166 @@
             document.getElementById('taskDuration')?.addEventListener('input', onCalcMethodChange);
             document.getElementById('taskSaturdayWork')?.addEventListener('change', onCalcMethodChange);
             document.getElementById('taskSundayWork')?.addEventListener('change', onCalcMethodChange);
+            document.getElementById('taskHolidayWork')?.addEventListener('change', onCalcMethodChange);
             document.getElementById('calcFromStart')?.addEventListener('change', onCalcMethodChange);
             document.getElementById('calcFromEnd')?.addEventListener('change', onCalcMethodChange);
+            
+            // Event listener per disabilitare campi quando si usa collegamento
+            document.getElementById('taskStartLinkedTo')?.addEventListener('change', function() {
+                const hasLink = this.value !== '';
+                const startDateField = document.getElementById('taskStartDate');
+                const endDateField = document.getElementById('taskEndDate');
+                const calcFromStart = document.getElementById('calcFromStart');
+                const calcFromEnd = document.getElementById('calcFromEnd');
+                const endLinkedSelect = document.getElementById('taskEndLinkedTo');
+                const endOffsetField = document.getElementById('taskEndOffset');
+                
+                if (hasLink) {
+                    // Imposta metodo Inizio + durata
+                    calcFromStart.checked = true;
+                    calcFromStart.disabled = true;
+                    calcFromEnd.disabled = true;
+                    
+                    // Disabilita campi data
+                    startDateField.disabled = true;
+                    endDateField.disabled = true;
+                    
+                    // Disabilita collegamento opposto
+                    endLinkedSelect.disabled = true;
+                    endOffsetField.disabled = true;
+                    endLinkedSelect.value = '';
+                    
+                    // Calcola e mostra la data risultante
+                    updateLinkedDates();
+                } else {
+                    calcFromStart.disabled = false;
+                    calcFromEnd.disabled = false;
+                    startDateField.disabled = false;
+                    endDateField.disabled = false;
+                    endLinkedSelect.disabled = false;
+                    endOffsetField.disabled = false;
+                }
+            });
+            
+            document.getElementById('taskEndLinkedTo')?.addEventListener('change', function() {
+                const hasLink = this.value !== '';
+                const startDateField = document.getElementById('taskStartDate');
+                const endDateField = document.getElementById('taskEndDate');
+                const calcFromStart = document.getElementById('calcFromStart');
+                const calcFromEnd = document.getElementById('calcFromEnd');
+                const startLinkedSelect = document.getElementById('taskStartLinkedTo');
+                const startOffsetField = document.getElementById('taskStartOffset');
+                
+                if (hasLink) {
+                    // Imposta metodo Fine + durata
+                    calcFromEnd.checked = true;
+                    calcFromStart.disabled = true;
+                    calcFromEnd.disabled = true;
+                    
+                    // Disabilita campi data
+                    startDateField.disabled = true;
+                    endDateField.disabled = true;
+                    
+                    // Disabilita collegamento opposto
+                    startLinkedSelect.disabled = true;
+                    startOffsetField.disabled = true;
+                    startLinkedSelect.value = '';
+                    
+                    // Calcola e mostra la data risultante
+                    updateLinkedDates();
+                } else {
+                    calcFromStart.disabled = false;
+                    calcFromEnd.disabled = false;
+                    startDateField.disabled = false;
+                    endDateField.disabled = false;
+                    startLinkedSelect.disabled = false;
+                    startOffsetField.disabled = false;
+                }
+            });
+            
+            // Event listener per aggiornare date quando cambia l'offset
+            document.getElementById('taskStartOffset')?.addEventListener('input', updateLinkedDates);
+            document.getElementById('taskEndOffset')?.addEventListener('input', updateLinkedDates);
+            document.getElementById('taskDuration')?.addEventListener('input', function() {
+                onCalcMethodChange();
+                updateLinkedDates();
+            });
+            
+            // Event listener per gestire lo stato in base al completamento
+            document.getElementById('taskCompletion')?.addEventListener('input', function() {
+                const completion = parseInt(this.value) || 0;
+                const statusField = document.getElementById('taskStatus');
+                
+                if (completion === 100) {
+                    statusField.value = 'completata';
+                } else if (completion > 0 && statusField.value === '') {
+                    statusField.value = 'in-corso';
+                }
+            });
         });
+
+        function updateLinkedDates() {
+            const startLinkedTo = document.getElementById('taskStartLinkedTo').value;
+            const endLinkedTo = document.getElementById('taskEndLinkedTo').value;
+            const startOffset = parseInt(document.getElementById('taskStartOffset').value) || 0;
+            const endOffset = parseInt(document.getElementById('taskEndOffset').value) || 0;
+            const duration = parseInt(document.getElementById('taskDuration').value) || 1;
+            const startDateField = document.getElementById('taskStartDate');
+            const endDateField = document.getElementById('taskEndDate');
+            const saturdayWork = document.getElementById('taskSaturdayWork').checked;
+            const sundayWork = document.getElementById('taskSundayWork').checked;
+            const holidayWork = document.getElementById('taskHolidayWork').checked;
+            
+            // Ottieni il progetto corrente
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            if (startLinkedTo) {
+                const [type, id] = startLinkedTo.split(':');
+                let linkedDate = null;
+                
+                if (type === 'milestone') {
+                    const milestone = project.milestones.find(m => m.id == id);
+                    linkedDate = milestone?.date;
+                } else {
+                    const linkedTask = project.tasks.find(t => t.id == id);
+                    linkedDate = type === 'end' ? linkedTask?.endDate : linkedTask?.startDate;
+                }
+                
+                if (linkedDate) {
+                    // Se collegato alla fine di un task o a una milestone, aggiungi +1 per iniziare il giorno dopo
+                    const adjustedOffset = (type === 'end' || type === 'milestone') ? startOffset + 1 : startOffset;
+                    const calculatedStart = calculateDateWithOffset(linkedDate, adjustedOffset, saturdayWork, sundayWork, holidayWork);
+                    startDateField.value = calculatedStart;
+                    
+                    // Calcola data fine da inizio + durata
+                    const calcEnd = calculateDateWithOffset(calculatedStart, duration - 1, saturdayWork, sundayWork, holidayWork);
+                    endDateField.value = calcEnd;
+                }
+            } else if (endLinkedTo) {
+                const [type, id] = endLinkedTo.split(':');
+                let linkedDate = null;
+                
+                if (type === 'milestone') {
+                    const milestone = project.milestones.find(m => m.id == id);
+                    linkedDate = milestone?.date;
+                } else {
+                    const linkedTask = project.tasks.find(t => t.id == id);
+                    linkedDate = type === 'end' ? linkedTask?.endDate : linkedTask?.startDate;
+                }
+                
+                if (linkedDate) {
+                    // Se collegato all'inizio di un task o a una milestone, sottrai -1 per finire il giorno prima
+                    const adjustedOffset = (type === 'start' || type === 'milestone') ? endOffset - 1 : endOffset;
+                    const calculatedEnd = calculateDateWithOffset(linkedDate, adjustedOffset, saturdayWork, sundayWork, holidayWork);
+                    endDateField.value = calculatedEnd;
+                    
+                    // Calcola data inizio da fine - durata
+                    const calcStart = calculateDateWithOffset(calculatedEnd, -(duration - 1), saturdayWork, sundayWork, holidayWork);
+                    startDateField.value = calcStart;
+                }
+            }
+        }
 
         function saveTask() {
             console.log('=== SAVE TASK START ===');
@@ -2764,11 +3084,24 @@
             const startDate = document.getElementById('taskStartDate').value;
             const duration = parseInt(document.getElementById('taskDuration').value);
             const completion = parseInt(document.getElementById('taskCompletion').value);
-            const status = document.getElementById('taskStatus').value;
+            let status = document.getElementById('taskStatus').value;
+            const notes = document.getElementById('taskNotes').value.trim();
             console.log('Task name:', name);
             const saturdayWork = document.getElementById('taskSaturdayWork').checked;
             const sundayWork = document.getElementById('taskSundayWork').checked;
+            const holidayWork = document.getElementById('taskHolidayWork').checked;
             const endDate = document.getElementById('taskEndDate').value;
+            const startLinkedTo = document.getElementById('taskStartLinkedTo').value;
+            const endLinkedTo = document.getElementById('taskEndLinkedTo').value;
+            const startOffset = parseInt(document.getElementById('taskStartOffset').value) || 0;
+            const endOffset = parseInt(document.getElementById('taskEndOffset').value) || 0;
+            
+            // Gestione automatica dello stato in base al completamento
+            if (completion === 100) {
+                status = 'completata';
+            } else if (completion > 0 && !status) {
+                status = 'in-corso';
+            }
             
             if (!name || !duration) {
                 alert('Nome e Durata sono obbligatori');
@@ -2810,7 +3143,13 @@
                 status,
                 saturdayWork,
                 sundayWork,
+                holidayWork,
                 endDate,
+                startLinkedTo,
+                endLinkedTo,
+                startOffset,
+                endOffset,
+                notes,
                 resources: assignedResources
             };
             console.log('Task object created:', JSON.stringify(task));
@@ -2835,6 +3174,9 @@
             renderTasks();
             renderGantt(); // Aggiorna vista Gantt
             closeTaskModal();
+            
+            // Applica collegamenti tra attività
+            applyTaskLinks();
         }
 
         function editTask(id) {
@@ -2904,16 +3246,292 @@
             renderTasks();
         }
 
+        function updateTaskLinkSelects(excludeTaskId = null) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            const startLinkedSelect = document.getElementById('taskStartLinkedTo');
+            const endLinkedSelect = document.getElementById('taskEndLinkedTo');
+            
+            if (!startLinkedSelect || !endLinkedSelect) return;
+            
+            // Popola dropdown per data inizio (collegata alla FINE/DATA di altre attività o milestones)
+            startLinkedSelect.innerHTML = '<option value="">-- Nessun Collegamento --</option>';
+            
+            // Aggiungi milestones
+            if (project.milestones) {
+                project.milestones.forEach(milestone => {
+                    const option = document.createElement('option');
+                    option.value = `milestone:${milestone.id}`;
+                    option.textContent = `Dopo: 🚩 ${milestone.name}`;
+                    startLinkedSelect.appendChild(option);
+                });
+            }
+            
+            // Aggiungi tasks
+            if (project.tasks) {
+                project.tasks.forEach(task => {
+                    if (task.id !== excludeTaskId) {
+                        const option = document.createElement('option');
+                        option.value = `end:${task.id}`;
+                        option.textContent = `Dopo: ${task.name}`;
+                        startLinkedSelect.appendChild(option);
+                    }
+                });
+            }
+            
+            // Popola dropdown per data fine (collegata all'INIZIO/DATA di altre attività o milestones)
+            endLinkedSelect.innerHTML = '<option value="">-- Nessun Collegamento --</option>';
+            
+            // Aggiungi milestones
+            if (project.milestones) {
+                project.milestones.forEach(milestone => {
+                    const option = document.createElement('option');
+                    option.value = `milestone:${milestone.id}`;
+                    option.textContent = `Prima di: 🚩 ${milestone.name}`;
+                    endLinkedSelect.appendChild(option);
+                });
+            }
+            
+            // Aggiungi tasks
+            if (project.tasks) {
+                project.tasks.forEach(task => {
+                    if (task.id !== excludeTaskId) {
+                        const option = document.createElement('option');
+                        option.value = `start:${task.id}`;
+                        option.textContent = `Prima di: ${task.name}`;
+                        endLinkedSelect.appendChild(option);
+                    }
+                });
+            }
+        }
+
+        function applyTaskLinks() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project || !project.tasks) return;
+            
+            let changed = false;
+            const maxIterations = 10; // Previene loop infiniti
+            let iteration = 0;
+            
+            // Ripeti finché ci sono cambiamenti (per propagazione)
+            do {
+                changed = false;
+                iteration++;
+                
+                project.tasks.forEach(task => {
+                    // Aggiorna data inizio se collegata
+                    if (task.startLinkedTo) {
+                        const [linkType, linkedId] = task.startLinkedTo.split(':');
+                        const offset = task.startOffset || 0;
+                        
+                        if (linkType === 'milestone') {
+                            const milestone = project.milestones?.find(m => m.id == linkedId);
+                            if (milestone && milestone.date) {
+                                const newStartDate = calculateDateWithOffset(milestone.date, offset + 1, task.saturdayWork, task.sundayWork, task.holidayWork);
+                                if (task.startDate !== newStartDate) {
+                                    task.startDate = newStartDate;
+                                    task.endDate = calculateEndDateForTask(task.startDate, task.duration, task.saturdayWork, task.sundayWork, task.holidayWork);
+                                    changed = true;
+                                }
+                            }
+                        } else if (linkType === 'end') {
+                            const linkedTask = project.tasks.find(t => t.id == linkedId);
+                            if (linkedTask && linkedTask.endDate) {
+                                const newStartDate = calculateDateWithOffset(linkedTask.endDate, offset + 1, task.saturdayWork, task.sundayWork, task.holidayWork);
+                                if (task.startDate !== newStartDate) {
+                                    task.startDate = newStartDate;
+                                    task.endDate = calculateEndDateForTask(task.startDate, task.duration, task.saturdayWork, task.sundayWork, task.holidayWork);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Aggiorna data fine se collegata
+                    if (task.endLinkedTo) {
+                        const [linkType, linkedId] = task.endLinkedTo.split(':');
+                        const offset = task.endOffset || 0;
+                        
+                        if (linkType === 'milestone') {
+                            const milestone = project.milestones?.find(m => m.id == linkedId);
+                            if (milestone && milestone.date) {
+                                const newEndDate = calculateDateWithOffset(milestone.date, offset - 1, task.saturdayWork, task.sundayWork, task.holidayWork);
+                                if (task.endDate !== newEndDate) {
+                                    task.endDate = newEndDate;
+                                    task.startDate = calculateStartDateForTask(task.endDate, task.duration, task.saturdayWork, task.sundayWork, task.holidayWork);
+                                    changed = true;
+                                }
+                            }
+                        } else if (linkType === 'start') {
+                            const linkedTask = project.tasks.find(t => t.id == linkedId);
+                            if (linkedTask && linkedTask.startDate) {
+                                const newEndDate = calculateDateWithOffset(linkedTask.startDate, offset - 1, task.saturdayWork, task.sundayWork, task.holidayWork);
+                                if (task.endDate !== newEndDate) {
+                                    task.endDate = newEndDate;
+                                    task.startDate = calculateStartDateForTask(task.endDate, task.duration, task.saturdayWork, task.sundayWork, task.holidayWork);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                });
+            } while (changed && iteration < maxIterations);
+            
+            if (iteration > 0) {
+                saveToIndexedDBAll();
+                renderTasks();
+                renderGantt();
+            }
+        }
+
+        function calculateDateWithOffset(dateStr, offsetDays, saturdayWork, sundayWork, holidayWork = false) {
+            if (offsetDays === 0) return dateStr;
+            
+            const parts = dateStr.split('-');
+            let date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            const direction = offsetDays > 0 ? 1 : -1;
+            const totalDays = Math.abs(offsetDays);
+            let workDaysAdded = 0;
+            
+            while (workDaysAdded < totalDays) {
+                date.setDate(date.getDate() + direction);
+                
+                const dayOfWeek = date.getDay();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const checkDateStr = `${year}-${month}-${day}`;
+                const isHoliday = holidays.some(h => h.date === checkDateStr);
+                
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isWorkingDay = (!isHoliday || holidayWork) && (!isSaturday || saturdayWork) && (!isSunday || sundayWork);
+                
+                if (isWorkingDay) {
+                    workDaysAdded++;
+                }
+            }
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function calculateNextWorkingDay(dateStr, saturdayWork, sundayWork, holidayWork = false) {
+            const parts = dateStr.split('-');
+            const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            date.setDate(date.getDate() + 1);
+            
+            // Salta giorni non lavorativi
+            while (true) {
+                const dayOfWeek = date.getDay();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const checkDateStr = `${year}-${month}-${day}`;
+                const isHoliday = holidays.some(h => h.date === checkDateStr);
+                
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isWorkingDay = (!isHoliday || holidayWork) && (!isSaturday || saturdayWork) && (!isSunday || sundayWork);
+                
+                if (isWorkingDay) break;
+                date.setDate(date.getDate() + 1);
+            }
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function calculatePreviousWorkingDay(dateStr, saturdayWork, sundayWork) {
+            const parts = dateStr.split('-');
+            const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            date.setDate(date.getDate() - 1);
+            
+            // Salta giorni non lavorativi
+            while (true) {
+                const dayOfWeek = date.getDay();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const checkDateStr = `${year}-${month}-${day}`;
+                const isHoliday = holidays.some(h => h.date === checkDateStr);
+                
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isWorkingDay = !isHoliday && (!isSaturday || saturdayWork) && (!isSunday || sundayWork);
+                
+                if (isWorkingDay) break;
+                date.setDate(date.getDate() - 1);
+            }
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function calculateStartDateForTask(endDateStr, duration, saturdayWork, sundayWork, holidayWork = false) {
+            const parts = endDateStr.split('-');
+            let currentDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            let workDaysAdded = 0;
+
+            while (workDaysAdded < duration) {
+                const dayOfWeek = currentDate.getDay();
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+                const isHoliday = holidays.some(h => h.date === dateStr);
+
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isWorkingDay = (!isHoliday || holidayWork) && (!isSaturday || saturdayWork) && (!isSunday || sundayWork);
+
+                if (isWorkingDay) {
+                    workDaysAdded++;
+                    if (workDaysAdded === duration) break;
+                }
+                
+                currentDate.setDate(currentDate.getDate() - 1);
+            }
+
+            const year = currentDate.getFullYear();
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const day = String(currentDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         function clearTaskForm() {
             editingTaskId = null;
             document.getElementById('taskName').value = '';
             document.getElementById('taskStartDate').value = '';
             document.getElementById('taskDuration').value = '1';
             document.getElementById('taskCompletion').value = '0';
-            document.getElementById('taskStatus').value = 'in-corso';
+            document.getElementById('taskStatus').value = '';
+            document.getElementById('taskNotes').value = '';
             document.getElementById('taskSaturdayWork').checked = false;
             document.getElementById('taskSundayWork').checked = false;
+            document.getElementById('taskHolidayWork').checked = false;
             document.getElementById('taskEndDate').value = '';
+            document.getElementById('taskStartLinkedTo').value = '';
+            document.getElementById('taskEndLinkedTo').value = '';
+            document.getElementById('taskStartOffset').value = '0';
+            document.getElementById('taskEndOffset').value = '0';
+            
+            // Riabilita tutti i campi
+            document.getElementById('taskStartDate').disabled = false;
+            document.getElementById('taskEndDate').disabled = false;
+            document.getElementById('calcFromStart').disabled = false;
+            document.getElementById('calcFromEnd').disabled = false;
+            document.getElementById('taskStartLinkedTo').disabled = false;
+            document.getElementById('taskEndLinkedTo').disabled = false;
+            document.getElementById('taskStartOffset').disabled = false;
+            document.getElementById('taskEndOffset').disabled = false;
 
             const container = document.getElementById('taskResources');
             container.innerHTML = '';
@@ -2930,13 +3548,21 @@
 
             if (!project.tasks) project.tasks = [];
 
-            project.tasks.forEach(task => {
+            // Ordina le attività per data di inizio
+            const sortedTasks = [...project.tasks].sort((a, b) => {
+                if (!a.startDate && !b.startDate) return 0;
+                if (!a.startDate) return 1;
+                if (!b.startDate) return -1;
+                return a.startDate.localeCompare(b.startDate);
+            });
+
+            sortedTasks.forEach(task => {
                 const tr = document.createElement('tr');
                 
                 // Determine row class based on status and resource assignment
                 let rowClass = '';
                 const isCompleted = task.status === 'completata' || task.completion >= 100;
-                const today = new Date().toISOString().split('T')[0];
+                const today = formatDateLocal(new Date());
                 const isOverdue = !isCompleted && task.endDate && task.endDate < today;
                 
                 if (isOverdue) {
@@ -3086,7 +3712,7 @@
 
             // Se non c'è data di inizio, usa oggi
             if (!projectStartDate) {
-                projectStartDate = new Date().toISOString().split('T')[0];
+                projectStartDate = formatDateLocal(new Date());
             }
 
             const baseDate = new Date(projectStartDate + 'T00:00:00');
@@ -3098,7 +3724,7 @@
                 return {
                     id: Date.now() + Math.random(),
                     name: m.name,
-                    date: milestoneDate.toISOString().split('T')[0]
+                    date: formatDateLocal(milestoneDate)
                 };
             });
 
@@ -3109,7 +3735,7 @@
                 
                 // Calcola la data di fine
                 const taskEndDate = calculateEndDateForTask(
-                    taskStartDate.toISOString().split('T')[0],
+                    formatDateLocal(taskStartDate),
                     t.duration,
                     t.saturdayWork,
                     t.sundayWork
@@ -3118,10 +3744,10 @@
                 return {
                     id: Date.now() + Math.random(),
                     name: t.name,
-                    startDate: taskStartDate.toISOString().split('T')[0],
+                    startDate: formatDateLocal(taskStartDate),
                     duration: t.duration,
                     completion: 0,
-                    status: 'in-corso',
+                    status: undefined,
                     saturdayWork: t.saturdayWork,
                     sundayWork: t.sundayWork,
                     endDate: taskEndDate,
@@ -3405,13 +4031,13 @@
             }
         }
 
-        function calculateEndDateForTask(startDate, duration, saturdayWork, sundayWork) {
+        function calculateEndDateForTask(startDate, duration, saturdayWork, sundayWork, holidayWork = false) {
             // Parse della data in formato locale
             const parts = startDate.split('-');
             let currentDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            let workDaysLeft = duration;
+            let workDaysAdded = 0;
 
-            while (workDaysLeft > 0) {
+            while (workDaysAdded < duration) {
                 const dayOfWeek = currentDate.getDay();
                 const year = currentDate.getFullYear();
                 const month = String(currentDate.getMonth() + 1).padStart(2, '0');
@@ -3421,17 +4047,18 @@
 
                 const isSaturday = dayOfWeek === 6;
                 const isSunday = dayOfWeek === 0;
-                const isWorkingDay = !isHoliday && 
+                const isWorkingDay = (!isHoliday || holidayWork) && 
                                     (!isSaturday || saturdayWork) && 
                                     (!isSunday || sundayWork);
 
                 if (isWorkingDay) {
-                    workDaysLeft--;
+                    workDaysAdded++;
+                    if (workDaysAdded === duration) {
+                        break;
+                    }
                 }
-
-                if (workDaysLeft > 0) {
-                    currentDate.setDate(currentDate.getDate() + 1);
-                }
+                
+                currentDate.setDate(currentDate.getDate() + 1);
             }
 
             const endYear = currentDate.getFullYear();
@@ -3457,7 +4084,7 @@
             
             const link = document.createElement('a');
             link.href = url;
-            link.download = `project-planner-export-${new Date().toISOString().split('T')[0]}.json`;
+            link.download = `project-planner-export-${formatDateLocal(new Date())}.json`;
             link.click();
             
             URL.revokeObjectURL(url);
@@ -4100,7 +4727,10 @@
                     dayDiv.classList.add('weekend');
                 }
 
-                const dateStr = day.toISOString().split('T')[0];
+                const year = day.getFullYear();
+                const month = String(day.getMonth() + 1).padStart(2, '0');
+                const dayOfMonth = String(day.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${dayOfMonth}`;
                 if (holidays.some(h => h.date === dateStr)) {
                     dayDiv.classList.add('holiday');
                 }
@@ -4174,8 +4804,8 @@
             if (end < firstDay || start > lastDay) return;
             
             // Clampa le date ai limiti visibili
-            let startIndex = days.findIndex(d => d.toISOString().split('T')[0] === startDate);
-            let endIndex = days.findIndex(d => d.toISOString().split('T')[0] === endDate);
+            let startIndex = days.findIndex(d => formatDateLocal(d) === startDate);
+            let endIndex = days.findIndex(d => formatDateLocal(d) === endDate);
             
             // Se start è prima del primo giorno visibile, inizia dal primo giorno
             if (startIndex === -1 && start < firstDay) {
@@ -4200,13 +4830,16 @@
             for (let i = startIndex; i <= endIndex; i++) {
                 const day = days[i];
                 const dayOfWeek = day.getDay();
-                const dateStr = day.toISOString().split('T')[0];
+                const dateStr = formatDateLocal(day);
                 const isSaturday = dayOfWeek === 6;
                 const isSunday = dayOfWeek === 0;
                 const isHoliday = holidays.some(h => h.date === dateStr);
                 
                 // Determina se il giorno è lavorativo considerando le impostazioni del task
-                let isNonWorking = isHoliday;
+                let isNonWorking = false;
+                if (isHoliday && !(task && task.holidayWork)) {
+                    isNonWorking = true;
+                }
                 if (isSaturday && !(task && task.saturdayWork)) {
                     isNonWorking = true;
                 }
@@ -4222,7 +4855,7 @@
                 } else {
                     // Giorno non lavorativo - chiudi segmento se aperto
                     if (segmentStart !== null) {
-                        createBarSegment(row, segmentStart, i - 1, label, startDate, endDate, className, onClickCallback, dayWidth);
+                        createBarSegment(row, segmentStart, i - 1, label, startDate, endDate, className, onClickCallback, dayWidth, task);
                         segmentStart = null;
                     }
                 }
@@ -4230,11 +4863,11 @@
             
             // Chiudi ultimo segmento se aperto
             if (segmentStart !== null) {
-                createBarSegment(row, segmentStart, endIndex, label, startDate, endDate, className, onClickCallback, dayWidth);
+                createBarSegment(row, segmentStart, endIndex, label, startDate, endDate, className, onClickCallback, dayWidth, task);
             }
         }
 
-        function createBarSegment(row, startIndex, endIndex, label, originalStart, originalEnd, className, onClickCallback, dayWidth) {
+        function createBarSegment(row, startIndex, endIndex, label, originalStart, originalEnd, className, onClickCallback, dayWidth, task) {
             const bar = document.createElement('div');
             bar.className = `gantt-bar ${className}`;
             bar.textContent = label;
@@ -4258,6 +4891,15 @@
                 bar.style.left = `${startIndex * dayWidth + 10}px`;
             } else {
                 bar.style.width = `${(endIndex - startIndex + 1) * dayWidth}px`;
+                
+                // Aggiungi barra di completamento se è un task con percentuale
+                if (task && task.completion > 0) {
+                    const completionBar = document.createElement('div');
+                    completionBar.className = 'gantt-completion-bar';
+                    completionBar.style.width = `${task.completion}%`;
+                    completionBar.title = `Completamento: ${task.completion}%`;
+                    bar.appendChild(completionBar);
+                }
             }
 
             row.querySelector('.gantt-row-bars').appendChild(bar);
@@ -4488,6 +5130,15 @@
                             const assignDiv = document.createElement('div');
                             assignDiv.className = 'resource-assignment';
 
+                            // Aggiungi classe per stato
+                            const status = assignment.task.status || 'nessuno';
+                            if (status === 'nessuno') assignDiv.classList.add('status-none');
+                            if (status === 'completata') assignDiv.classList.add('status-completed');
+                            if (status === 'in-corso') assignDiv.classList.add('status-in-progress');
+                            if (status === 'pausa') assignDiv.classList.add('status-paused');
+                            if (status === 'non-assegnata') assignDiv.classList.add('status-not-assigned');
+                            if (status === 'annullata') assignDiv.classList.add('status-cancelled');
+
                             // Verifica conflitti (sovrapposizioni)
                             const hasConflict = checkDateOverlap(assignment, assignments);
                             if (hasConflict) {
@@ -4585,7 +5236,7 @@
                 
                 const currentDate = new Date(start);
                 while (currentDate <= end) {
-                    const dateStr = currentDate.toISOString().split('T')[0];
+                    const dateStr = formatDateLocal(currentDate);
                     if (!dailyLoad[dateStr]) dailyLoad[dateStr] = 0;
                     dailyLoad[dateStr] += assignment.percentage;
                     currentDate.setDate(currentDate.getDate() + 1);
@@ -4628,12 +5279,12 @@
             const startDateInput = document.getElementById('resourceViewStartDate');
             const endDateInput = document.getElementById('resourceViewEndDate');
             if (startDateInput && !startDateInput.value) {
-                startDateInput.value = new Date().toISOString().split('T')[0];
+                startDateInput.value = formatDateLocal(new Date());
             }
             if (endDateInput && !endDateInput.value) {
                 const endDate = new Date();
                 endDate.setDate(endDate.getDate() + 30);
-                endDateInput.value = endDate.toISOString().split('T')[0];
+                endDateInput.value = formatDateLocal(endDate);
             }
         }
     </script>
