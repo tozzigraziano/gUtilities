@@ -1222,7 +1222,7 @@
         <div id="resourceView" class="tab-content">
             <h2>Vista Risorse e Carico di Lavoro</h2>
 
-            <div class="filter-section">
+            <div class="filter-section" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                 <div class="filter-group">
                     <label>Risorsa:</label>
                     <select id="resourceViewFilter" onchange="renderResourceView()">
@@ -1232,29 +1232,41 @@
                 <div class="filter-group">
                     <label>Periodo:</label>
                     <select id="resourceViewPeriod" onchange="updateResourceViewPeriod()">
-                        <option value="today">Oggi</option>
-                        <option value="week">Settimana</option>
-                        <option value="month" selected>Mese</option>
+                        <option value="day">Giorno</option>
+                        <option value="week" selected>Settimana</option>
+                        <option value="month">Mese</option>
                         <option value="quarter">Trimestre</option>
                         <option value="year">Anno</option>
                         <option value="all">Tutto</option>
                         <option value="custom">Personalizzato</option>
                     </select>
                 </div>
+                <div class="filter-group" id="specificDayRange" style="display: none;">
+                    <button onclick="navigateResourceView(-1)" title="Giorno precedente">◀</button>
+                    <input type="date" id="resourceViewSpecificDay" onchange="renderResourceView()" style="width: 150px;">
+                    <button onclick="navigateResourceView(1)" title="Giorno successivo">▶</button>
+                    <button onclick="goToCurrentPeriod()" title="Vai a oggi">📅 Oggi</button>
+                </div>
                 <div class="filter-group" id="specificWeekRange" style="display: none;">
-                    <label>Settimana:</label>
+                    <button onclick="navigateResourceView(-1)" title="Settimana precedente">◀</button>
                     <select id="resourceViewSpecificWeek" onchange="renderResourceView()">
                     </select>
+                    <button onclick="navigateResourceView(1)" title="Settimana successiva">▶</button>
+                    <button onclick="goToCurrentPeriod()" title="Vai a settimana corrente">📅 Corrente</button>
                 </div>
                 <div class="filter-group" id="specificMonthRange" style="display: none;">
-                    <label>Mese:</label>
+                    <button onclick="navigateResourceView(-1)" title="Mese precedente">◀</button>
                     <select id="resourceViewSpecificMonth" onchange="renderResourceView()">
                     </select>
+                    <button onclick="navigateResourceView(1)" title="Mese successivo">▶</button>
+                    <button onclick="goToCurrentPeriod()" title="Vai a mese corrente">📅 Corrente</button>
                 </div>
                 <div class="filter-group" id="specificYearRange" style="display: none;">
-                    <label>Anno:</label>
+                    <button onclick="navigateResourceView(-1)" title="Anno precedente">◀</button>
                     <select id="resourceViewSpecificYear" onchange="renderResourceView()">
                     </select>
+                    <button onclick="navigateResourceView(1)" title="Anno successivo">▶</button>
+                    <button onclick="goToCurrentPeriod()" title="Vai a anno corrente">📅 Corrente</button>
                 </div>
                 <div class="filter-group" id="customDateRange" style="display: none;">
                     <label>Da:</label>
@@ -1262,7 +1274,7 @@
                     <label>A:</label>
                     <input type="date" id="resourceViewEndDate" onchange="renderResourceView()">
                 </div>
-                <button onclick="renderResourceView()" class="secondary">🔄 Aggiorna</button>
+                <button onclick="renderResourceView()" class="secondary" style="margin-left: auto;">🔄 Aggiorna</button>
             </div>
 
             <div class="holidays-info">
@@ -1810,6 +1822,7 @@
             }
             // Renderizza la Vista Risorse quando si apre la tab
             if (tabName === 'resourceView') {
+                updateResourceViewPeriod();
                 renderResourceView();
             }
         }
@@ -3244,8 +3257,9 @@
             document.getElementById('taskDuration').value = task.duration;
             document.getElementById('taskCompletion').value = task.completion;
             document.getElementById('taskStatus').value = task.status;
-            document.getElementById('taskSaturdayWork').checked = task.saturdayWork;
-            document.getElementById('taskSundayWork').checked = task.sundayWork;
+            document.getElementById('taskSaturdayWork').checked = task.saturdayWork || false;
+            document.getElementById('taskSundayWork').checked = task.sundayWork || false;
+            document.getElementById('taskHolidayWork').checked = task.holidayWork || false;
             document.getElementById('taskEndDate').value = task.endDate;
 
             // Clear and rebuild resource assignments
@@ -5082,6 +5096,7 @@
         function updateResourceViewPeriod() {
             const period = document.getElementById('resourceViewPeriod').value;
             const customRange = document.getElementById('customDateRange');
+            const specificDayRange = document.getElementById('specificDayRange');
             const specificWeekRange = document.getElementById('specificWeekRange');
             const specificMonthRange = document.getElementById('specificMonthRange');
             const specificYearRange = document.getElementById('specificYearRange');
@@ -5090,16 +5105,22 @@
             
             // Nascondi tutti i selettori specifici
             customRange.style.display = 'none';
+            specificDayRange.style.display = 'none';
             specificWeekRange.style.display = 'none';
             specificMonthRange.style.display = 'none';
             specificYearRange.style.display = 'none';
             
-            const today = new Date();
-            let startDate, endDate;
-            
             if (period === 'custom') {
                 customRange.style.display = 'flex';
-                return; // Non aggiorna automaticamente, aspetta che l'utente selezioni le date
+                return;
+            } else if (period === 'day') {
+                specificDayRange.style.display = 'flex';
+                const dayInput = document.getElementById('resourceViewSpecificDay');
+                if (!dayInput.value) {
+                    dayInput.value = formatDateLocal(new Date());
+                }
+                renderResourceView();
+                return;
             } else if (period === 'week') {
                 specificWeekRange.style.display = 'flex';
                 populateWeekSelector();
@@ -5113,59 +5134,76 @@
                 populateYearSelector();
                 return;
             } else if (period === 'all') {
-                // Trova il range completo dai progetti
                 const dateRange = getProjectsDateRange();
                 if (dateRange.minDate && dateRange.maxDate) {
-                    const formatDate = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
-                    startDateInput.value = formatDate(dateRange.minDate);
-                    endDateInput.value = formatDate(dateRange.maxDate);
+                    startDateInput.value = formatDateLocal(dateRange.minDate);
+                    endDateInput.value = formatDateLocal(dateRange.maxDate);
                     renderResourceView();
                 }
                 return;
-            } else {
-                customRange.style.display = 'none';
-                
-                switch(period) {
-                    case 'today':
-                        startDate = new Date(today);
-                        endDate = new Date(today);
-                        break;
-                    case 'week':
-                        startDate = new Date(today);
-                        endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-                        break;
-                    case 'month':
-                        startDate = new Date(today);
-                        endDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-                        break;
-                    case 'quarter':
-                        startDate = new Date(today);
-                        endDate = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
-                        break;
-                    case 'year':
-                        startDate = new Date(today);
-                        endDate = new Date(today.getTime() + 365 * 24 * 60 * 60 * 1000);
-                        break;
-                }
-                
-                const formatDate = (date) => {
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                };
-                
-                startDateInput.value = formatDate(startDate);
-                endDateInput.value = formatDate(endDate);
+            } else if (period === 'quarter') {
+                const today = new Date();
+                startDateInput.value = formatDateLocal(today);
+                const endDate = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
+                endDateInput.value = formatDateLocal(endDate);
             }
             
             renderResourceView();
         }
+
+        function navigateResourceView(direction) {
+            const period = document.getElementById('resourceViewPeriod').value;
+            
+            if (period === 'day') {
+                const dayInput = document.getElementById('resourceViewSpecificDay');
+                const currentDate = new Date(dayInput.value);
+                currentDate.setDate(currentDate.getDate() + direction);
+                dayInput.value = formatDateLocal(currentDate);
+                renderResourceView();
+            } else if (period === 'week') {
+                const weekSelect = document.getElementById('resourceViewSpecificWeek');
+                const currentIndex = weekSelect.selectedIndex;
+                const newIndex = currentIndex + direction;
+                if (newIndex >= 0 && newIndex < weekSelect.options.length) {
+                    weekSelect.selectedIndex = newIndex;
+                    renderResourceView();
+                }
+            } else if (period === 'month') {
+                const monthSelect = document.getElementById('resourceViewSpecificMonth');
+                const currentIndex = monthSelect.selectedIndex;
+                const newIndex = currentIndex + direction;
+                if (newIndex >= 0 && newIndex < monthSelect.options.length) {
+                    monthSelect.selectedIndex = newIndex;
+                    renderResourceView();
+                }
+            } else if (period === 'year') {
+                const yearSelect = document.getElementById('resourceViewSpecificYear');
+                const currentIndex = yearSelect.selectedIndex;
+                const newIndex = currentIndex + direction;
+                if (newIndex >= 0 && newIndex < yearSelect.options.length) {
+                    yearSelect.selectedIndex = newIndex;
+                    renderResourceView();
+                }
+            }
+        }
+
+        function goToCurrentPeriod() {
+            const period = document.getElementById('resourceViewPeriod').value;
+            const today = new Date();
+            
+            if (period === 'day') {
+                const dayInput = document.getElementById('resourceViewSpecificDay');
+                dayInput.value = formatDateLocal(today);
+                renderResourceView();
+            } else if (period === 'week') {
+                populateWeekSelector(); // Rigenera e seleziona settimana corrente
+            } else if (period === 'month') {
+                populateMonthSelector(); // Rigenera e seleziona mese corrente
+            } else if (period === 'year') {
+                populateYearSelector(); // Rigenera e seleziona anno corrente
+            }
+        }
+            renderResourceView();
 
         function getProjectsDateRange() {
             let minDate = null;
@@ -5215,13 +5253,21 @@
             weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
 
             let selectedSet = false;
+            let weekNumber = 1;
             while (weekStart <= dateRange.maxDate) {
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekEnd.getDate() + 6);
                 
+                // Calcola il numero della settimana ISO
+                const tempDate = new Date(weekStart.getTime());
+                tempDate.setHours(0, 0, 0, 0);
+                tempDate.setDate(tempDate.getDate() + 3 - (tempDate.getDay() + 6) % 7);
+                const week1 = new Date(tempDate.getFullYear(), 0, 4);
+                const isoWeekNumber = 1 + Math.round(((tempDate.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+                
                 const option = document.createElement('option');
                 option.value = formatDateLocal(weekStart);
-                option.textContent = `${formatDateLocal(weekStart)} - ${formatDateLocal(weekEnd)}`;
+                option.textContent = `Sett. ${isoWeekNumber}/${weekStart.getFullYear()} (${formatDateLocal(weekStart)} - ${formatDateLocal(weekEnd)})`;
                 
                 // Seleziona la settimana corrente
                 if (!selectedSet && weekStart <= currentWeekStart && weekEnd >= currentWeekStart) {
@@ -5231,6 +5277,7 @@
                 
                 select.appendChild(option);
                 weekStart.setDate(weekStart.getDate() + 7);
+                weekNumber++;
             }
 
             renderResourceView();
@@ -5327,6 +5374,19 @@
             if ((period === 'custom' || period === 'all') && startDateInput && endDateInput) {
                 startDate = new Date(startDateInput);
                 endDate = new Date(endDateInput);
+            } else if (period === 'day') {
+                const dayValue = document.getElementById('resourceViewSpecificDay')?.value;
+                if (dayValue) {
+                    startDate = new Date(dayValue);
+                    startDate.setHours(0, 0, 0, 0);
+                    endDate = new Date(dayValue);
+                    endDate.setHours(23, 59, 59, 999);
+                } else {
+                    startDate = new Date();
+                    startDate.setHours(0, 0, 0, 0);
+                    endDate = new Date();
+                    endDate.setHours(23, 59, 59, 999);
+                }
             } else if (period === 'week') {
                 const weekStart = document.getElementById('resourceViewSpecificWeek')?.value;
                 if (weekStart) {
@@ -5357,14 +5417,11 @@
                     startDate = new Date();
                     endDate = new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000);
                 }
-            } else if (period === 'today') {
-                startDate = new Date();
-                endDate = new Date();
             } else if (period === 'quarter') {
                 startDate = new Date();
                 endDate = new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000);
             } else {
-                // Default: oggi
+                // Default: giorno corrente
                 startDate = new Date();
                 endDate = new Date();
             }
@@ -5397,7 +5454,9 @@
                             const res = task.resources.find(r => r.resourceId == resource.id);
                             if (res) {
                                 const taskStart = new Date(task.startDate);
+                                taskStart.setHours(0, 0, 0, 0);
                                 const taskEnd = new Date(task.endDate);
+                                taskEnd.setHours(23, 59, 59, 999);
                                 
                                 // Filtra per periodo
                                 if (taskEnd >= startDate && taskStart <= endDate) {
@@ -5415,8 +5474,8 @@
                 }
             });
 
-            // Calcola sovraccarico
-            const overload = calculateResourceOverload(assignments);
+            // Calcola sovraccarico solo nel periodo visualizzato
+            const overload = calculateResourceOverload(assignments, startDate, endDate);
             if (overload.maxLoad > 100) {
                 card.classList.add('overloaded');
             }
@@ -5462,86 +5521,79 @@
 
             // Timeline assegnazioni
             if (assignments.length > 0) {
-                const timeline = document.createElement('div');
-                timeline.className = 'resource-timeline';
-
-                // Ordina per data
-                assignments.sort((a, b) => a.startDate.localeCompare(b.startDate));
-
-                // Raggruppa per stato
-                const statusGroups = {
-                    'in-corso': { label: 'In Corso', assignments: [] },
-                    'pausa': { label: 'In Pausa', assignments: [] },
-                    'completata': { label: 'Completata', assignments: [] },
-                    'non-assegnata': { label: 'Non Assegnata', assignments: [] },
-                    'annullata': { label: 'Annullata', assignments: [] },
-                    'nessuno': { label: 'Nessuno Stato', assignments: [] }
-                };
-
-                assignments.forEach(assignment => {
-                    const status = assignment.task.status || 'nessuno';
-                    if (statusGroups[status]) {
-                        statusGroups[status].assignments.push(assignment);
-                    } else {
-                        statusGroups['nessuno'].assignments.push(assignment);
+                // Filtra solo le attività che hanno giorni lavorativi nel periodo visualizzato
+                const assignmentsInPeriod = assignments.filter(assignment => {
+                    const start = new Date(assignment.startDate);
+                    const end = new Date(assignment.endDate);
+                    const calcStart = start < startDate ? new Date(startDate) : new Date(start);
+                    const calcEnd = end > endDate ? new Date(endDate) : new Date(end);
+                    
+                    // Verifica se c'è almeno un giorno lavorativo nel periodo
+                    const currentDate = new Date(calcStart);
+                    while (currentDate <= calcEnd) {
+                        if (isWorkingDay(currentDate, assignment.task)) {
+                            return true;
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
                     }
+                    return false;
                 });
+                
+                if (assignmentsInPeriod.length > 0) {
+                    const timeline = document.createElement('div');
+                    timeline.className = 'resource-timeline';
 
-                // Renderizza gruppi
-                Object.entries(statusGroups).forEach(([statusKey, group]) => {
-                    if (group.assignments.length > 0) {
-                        const groupHeader = document.createElement('div');
-                        groupHeader.style.fontWeight = 'bold';
-                        groupHeader.style.marginTop = '10px';
-                        groupHeader.style.marginBottom = '5px';
-                        groupHeader.style.padding = '5px';
-                        groupHeader.style.backgroundColor = 'var(--bg-secondary)';
-                        groupHeader.style.borderRadius = '4px';
-                        groupHeader.textContent = `${group.label} (${group.assignments.length})`;
-                        timeline.appendChild(groupHeader);
+                    // Ordina per data
+                    assignmentsInPeriod.sort((a, b) => a.startDate.localeCompare(b.startDate));
 
-                        group.assignments.forEach(assignment => {
-                            const assignDiv = document.createElement('div');
-                            assignDiv.className = 'resource-assignment';
+                    assignmentsInPeriod.forEach(assignment => {
+                        const assignDiv = document.createElement('div');
+                        assignDiv.className = 'resource-assignment';
 
-                            // Aggiungi classe per stato
-                            const status = assignment.task.status || 'nessuno';
-                            if (status === 'nessuno') assignDiv.classList.add('status-none');
-                            if (status === 'completata') assignDiv.classList.add('status-completed');
-                            if (status === 'in-corso') assignDiv.classList.add('status-in-progress');
-                            if (status === 'pausa') assignDiv.classList.add('status-paused');
-                            if (status === 'non-assegnata') assignDiv.classList.add('status-not-assigned');
-                            if (status === 'annullata') assignDiv.classList.add('status-cancelled');
+                        // Aggiungi classe per stato
+                        const status = assignment.task.status || 'nessuno';
+                        if (status === 'nessuno') assignDiv.classList.add('status-none');
+                        if (status === 'completata') assignDiv.classList.add('status-completed');
+                        if (status === 'in-corso') assignDiv.classList.add('status-in-progress');
+                        if (status === 'pausa') assignDiv.classList.add('status-paused');
+                        if (status === 'non-assegnata') assignDiv.classList.add('status-not-assigned');
+                        if (status === 'annullata') assignDiv.classList.add('status-cancelled');
 
-                            // Verifica conflitti (sovrapposizioni)
-                            const hasConflict = checkDateOverlap(assignment, assignments);
-                            if (hasConflict) {
-                                assignDiv.classList.add('conflict');
-                            }
+                        // Verifica conflitti (sovrapposizioni)
+                        const hasConflict = checkDateOverlap(assignment, assignmentsInPeriod);
+                        if (hasConflict) {
+                            assignDiv.classList.add('conflict');
+                        }
 
-                            const assignHeader = document.createElement('div');
-                            assignHeader.className = 'assignment-header';
-                            assignHeader.innerHTML = `
-                                <span>${assignment.project.client} - ${assignment.task.name}</span>
-                                <span>${assignment.percentage}%</span>
-                            `;
-                            assignDiv.appendChild(assignHeader);
+                        const assignInfo = document.createElement('div');
+                        assignInfo.style.fontSize = '13px';
+                        assignInfo.style.padding = '8px 10px';
+                        assignInfo.style.display = 'grid';
+                        assignInfo.style.gridTemplateColumns = '120px 100px 1fr 120px 110px 150px';
+                        assignInfo.style.gap = '15px';
+                        assignInfo.style.alignItems = 'center';
+                        assignInfo.innerHTML = `
+                            <span style="font-weight: bold; color: var(--primary-color);">${assignment.project.client}</span>
+                            <span>${assignment.project.code}</span>
+                            <span style="font-weight: bold;">${assignment.task.name}</span>
+                            <span>Compl: <strong>${assignment.task.completion}%</strong></span>
+                            <span>Carico: <strong style="color: ${assignment.percentage > 100 ? 'var(--danger-color)' : 'var(--primary-color)'};">${assignment.percentage}%</strong></span>
+                            <span style="color: var(--danger-color); font-weight: bold;">${hasConflict ? '⚠️ SOVRAPPOSIZIONE' : ''}</span>
+                        `;
+                        assignDiv.appendChild(assignInfo);
 
-                            const assignDetails = document.createElement('div');
-                            assignDetails.className = 'assignment-details';
-                            assignDetails.innerHTML = `
-                                ${assignment.startDate} → ${assignment.endDate} | 
-                                Completamento: ${assignment.task.completion}%
-                                ${hasConflict ? ' | <strong style="color: var(--danger-color);">⚠️ SOVRAPPOSIZIONE</strong>' : ''}
-                            `;
-                            assignDiv.appendChild(assignDetails);
-
-                            timeline.appendChild(assignDiv);
-                        });
-                    }
-                });
+                        timeline.appendChild(assignDiv);
+                    });
 
                 card.appendChild(timeline);
+                } else {
+                    const noAssign = document.createElement('div');
+                    noAssign.style.padding = '10px';
+                    noAssign.style.fontStyle = 'italic';
+                    noAssign.style.color = 'var(--text-tertiary)';
+                    noAssign.textContent = 'Nessuna assegnazione nel periodo selezionato';
+                    card.appendChild(noAssign);
+                }
             } else {
                 const noAssign = document.createElement('div');
                 noAssign.style.padding = '10px';
@@ -5600,25 +5652,62 @@
             }
         }
 
-        function calculateResourceOverload(assignments) {
-            // Calcola il carico massimo giornaliero
+        function calculateResourceOverload(assignments, periodStart, periodEnd) {
+            // Calcola il carico massimo giornaliero solo nel periodo visualizzato
             const dailyLoad = {};
 
             assignments.forEach(assignment => {
+                // Escludi attività completate al 100% o con stato 'completata'
+                if (assignment.task.completion >= 100 || assignment.task.status === 'completata') {
+                    return;
+                }
+                
                 const start = new Date(assignment.startDate);
                 const end = new Date(assignment.endDate);
                 
-                const currentDate = new Date(start);
-                while (currentDate <= end) {
-                    const dateStr = formatDateLocal(currentDate);
-                    if (!dailyLoad[dateStr]) dailyLoad[dateStr] = 0;
-                    dailyLoad[dateStr] += assignment.percentage;
+                // Limita al periodo visualizzato
+                const calcStart = start < periodStart ? new Date(periodStart) : new Date(start);
+                const calcEnd = end > periodEnd ? new Date(periodEnd) : new Date(end);
+                
+                const currentDate = new Date(calcStart);
+                while (currentDate <= calcEnd) {
+                    // Verifica se il giorno è lavorativo per questa attività
+                    if (isWorkingDay(currentDate, assignment.task)) {
+                        const dateStr = formatDateLocal(currentDate);
+                        if (!dailyLoad[dateStr]) dailyLoad[dateStr] = 0;
+                        dailyLoad[dateStr] += assignment.percentage;
+                    }
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
             });
 
             const maxLoad = Math.max(...Object.values(dailyLoad), 0);
             return { maxLoad, dailyLoad };
+        }
+
+        function isWorkingDay(date, task) {
+            const dayOfWeek = date.getDay(); // 0 = domenica, 6 = sabato
+            
+            // Verifica sabato (se il campo non esiste, assume false = non lavorativo)
+            if (dayOfWeek === 6 && !task.saturdayWork) {
+                return false;
+            }
+            
+            // Verifica domenica (se il campo non esiste, assume false = non lavorativo)
+            if (dayOfWeek === 0 && !task.sundayWork) {
+                return false;
+            }
+            
+            // Verifica festivi (se il campo non esiste, assume false = non lavorativo)
+            if (!task.holidayWork) {
+                const dateStr = formatDateLocal(date);
+                const isHoliday = holidays.some(h => h.date === dateStr);
+                if (isHoliday) {
+                    return false;
+                }
+            }
+            
+            return true;
         }
 
         function checkDateOverlap(assignment, allAssignments) {
