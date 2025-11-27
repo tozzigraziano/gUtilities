@@ -923,6 +923,7 @@
                     <tr>
                         <th>Nome</th>
                         <th>Cognome</th>
+                        <th>Tipo Risorsa</th>
                         <th>Giorni di Assenza</th>
                         <th>Azioni</th>
                     </tr>
@@ -1305,6 +1306,19 @@
                 <div class="form-group">
                     <label>Cognome:</label>
                     <input type="text" id="resourceLastName" placeholder="Cognome">
+                </div>
+                <div class="form-group">
+                    <label>Tipo Risorsa:</label>
+                    <select id="resourceType">
+                        <option value="">-- Seleziona --</option>
+                        <option value="programmatore-robot">Programmatore Robot</option>
+                        <option value="programmatore-plc">Programmatore PLC</option>
+                        <option value="programmatore-visione">Programmatore Visione</option>
+                        <option value="meccanico">Meccanico</option>
+                        <option value="elettricista">Elettricista</option>
+                        <option value="project-manager">Project Manager</option>
+                        <option value="esterno">Esterno</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Giorni di Assenza:</label>
@@ -1839,6 +1853,7 @@
                 if (resource) {
                     document.getElementById('resourceFirstName').value = resource.firstName;
                     document.getElementById('resourceLastName').value = resource.lastName;
+                    document.getElementById('resourceType').value = resource.type || '';
                     
                     const container = document.getElementById('absenceDays');
                     container.innerHTML = '';
@@ -2209,6 +2224,7 @@
                 id: editingResourceId || Date.now(),
                 firstName,
                 lastName,
+                type: document.getElementById('resourceType').value || '',
                 absences
             };
 
@@ -2232,6 +2248,7 @@
             editingResourceId = id;
             document.getElementById('resourceFirstName').value = resource.firstName;
             document.getElementById('resourceLastName').value = resource.lastName;
+            document.getElementById('resourceType').value = resource.type || '';
 
             // Clear existing absence ranges
             const container = document.getElementById('absenceDays');
@@ -2271,6 +2288,7 @@
             editingResourceId = null;
             document.getElementById('resourceFirstName').value = '';
             document.getElementById('resourceLastName').value = '';
+            document.getElementById('resourceType').value = '';
             const container = document.getElementById('absenceDays');
             container.innerHTML = `
                 <div class="absence-range">
@@ -2293,9 +2311,21 @@
                     return `${a.start} - ${a.end}`;
                 }).join(', ') || 'Nessuna';
 
+                const typeLabels = {
+                    'programmatore-robot': 'Programmatore Robot',
+                    'programmatore-plc': 'Programmatore PLC',
+                    'programmatore-visione': 'Programmatore Visione',
+                    'meccanico': 'Meccanico',
+                    'elettricista': 'Elettricista',
+                    'project-manager': 'Project Manager',
+                    'esterno': 'Esterno'
+                };
+                const typeLabel = resource.type ? typeLabels[resource.type] || resource.type : '-';
+
                 tr.innerHTML = `
                     <td>${resource.firstName}</td>
                     <td>${resource.lastName}</td>
+                    <td>${typeLabel}</td>
                     <td>${absencesStr}</td>
                     <td class="action-buttons">
                         <button onclick="openResourceModal(${resource.id})" class="secondary">✏️ Modifica</button>
@@ -5202,8 +5232,8 @@
             } else if (period === 'year') {
                 populateYearSelector(); // Rigenera e seleziona anno corrente
             }
-        }
             renderResourceView();
+        }
 
         function getProjectsDateRange() {
             let minDate = null;
