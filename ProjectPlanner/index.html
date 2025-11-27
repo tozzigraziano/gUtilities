@@ -975,9 +975,23 @@
             
             <div class="action-bar">
                 <button onclick="openProjectModal()">➕ Nuovo Progetto</button>
+                <div style="display: flex; gap: 15px; align-items: center; margin-left: auto; flex-wrap: nowrap;">
+                    <label style="white-space: nowrap;">
+                        Ordina per:
+                        <select id="projectSortBy" onchange="renderProjects()" style="width: 80px;">
+                            <option value="code">Codice</option>
+                            <option value="client">Cliente</option>
+                        </select>
+                    </label>
+                    <label style="white-space: nowrap;">
+                        <input type="checkbox" id="hideCompletedProjects" onchange="renderProjects()">
+                        Nascondi completati
+                    </label>
+                </div>
             </div>
 
             <h3>Elenco Progetti</h3>
+            
             <table id="projectsTable">
                 <thead>
                     <tr>
@@ -2635,7 +2649,32 @@
             const tbody = document.querySelector('#projectsTable tbody');
             tbody.innerHTML = '';
 
-            projects.forEach(project => {
+            const sortBy = document.getElementById('projectSortBy')?.value || 'code';
+            const hideCompleted = document.getElementById('hideCompletedProjects')?.checked || false;
+
+            // Filtra progetti completati se richiesto
+            let filteredProjects = projects;
+            if (hideCompleted) {
+                filteredProjects = projects.filter(project => {
+                    const stats = calculateProjectStats(project);
+                    return stats.completion < 100;
+                });
+            }
+
+            // Ordina i progetti
+            const sortedProjects = [...filteredProjects].sort((a, b) => {
+                if (sortBy === 'client') {
+                    const clientA = a.client || '';
+                    const clientB = b.client || '';
+                    return clientA.localeCompare(clientB);
+                } else {
+                    const codeA = a.code || '';
+                    const codeB = b.code || '';
+                    return codeA.localeCompare(codeB);
+                }
+            });
+
+            sortedProjects.forEach(project => {
                 const stats = calculateProjectStats(project);
                 const tr = document.createElement('tr');
                 tr.className = 'project-item';
@@ -3111,15 +3150,12 @@
         }
 
         function saveTask() {
-            console.log('=== SAVE TASK START ===');
-            console.log('editingTaskId:', editingTaskId);
             const name = document.getElementById('taskName').value.trim();
             const startDate = document.getElementById('taskStartDate').value;
             const duration = parseInt(document.getElementById('taskDuration').value);
             const completion = parseInt(document.getElementById('taskCompletion').value);
             let status = document.getElementById('taskStatus').value;
             const notes = document.getElementById('taskNotes').value.trim();
-            console.log('Task name:', name);
             const saturdayWork = document.getElementById('taskSaturdayWork').checked;
             const sundayWork = document.getElementById('taskSundayWork').checked;
             const holidayWork = document.getElementById('taskHolidayWork').checked;
@@ -3143,24 +3179,15 @@
 
             const assignedResources = [];
             const resourceItems = document.querySelectorAll('.resource-item');
-            console.log('Resource items found:', resourceItems.length);
             resourceItems.forEach((item, index) => {
                 const selectElement = item.querySelector('.task-resource-select');
                 const percentageElement = item.querySelector('.task-resource-percentage');
-                console.log(`Resource ${index} - select:`, selectElement, 'value:', selectElement?.value);
-                console.log(`Resource ${index} - percentage:`, percentageElement, 'value:', percentageElement?.value);
-                const resourceId = selectElement.value; // NON usare parseInt per mantenere i decimali!
+                const resourceId = selectElement.value;
                 const percentage = parseInt(percentageElement.value);
-                console.log(`Resource ${index} - parsed:`, { resourceId, percentage });
                 if (resourceId && percentage >= 0) {
                     assignedResources.push({ resourceId, percentage });
-                    console.log(`Resource ${index} - ADDED to array`);
-                } else {
-                    console.log(`Resource ${index} - SKIPPED (invalid data)`);
                 }
             });
-            console.log('Total assigned resources:', assignedResources.length);
-            console.log('Assigned resources array:', JSON.stringify(assignedResources));
 
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
@@ -3185,23 +3212,15 @@
                 notes,
                 resources: assignedResources
             };
-            console.log('Task object created:', JSON.stringify(task));
 
             if (editingTaskId) {
                 const index = project.tasks.findIndex(t => t.id === editingTaskId);
-                console.log('UPDATING existing task at index:', index);
-                console.log('BEFORE update:', JSON.stringify(project.tasks[index]));
                 project.tasks[index] = task;
-                console.log('AFTER update:', JSON.stringify(project.tasks[index]));
             } else {
-                console.log('CREATING new task');
                 project.tasks.push(task);
             }
-            console.log('All project tasks:', JSON.stringify(project.tasks.map(t => ({ id: t.id, name: t.name, resources: t.resources }))));
 
-            console.log('Saving to IndexedDB...');
             saveToIndexedDBAll();
-            console.log('=== SAVE TASK END ===');
             calculateHolidays();
             renderHolidays();
             renderTasks();
@@ -3213,24 +3232,13 @@
         }
 
         function editTask(id) {
-            console.log('=== EDIT TASK START ===');
-            console.log('Task ID to edit:', id);
             const project = projects.find(p => p.id === currentProjectId);
-            if (!project) {
-                console.log('Project NOT FOUND');
-                return;
-            }
+            if (!project) return;
 
             const task = project.tasks.find(t => t.id === id);
-            if (!task) {
-                console.log('Task NOT FOUND');
-                return;
-            }
-            console.log('Task found:', JSON.stringify(task));
-            console.log('Task resources:', JSON.stringify(task.resources));
+            if (!task) return;
 
             editingTaskId = id;
-            console.log('editingTaskId set to:', editingTaskId);
             document.getElementById('taskName').value = task.name;
             document.getElementById('taskStartDate').value = task.startDate || '';
             document.getElementById('taskDuration').value = task.duration;
@@ -3242,11 +3250,9 @@
 
             // Clear and rebuild resource assignments
             const container = document.getElementById('taskResources');
-            console.log('Clearing resource container');
             container.innerHTML = '';
 
             if (task.resources && task.resources.length > 0) {
-                console.log('Loading', task.resources.length, 'resources');
                 task.resources.forEach((res, index) => {
                     console.log(`Loading resource ${index}:`, JSON.stringify(res));
                     addTaskResourceRow();
@@ -4943,7 +4949,6 @@
             
             // Se l'attività è completamente fuori dal range visibile, non disegnarla
             if (end < firstDay || start > lastDay) {
-                console.log(`[addGanttBar] "${label}": SKIPPED - out of range (${startDate} - ${endDate}, range: ${formatDateLocal(days[0])} - ${formatDateLocal(days[days.length - 1])})`);
                 return;
             }
             
@@ -4963,7 +4968,6 @@
             
             // Se ancora non trovati, esci
             if (startIndex === -1 || endIndex === -1) {
-                console.log(`[addGanttBar] "${label}": SKIPPED - indices not found (start=${startIndex}, end=${endIndex}, dates=${startDate}-${endDate}, firstDay=${formatDateLocal(days[0])}, lastDay=${formatDateLocal(days[days.length - 1])})`);
                 return;
             }
 
@@ -5022,7 +5026,6 @@
             
             const numDays = endIndex - startIndex + 1;
             const calculatedWidth = numDays * dayWidth;
-            console.log(`[SEGMENT] "${label}": startIndex=${startIndex}, endIndex=${endIndex}, width=${calculatedWidth}px (${numDays} days)`);
             
             // Salva gli indici E le date originali per il ridimensionamento
             bar._startIndex = startIndex;
