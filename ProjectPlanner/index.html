@@ -61,7 +61,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 10px;
+            padding: 0;
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.3s, color 0.3s;
@@ -69,12 +69,12 @@
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            width: 100%;
             background: var(--bg-secondary);
             padding: 12px;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px var(--shadow);
+            border-radius: 0;
+            box-shadow: none;
+            min-height: 100vh;
         }
 
         h1 {
@@ -474,6 +474,11 @@
             font-size: 0;
         }
 
+        .gantt-chart.zoomed-out .gantt-bar {
+            border-radius: 2px;
+            box-shadow: none;
+        }
+
         .gantt-day.today::before {
             content: '';
             position: absolute;
@@ -488,7 +493,7 @@
         .gantt-row {
             display: flex;
             position: relative;
-            min-height: 40px;
+            min-height: 26px;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -500,7 +505,7 @@
             flex: 0 0 250px;
             width: 250px;
             min-width: 250px;
-            padding: 8px;
+            padding: 3px 8px;
             background: var(--bg-tertiary);
             border-right: 2px solid var(--border-color);
             position: sticky;
@@ -508,7 +513,7 @@
             z-index: 6;
             display: flex;
             align-items: center;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         .gantt-expand-icon {
@@ -528,12 +533,12 @@
 
         .gantt-bar {
             position: absolute;
-            height: 30px;
-            top: 5px;
-            border-radius: 4px;
-            padding: 5px 10px;
+            height: 20px;
+            top: 3px;
+            border-radius: 3px;
+            padding: 2px 6px;
             color: white;
-            font-size: 12px;
+            font-size: 10px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -559,10 +564,10 @@
 
         .gantt-bar.milestone {
             background: var(--info-color);
-            height: 20px;
-            top: 10px;
+            height: 14px;
+            top: 6px;
             clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-            width: 20px !important;
+            width: 14px !important;
         }
 
         .gantt-bar.task {
@@ -1158,6 +1163,8 @@
                     </select>
                 </div>
                 <button onclick="renderGantt()" class="secondary">🔄 Aggiorna</button>
+                <button onclick="collapseAllGanttProjects()" class="secondary">▶ Collapse All</button>
+                <button onclick="expandAllGanttProjects()" class="secondary">▼ Expand All</button>
             </div>
 
             <div class="gantt-legend">
@@ -1215,7 +1222,23 @@
                         <option value="month" selected>Mese</option>
                         <option value="quarter">Trimestre</option>
                         <option value="year">Anno</option>
+                        <option value="all">Tutto</option>
                         <option value="custom">Personalizzato</option>
+                    </select>
+                </div>
+                <div class="filter-group" id="specificWeekRange" style="display: none;">
+                    <label>Settimana:</label>
+                    <select id="resourceViewSpecificWeek" onchange="renderResourceView()">
+                    </select>
+                </div>
+                <div class="filter-group" id="specificMonthRange" style="display: none;">
+                    <label>Mese:</label>
+                    <select id="resourceViewSpecificMonth" onchange="renderResourceView()">
+                    </select>
+                </div>
+                <div class="filter-group" id="specificYearRange" style="display: none;">
+                    <label>Anno:</label>
+                    <select id="resourceViewSpecificYear" onchange="renderResourceView()">
                     </select>
                 </div>
                 <div class="filter-group" id="customDateRange" style="display: none;">
@@ -2787,7 +2810,7 @@
             newResource.innerHTML = `
                 <select class="task-resource-select">${options}</select>
                 <label>Coinvolgimento:</label>
-                <input type="number" class="task-resource-percentage" min="1" max="100" value="100" placeholder="%">
+                <input type="number" class="task-resource-percentage" min="0" max="100" value="100" placeholder="%">
                 <span>%</span>
                 <button type="button" onclick="addTaskResource()">+ Aggiungi Risorsa</button>
             `;
@@ -3119,7 +3142,7 @@
                 const resourceId = selectElement.value; // NON usare parseInt per mantenere i decimali!
                 const percentage = parseInt(percentageElement.value);
                 console.log(`Resource ${index} - parsed:`, { resourceId, percentage });
-                if (resourceId && percentage) {
+                if (resourceId && percentage >= 0) {
                     assignedResources.push({ resourceId, percentage });
                     console.log(`Resource ${index} - ADDED to array`);
                 } else {
@@ -4578,21 +4601,39 @@
 
         function renderGanttByProjects(container, filteredProjects, days, minDate, maxDate) {
             filteredProjects.forEach(project => {
+                // Verifica se ci sono attività con sabato/domenica/festivo lavorativo
+                let workFlags = [];
+                if (project.tasks) {
+                    const hasSaturdayWork = project.tasks.some(t => t.saturdayWork);
+                    const hasSundayWork = project.tasks.some(t => t.sundayWork);
+                    const hasHolidayWork = project.tasks.some(t => t.holidayWork);
+                    if (hasSaturdayWork) workFlags.push('📅Sab');
+                    if (hasSundayWork) workFlags.push('📅Dom');
+                    if (hasHolidayWork) workFlags.push('🎉Fest');
+                }
+                const workFlagsStr = workFlags.length > 0 ? ` [${workFlags.join(' ')}]` : '';
+                
                 // Row per progetto
-                const projectRow = createGanttRow(`📁 ${project.client} - ${project.code}`, days, 'project', project.id);
+                const projectRow = createGanttRow(`📁 ${project.client} - ${project.code}${workFlagsStr}`, days, 'project', project.id);
                 container.appendChild(projectRow);
 
                 // Calcola barra progetto (dall'inizio alla fine)
                 const stats = calculateProjectStats(project);
                 if (stats.startDate && stats.endDate) {
-                    addGanttBar(projectRow, stats.startDate, stats.endDate, project.client, days, minDate, 'project', null, null);
+                    // Crea un oggetto pseudo-task con le impostazioni lavorative aggregate del progetto
+                    const projectWorkSettings = {
+                        saturdayWork: project.tasks && project.tasks.some(t => t.saturdayWork),
+                        sundayWork: project.tasks && project.tasks.some(t => t.sundayWork),
+                        holidayWork: project.tasks && project.tasks.some(t => t.holidayWork)
+                    };
+                    addGanttBar(projectRow, stats.startDate, stats.endDate, project.client, days, minDate, 'project', null, projectWorkSettings);
                 }
 
-                // Milestone
+                // Milestone - Raggruppati in una sola riga
                 if (project.milestones && project.milestones.length > 0) {
+                    const milestoneRow = createGanttRow(`  ◆ Milestone (${project.milestones.length})`, days, 'milestone', project.id);
+                    container.appendChild(milestoneRow);
                     project.milestones.forEach(milestone => {
-                        const milestoneRow = createGanttRow(`  ◆ ${milestone.name}`, days, 'milestone', project.id);
-                        container.appendChild(milestoneRow);
                         addGanttBar(milestoneRow, milestone.date, milestone.date, milestone.name, days, minDate, 'milestone', null, null);
                     });
                 }
@@ -4794,6 +4835,28 @@
             icon.textContent = isCollapsed ? '▼' : '▶';
         }
 
+        function collapseAllGanttProjects() {
+            const allProjectRows = document.querySelectorAll('.gantt-row[data-row-type="project"]');
+            allProjectRows.forEach(projectRow => {
+                const projectId = projectRow.dataset.projectId;
+                const icon = projectRow.querySelector('.gantt-expand-icon');
+                if (icon && icon.textContent === '▼') {
+                    toggleGanttProject(projectId);
+                }
+            });
+        }
+
+        function expandAllGanttProjects() {
+            const allProjectRows = document.querySelectorAll('.gantt-row[data-row-type="project"]');
+            allProjectRows.forEach(projectRow => {
+                const projectId = projectRow.dataset.projectId;
+                const icon = projectRow.querySelector('.gantt-expand-icon');
+                if (icon && icon.textContent === '▶') {
+                    toggleGanttProject(projectId);
+                }
+            });
+        }
+
         function addGanttBar(row, startDate, endDate, label, days, minDate, className, onClickCallback, task) {
             const start = new Date(startDate);
             const end = new Date(endDate);
@@ -4873,6 +4936,9 @@
             bar.textContent = label;
             bar.title = `${label}\n${originalStart} - ${originalEnd}`;
             
+            const calculatedWidth = (endIndex - startIndex + 1) * dayWidth;
+            console.log(`[SEGMENT] "${label}": startIndex=${startIndex}, endIndex=${endIndex}, width=${calculatedWidth}px (${endIndex - startIndex + 1} days)`);
+            
             // Salva gli indici E le date originali per il ridimensionamento
             bar._startIndex = startIndex;
             bar._endIndex = endIndex;
@@ -4924,8 +4990,17 @@
         function updateResourceViewPeriod() {
             const period = document.getElementById('resourceViewPeriod').value;
             const customRange = document.getElementById('customDateRange');
+            const specificWeekRange = document.getElementById('specificWeekRange');
+            const specificMonthRange = document.getElementById('specificMonthRange');
+            const specificYearRange = document.getElementById('specificYearRange');
             const startDateInput = document.getElementById('resourceViewStartDate');
             const endDateInput = document.getElementById('resourceViewEndDate');
+            
+            // Nascondi tutti i selettori specifici
+            customRange.style.display = 'none';
+            specificWeekRange.style.display = 'none';
+            specificMonthRange.style.display = 'none';
+            specificYearRange.style.display = 'none';
             
             const today = new Date();
             let startDate, endDate;
@@ -4933,6 +5008,33 @@
             if (period === 'custom') {
                 customRange.style.display = 'flex';
                 return; // Non aggiorna automaticamente, aspetta che l'utente selezioni le date
+            } else if (period === 'week') {
+                specificWeekRange.style.display = 'flex';
+                populateWeekSelector();
+                return;
+            } else if (period === 'month') {
+                specificMonthRange.style.display = 'flex';
+                populateMonthSelector();
+                return;
+            } else if (period === 'year') {
+                specificYearRange.style.display = 'flex';
+                populateYearSelector();
+                return;
+            } else if (period === 'all') {
+                // Trova il range completo dai progetti
+                const dateRange = getProjectsDateRange();
+                if (dateRange.minDate && dateRange.maxDate) {
+                    const formatDate = (date) => {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                    };
+                    startDateInput.value = formatDate(dateRange.minDate);
+                    endDateInput.value = formatDate(dateRange.maxDate);
+                    renderResourceView();
+                }
+                return;
             } else {
                 customRange.style.display = 'none';
                 
@@ -4973,6 +5075,150 @@
             renderResourceView();
         }
 
+        function getProjectsDateRange() {
+            let minDate = null;
+            let maxDate = null;
+
+            projects.forEach(project => {
+                if (project.milestones) {
+                    project.milestones.forEach(m => {
+                        if (m.date) {
+                            const date = new Date(m.date);
+                            if (!minDate || date < minDate) minDate = date;
+                            if (!maxDate || date > maxDate) maxDate = date;
+                        }
+                    });
+                }
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (task.startDate) {
+                            const start = new Date(task.startDate);
+                            if (!minDate || start < minDate) minDate = start;
+                        }
+                        if (task.endDate) {
+                            const end = new Date(task.endDate);
+                            if (!maxDate || end > maxDate) maxDate = end;
+                        }
+                    });
+                }
+            });
+
+            return { minDate, maxDate };
+        }
+
+        function populateWeekSelector() {
+            const select = document.getElementById('resourceViewSpecificWeek');
+            const dateRange = getProjectsDateRange();
+            
+            if (!dateRange.minDate || !dateRange.maxDate) {
+                select.innerHTML = '<option value="">Nessun progetto</option>';
+                return;
+            }
+
+            select.innerHTML = '';
+            const currentWeekStart = new Date();
+            currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay() + 1); // Lunedì
+
+            let weekStart = new Date(dateRange.minDate);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+
+            let selectedSet = false;
+            while (weekStart <= dateRange.maxDate) {
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                
+                const option = document.createElement('option');
+                option.value = formatDateLocal(weekStart);
+                option.textContent = `${formatDateLocal(weekStart)} - ${formatDateLocal(weekEnd)}`;
+                
+                // Seleziona la settimana corrente
+                if (!selectedSet && weekStart <= currentWeekStart && weekEnd >= currentWeekStart) {
+                    option.selected = true;
+                    selectedSet = true;
+                }
+                
+                select.appendChild(option);
+                weekStart.setDate(weekStart.getDate() + 7);
+            }
+
+            renderResourceView();
+        }
+
+        function populateMonthSelector() {
+            const select = document.getElementById('resourceViewSpecificMonth');
+            const dateRange = getProjectsDateRange();
+            
+            if (!dateRange.minDate || !dateRange.maxDate) {
+                select.innerHTML = '<option value="">Nessun progetto</option>';
+                return;
+            }
+
+            select.innerHTML = '';
+            const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                              'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+            
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+
+            let year = dateRange.minDate.getFullYear();
+            let month = dateRange.minDate.getMonth();
+            const endYear = dateRange.maxDate.getFullYear();
+            const endMonth = dateRange.maxDate.getMonth();
+
+            let selectedSet = false;
+            while (year < endYear || (year === endYear && month <= endMonth)) {
+                const option = document.createElement('option');
+                option.value = `${year}-${String(month + 1).padStart(2, '0')}`;
+                option.textContent = `${monthNames[month]} ${year}`;
+                
+                // Seleziona il mese corrente
+                if (!selectedSet && year === currentYear && month === currentMonth) {
+                    option.selected = true;
+                    selectedSet = true;
+                }
+                
+                select.appendChild(option);
+                
+                month++;
+                if (month > 11) {
+                    month = 0;
+                    year++;
+                }
+            }
+
+            renderResourceView();
+        }
+
+        function populateYearSelector() {
+            const select = document.getElementById('resourceViewSpecificYear');
+            const dateRange = getProjectsDateRange();
+            
+            if (!dateRange.minDate || !dateRange.maxDate) {
+                select.innerHTML = '<option value="">Nessun progetto</option>';
+                return;
+            }
+
+            select.innerHTML = '';
+            const currentYear = new Date().getFullYear();
+            const startYear = dateRange.minDate.getFullYear();
+            const endYear = dateRange.maxDate.getFullYear();
+
+            for (let year = startYear; year <= endYear; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                
+                // Seleziona l'anno corrente
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                
+                select.appendChild(option);
+            }
+
+            renderResourceView();
+        }
+
         function renderResourceView() {
             const resourceFilter = document.getElementById('resourceViewFilter')?.value;
             const period = document.getElementById('resourceViewPeriod')?.value;
@@ -4984,15 +5230,51 @@
             
             container.innerHTML = '';
 
-            // Calcola date in base al periodo se non sono custom
+            // Calcola date in base al periodo
             let startDate, endDate;
-            if (period === 'custom' && startDateInput && endDateInput) {
+            if ((period === 'custom' || period === 'all') && startDateInput && endDateInput) {
                 startDate = new Date(startDateInput);
                 endDate = new Date(endDateInput);
-            } else {
-                // Default: mese (30 giorni)
+            } else if (period === 'week') {
+                const weekStart = document.getElementById('resourceViewSpecificWeek')?.value;
+                if (weekStart) {
+                    startDate = new Date(weekStart);
+                    endDate = new Date(startDate);
+                    endDate.setDate(endDate.getDate() + 6);
+                } else {
+                    startDate = new Date();
+                    endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+                }
+            } else if (period === 'month') {
+                const monthValue = document.getElementById('resourceViewSpecificMonth')?.value;
+                if (monthValue) {
+                    const [year, month] = monthValue.split('-').map(Number);
+                    startDate = new Date(year, month - 1, 1);
+                    endDate = new Date(year, month, 0); // Ultimo giorno del mese
+                } else {
+                    startDate = new Date();
+                    endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+                }
+            } else if (period === 'year') {
+                const yearValue = document.getElementById('resourceViewSpecificYear')?.value;
+                if (yearValue) {
+                    const year = parseInt(yearValue);
+                    startDate = new Date(year, 0, 1);
+                    endDate = new Date(year, 11, 31);
+                } else {
+                    startDate = new Date();
+                    endDate = new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+                }
+            } else if (period === 'today') {
                 startDate = new Date();
-                endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+                endDate = new Date();
+            } else if (period === 'quarter') {
+                startDate = new Date();
+                endDate = new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000);
+            } else {
+                // Default: oggi
+                startDate = new Date();
+                endDate = new Date();
             }
 
             const filteredResources = resourceFilter ? 
