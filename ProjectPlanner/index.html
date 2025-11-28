@@ -71,7 +71,7 @@
         .container {
             width: 100%;
             background: var(--bg-secondary);
-            padding: 12px;
+            padding: 8px;
             border-radius: 0;
             box-shadow: none;
             min-height: 100vh;
@@ -79,38 +79,38 @@
 
         h1 {
             color: var(--text-primary);
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             text-align: center;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
-            font-size: 1.6em;
+            gap: 8px;
+            font-size: 1.3em;
         }
 
         h2 {
             color: var(--text-secondary);
-            margin-top: 15px;
-            margin-bottom: 8px;
-            padding-bottom: 5px;
+            margin-top: 8px;
+            margin-bottom: 6px;
+            padding-bottom: 3px;
             border-bottom: 2px solid var(--accent-color);
-            font-size: 1.3em;
+            font-size: 1.1em;
         }
 
         .tabs {
             display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
+            gap: 3px;
+            margin-bottom: 6px;
             border-bottom: 2px solid var(--border-color);
         }
 
         .tab {
-            padding: 6px 12px;
+            padding: 4px 10px;
             background: var(--bg-tertiary);
             border: none;
             cursor: pointer;
             border-radius: 4px 4px 0 0;
-            font-size: 13px;
+            font-size: 12px;
             transition: background 0.3s;
             color: var(--text-primary);
         }
@@ -193,6 +193,9 @@
 
         button.secondary {
             background-color: var(--info-color);
+            padding: 4px 10px;
+            font-size: 11px;
+            margin-left: 4px;
         }
 
         button.secondary:hover {
@@ -376,15 +379,16 @@
 
         .gantt-header {
             display: flex;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             gap: 10px;
             align-items: center;
         }
 
         .gantt-chart {
             position: relative;
-            min-height: 400px;
+            height: calc(100vh - 140px);
             overflow-x: auto;
+            overflow-y: auto;
             border: 1px solid var(--border-color);
         }
 
@@ -395,7 +399,7 @@
             position: sticky;
             top: 0;
             background: var(--bg-secondary);
-            z-index: 11;
+            z-index: 100;
         }
 
         .gantt-timeline-row {
@@ -855,35 +859,48 @@
 
         .filter-section {
             background: var(--bg-tertiary);
-            padding: 15px;
+            padding: 8px 10px;
             border-radius: 5px;
-            margin-bottom: 20px;
+            margin-bottom: 6px;
+            font-size: 12px;
         }
 
         .filter-group {
             display: inline-block;
-            margin-right: 20px;
+            margin-right: 12px;
+            margin-bottom: 0;
+        }
+
+        .filter-group label {
+            margin-right: 4px;
+            font-size: 12px;
+        }
+
+        .filter-group select {
+            padding: 3px 6px;
+            font-size: 12px;
         }
 
         .gantt-legend {
             display: flex;
-            gap: 20px;
-            margin-bottom: 15px;
-            padding: 10px;
+            gap: 12px;
+            margin-bottom: 8px;
+            padding: 6px 10px;
             background: var(--bg-tertiary);
             border-radius: 5px;
+            font-size: 11px;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 5px;
         }
 
         .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 3px;
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
         }
 
         /* Modal Styles */
@@ -4768,17 +4785,19 @@
                 // Lascia che e.deltaY scorra normalmente la pagina se non c'è Shift
             };
 
-            // Drag to scroll
+            // Drag to scroll (orizzontale e verticale con Ctrl)
             let isDragging = false;
-            let startX;
-            let scrollLeft;
+            let startX, startY;
+            let scrollLeft, scrollTop;
 
             const mouseDownHandler = function(e) {
                 // Solo se click su gantt-row-bars o gantt-timeline
                 if (e.target.closest('.gantt-row-bars') || e.target.closest('.gantt-timeline')) {
                     isDragging = true;
                     startX = e.pageX - container.offsetLeft;
+                    startY = e.pageY - container.offsetTop;
                     scrollLeft = container.scrollLeft;
+                    scrollTop = container.scrollTop;
                     container.style.cursor = 'grabbing';
                     e.preventDefault();
                 }
@@ -4788,8 +4807,12 @@
                 if (!isDragging) return;
                 e.preventDefault();
                 const x = e.pageX - container.offsetLeft;
-                const walk = (x - startX) * 1.5; // Moltiplica per velocità
-                container.scrollLeft = scrollLeft - walk;
+                const walkX = (x - startX) * 1.5;
+                container.scrollLeft = scrollLeft - walkX;
+                
+                const y = e.pageY - container.offsetTop;
+                const walkY = (y - startY) * 1.5;
+                container.scrollTop = scrollTop - walkY;
             };
 
             const mouseUpHandler = function() {
@@ -4808,11 +4831,16 @@
             // Fix sticky columns - forza le label a rimanere visibili durante lo scroll
             container.addEventListener('scroll', function(e) {
                 const scrollLeft = container.scrollLeft;
-                const stickyLabels = container.querySelectorAll('.gantt-row-label, .gantt-timeline-label');
                 
-                // Forza la posizione left in base allo scroll
-                stickyLabels.forEach(label => {
-                    // Usa transform invece di left per migliori prestazioni
+                // Label delle righe - muovi orizzontalmente
+                const rowLabels = container.querySelectorAll('.gantt-row-label');
+                rowLabels.forEach(label => {
+                    label.style.transform = `translateX(${scrollLeft}px)`;
+                });
+                
+                // Label della timeline - muovi orizzontalmente (la timeline resta sticky verticale)
+                const timelineLabels = container.querySelectorAll('.gantt-timeline-label');
+                timelineLabels.forEach(label => {
                     label.style.transform = `translateX(${scrollLeft}px)`;
                 });
             }, { passive: true });
@@ -5166,25 +5194,55 @@
         }
 
         function collapseAllGanttProjects() {
-            const allProjectRows = document.querySelectorAll('.gantt-row[data-row-type="project"]');
-            allProjectRows.forEach(projectRow => {
-                const projectId = projectRow.dataset.projectId;
-                const icon = projectRow.querySelector('.gantt-expand-icon');
-                if (icon && icon.textContent === '▼') {
-                    toggleGanttProject(projectId);
-                }
-            });
+            const currentView = document.getElementById('ganttViewFilter')?.value;
+            
+            if (currentView === 'resources') {
+                // Vista per risorsa - collapse tutte le risorse
+                const allResourceRows = document.querySelectorAll('.gantt-row[data-row-type="resource"]');
+                allResourceRows.forEach(resourceRow => {
+                    const resourceId = resourceRow.dataset.resourceId;
+                    const icon = resourceRow.querySelector('.gantt-expand-icon');
+                    if (icon && icon.textContent === '▼') {
+                        toggleGanttResource(resourceId);
+                    }
+                });
+            } else {
+                // Vista per progetto - collapse tutti i progetti
+                const allProjectRows = document.querySelectorAll('.gantt-row[data-row-type="project"]');
+                allProjectRows.forEach(projectRow => {
+                    const projectId = projectRow.dataset.projectId;
+                    const icon = projectRow.querySelector('.gantt-expand-icon');
+                    if (icon && icon.textContent === '▼') {
+                        toggleGanttProject(projectId);
+                    }
+                });
+            }
         }
 
         function expandAllGanttProjects() {
-            const allProjectRows = document.querySelectorAll('.gantt-row[data-row-type="project"]');
-            allProjectRows.forEach(projectRow => {
-                const projectId = projectRow.dataset.projectId;
-                const icon = projectRow.querySelector('.gantt-expand-icon');
-                if (icon && icon.textContent === '▶') {
-                    toggleGanttProject(projectId);
-                }
-            });
+            const currentView = document.getElementById('ganttViewFilter')?.value;
+            
+            if (currentView === 'resources') {
+                // Vista per risorsa - expand tutte le risorse
+                const allResourceRows = document.querySelectorAll('.gantt-row[data-row-type="resource"]');
+                allResourceRows.forEach(resourceRow => {
+                    const resourceId = resourceRow.dataset.resourceId;
+                    const icon = resourceRow.querySelector('.gantt-expand-icon');
+                    if (icon && icon.textContent === '▶') {
+                        toggleGanttResource(resourceId);
+                    }
+                });
+            } else {
+                // Vista per progetto - expand tutti i progetti
+                const allProjectRows = document.querySelectorAll('.gantt-row[data-row-type="project"]');
+                allProjectRows.forEach(projectRow => {
+                    const projectId = projectRow.dataset.projectId;
+                    const icon = projectRow.querySelector('.gantt-expand-icon');
+                    if (icon && icon.textContent === '▶') {
+                        toggleGanttProject(projectId);
+                    }
+                });
+            }
         }
 
         function addGanttBar(row, startDate, endDate, label, days, minDate, className, onClickCallback, task) {
