@@ -412,8 +412,7 @@
             font-size: 9px;
             font-weight: 600;
             background: var(--bg-tertiary);
-            position: sticky;
-            left: 0;
+            position: relative;
             z-index: 20;
         }
 
@@ -536,8 +535,7 @@
             padding: 3px 8px;
             background: var(--bg-tertiary);
             border-right: 2px solid var(--border-color);
-            position: sticky;
-            left: 0;
+            position: relative;
             z-index: 15;
             display: flex;
             align-items: center;
@@ -4807,32 +4805,17 @@
             document.addEventListener('mousemove', mouseMoveHandler);
             document.addEventListener('mouseup', mouseUpHandler);
             
-            // Debug sticky columns
-            let scrollDebounce;
+            // Fix sticky columns - forza le label a rimanere visibili durante lo scroll
             container.addEventListener('scroll', function(e) {
-                clearTimeout(scrollDebounce);
-                scrollDebounce = setTimeout(() => {
-                    const stickyLabels = container.querySelectorAll('.gantt-row-label, .gantt-timeline-label');
-                    stickyLabels.forEach((label, idx) => {
-                        const rect = label.getBoundingClientRect();
-                        const containerRect = container.getBoundingClientRect();
-                        const isVisible = rect.left >= containerRect.left - 10;
-                        
-                        console.log(`Sticky ${idx}: left=${rect.left.toFixed(0)}, containerLeft=${containerRect.left.toFixed(0)}, visible=${isVisible}, scrollLeft=${container.scrollLeft}`);
-                        
-                        if (!isVisible) {
-                            console.warn(`⚠️ Sticky column ${idx} NASCOSTA!`, {
-                                labelLeft: rect.left,
-                                containerLeft: containerRect.left,
-                                scrollLeft: container.scrollLeft,
-                                position: getComputedStyle(label).position,
-                                zIndex: getComputedStyle(label).zIndex,
-                                left: getComputedStyle(label).left
-                            });
-                        }
-                    });
-                }, 100);
-            });
+                const scrollLeft = container.scrollLeft;
+                const stickyLabels = container.querySelectorAll('.gantt-row-label, .gantt-timeline-label');
+                
+                // Forza la posizione left in base allo scroll
+                stickyLabels.forEach(label => {
+                    // Usa transform invece di left per migliori prestazioni
+                    label.style.transform = `translateX(${scrollLeft}px)`;
+                });
+            }, { passive: true });
         }
 
         function updateGanttBarsWidth(container) {
