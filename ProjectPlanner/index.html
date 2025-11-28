@@ -371,7 +371,6 @@
 
         /* Gantt Chart Styles */
         .gantt-container {
-            overflow-x: auto;
             margin-top: 20px;
         }
 
@@ -415,7 +414,7 @@
             background: var(--bg-tertiary);
             position: sticky;
             left: 0;
-            z-index: 13;
+            z-index: 20;
         }
 
         .gantt-timeline-item {
@@ -539,7 +538,7 @@
             border-right: 2px solid var(--border-color);
             position: sticky;
             left: 0;
-            z-index: 6;
+            z-index: 15;
             display: flex;
             align-items: center;
             font-size: 11px;
@@ -4807,6 +4806,33 @@
             container.addEventListener('mousedown', mouseDownHandler);
             document.addEventListener('mousemove', mouseMoveHandler);
             document.addEventListener('mouseup', mouseUpHandler);
+            
+            // Debug sticky columns
+            let scrollDebounce;
+            container.addEventListener('scroll', function(e) {
+                clearTimeout(scrollDebounce);
+                scrollDebounce = setTimeout(() => {
+                    const stickyLabels = container.querySelectorAll('.gantt-row-label, .gantt-timeline-label');
+                    stickyLabels.forEach((label, idx) => {
+                        const rect = label.getBoundingClientRect();
+                        const containerRect = container.getBoundingClientRect();
+                        const isVisible = rect.left >= containerRect.left - 10;
+                        
+                        console.log(`Sticky ${idx}: left=${rect.left.toFixed(0)}, containerLeft=${containerRect.left.toFixed(0)}, visible=${isVisible}, scrollLeft=${container.scrollLeft}`);
+                        
+                        if (!isVisible) {
+                            console.warn(`⚠️ Sticky column ${idx} NASCOSTA!`, {
+                                labelLeft: rect.left,
+                                containerLeft: containerRect.left,
+                                scrollLeft: container.scrollLeft,
+                                position: getComputedStyle(label).position,
+                                zIndex: getComputedStyle(label).zIndex,
+                                left: getComputedStyle(label).left
+                            });
+                        }
+                    });
+                }, 100);
+            });
         }
 
         function updateGanttBarsWidth(container) {
