@@ -5687,8 +5687,8 @@
             const dailyLoad = {};
 
             assignments.forEach(assignment => {
-                // Escludi attività completate al 100% o con stato 'completata'
-                if (assignment.task.completion >= 100 || assignment.task.status === 'completata') {
+                // Escludi attività completate al 100%, con stato 'completata' o in pausa
+                if (assignment.task.completion >= 100 || assignment.task.status === 'completata' || assignment.task.status === 'pausa') {
                     return;
                 }
                 
