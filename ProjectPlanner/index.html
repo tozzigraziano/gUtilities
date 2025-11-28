@@ -470,6 +470,26 @@
             background: var(--bg-secondary);
         }
 
+        .gantt-timeline-item.today {
+            background: linear-gradient(135deg, #ff5722, #ff9800) !important;
+            color: white !important;
+            font-weight: 800 !important;
+            font-size: 10px !important;
+            box-shadow: 0 2px 6px rgba(255, 87, 34, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .gantt-timeline-item.today::before {
+            content: '▼';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #ff5722;
+            z-index: 11;
+        }
+
         .gantt-chart.zoomed-out .gantt-timeline-item:not(.week-header):not(.month-header):not(.year-header) {
             font-size: 0;
         }
@@ -485,9 +505,18 @@
             left: 0;
             top: 0;
             bottom: 0;
-            width: 2px;
-            background: #2196F3;
+            width: 3px;
+            background: linear-gradient(to bottom, #ff5722, #ff9800, #ff5722);
             z-index: 10;
+            box-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
+        }
+
+        .gantt-day.today {
+            background-image: linear-gradient(rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.15)) !important;
+        }
+
+        [data-theme="dark"] .gantt-day.today {
+            background-image: linear-gradient(rgba(255, 152, 0, 0.2), rgba(255, 152, 0, 0.2)) !important;
         }
 
         .gantt-row {
@@ -655,9 +684,18 @@
             left: 0;
             top: 0;
             bottom: 0;
-            width: 2px;
-            background: #2196F3;
+            width: 3px;
+            background: linear-gradient(to bottom, #ff5722, #ff9800, #ff5722);
             z-index: 10;
+            box-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
+        }
+
+        .gantt-day.today {
+            background-image: linear-gradient(rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.15)) !important;
+        }
+
+        [data-theme="dark"] .gantt-day.today {
+            background-image: linear-gradient(rgba(255, 152, 0, 0.2), rgba(255, 152, 0, 0.2)) !important;
         }
 
         /* Resource View Styles */
@@ -671,6 +709,63 @@
 
         .resource-card.overloaded {
             border-left-color: var(--danger-color);
+        }
+
+        .resource-load-bar {
+            background: var(--bg-secondary);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .resource-load-bar-label {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-tertiary);
+        }
+
+        .resource-load-bar-container {
+            display: flex;
+            gap: 2px;
+            align-items: flex-end;
+            height: 60px;
+        }
+
+        .resource-daily-bar {
+            flex: 1;
+            border-radius: 2px 2px 0 0;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            position: relative;
+            min-width: 8px;
+        }
+
+        .resource-daily-bar:hover {
+            opacity: 0.8;
+        }
+
+        .resource-daily-bar-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+            margin-bottom: 5px;
+        }
+
+        .resource-daily-bar:hover .resource-daily-bar-tooltip {
+            opacity: 1;
         }
 
         .resource-header {
@@ -4603,6 +4698,16 @@
                 const item = document.createElement('div');
                 item.className = 'gantt-timeline-item';
                 item.textContent = day.getDate();
+                
+                // Aggiungi classe today se è il giorno corrente
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const checkDay = new Date(day);
+                checkDay.setHours(0, 0, 0, 0);
+                if (checkDay.getTime() === today.getTime()) {
+                    item.classList.add('today');
+                }
+                
                 dayRow.appendChild(item);
             });
             timeline.appendChild(dayRow);
@@ -4817,11 +4922,80 @@
 
             // Renderizza per risorsa
             Object.values(resourceTasks).forEach(({ resource, tasks }) => {
-                const resourceRow = createGanttRow(`👤 ${resource.firstName} ${resource.lastName}`, days, null, null, resource.id);
+                // Crea riga risorsa con barra di carico integrata
+                const resourceRow = createGanttRow(`👤 ${resource.firstName} ${resource.lastName}`, days, 'resource', null, resource.id);
+                resourceRow.dataset.resourceId = resource.id;
+                resourceRow.style.minHeight = '50px';
+                resourceRow.style.height = '50px';
+                
+                // Aggiungi icona expand/collapse
+                const labelDiv = resourceRow.querySelector('.gantt-row-label');
+                const expandIcon = document.createElement('span');
+                expandIcon.className = 'gantt-expand-icon';
+                expandIcon.textContent = '▼';
+                expandIcon.onclick = function(e) {
+                    e.stopPropagation();
+                    toggleGanttResource(resource.id);
+                };
+                labelDiv.insertBefore(expandIcon, labelDiv.firstChild);
+                
+                // Calcola e aggiungi barra di carico direttamente sulla riga della risorsa
+                const assignments = tasks.map(task => ({
+                    task,
+                    percentage: task.percentage,
+                    startDate: task.startDate,
+                    endDate: task.endDate
+                }));
+                const overload = calculateResourceOverload(assignments, minDate, maxDate);
+                
+                // Sostituisci il contenuto di gantt-row-bars con la barra di carico
+                const barsDiv = resourceRow.querySelector('.gantt-row-bars');
+                barsDiv.innerHTML = '';
+                barsDiv.style.height = '100%';
+                barsDiv.style.position = 'relative';
+                
+                days.forEach(day => {
+                    const dayDiv = document.createElement('div');
+                    dayDiv.className = 'gantt-day';
+                    dayDiv.style.position = 'relative';
+                    dayDiv.style.height = '100%';
+                    dayDiv.style.display = 'flex';
+                    dayDiv.style.flexDirection = 'column';
+                    dayDiv.style.justifyContent = 'flex-end';
+                    
+                    const weekNum = getWeekNumber(day);
+                    if (weekNum % 2 === 0) {
+                        dayDiv.classList.add('week-even');
+                    } else {
+                        dayDiv.classList.add('week-odd');
+                    }
+                    
+                    const dayOfWeek = day.getDay();
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                        dayDiv.classList.add('weekend');
+                    }
+                    
+                    const dateStr = formatDateLocal(day);
+                    const load = overload.dailyLoad[dateStr] || 0;
+                    
+                    const loadBar = document.createElement('div');
+                    loadBar.style.width = '100%';
+                    loadBar.style.height = load > 0 ? `${Math.min(load / 150 * 100, 100)}%` : '2px';
+                    loadBar.style.backgroundColor = load > 0 ? getColorForLoad(load) : 'transparent';
+                    loadBar.style.borderRadius = '2px 2px 0 0';
+                    loadBar.style.minHeight = '2px';
+                    loadBar.title = load > 0 ? `${dateStr}: ${load.toFixed(0)}%` : '';
+                    
+                    dayDiv.appendChild(loadBar);
+                    barsDiv.appendChild(dayDiv);
+                });
+                
                 container.appendChild(resourceRow);
 
                 tasks.forEach(task => {
                     const taskRow = createGanttRow(`  ${task.project.code}: ${task.name} (${task.percentage}%)`, days, null, null, resource.id);
+                    taskRow.dataset.resourceId = resource.id;
+                    taskRow.dataset.rowType = 'resource-task';
                     container.appendChild(taskRow);
                     
                     let barClass = 'task';
@@ -4899,8 +5073,10 @@
                     dayDiv.classList.add('holiday');
                 }
                 
-                // Segna oggi
-                if (day.getTime() === today.getTime()) {
+                // Segna oggi (normalizza entrambe le date per il confronto)
+                const checkDay = new Date(day);
+                checkDay.setHours(0, 0, 0, 0);
+                if (checkDay.getTime() === today.getTime()) {
                     dayDiv.classList.add('today');
                 }
 
@@ -4947,6 +5123,28 @@
             
             projectRows.forEach(row => {
                 if (row.dataset.rowType !== 'project') {
+                    if (isCollapsed) {
+                        row.classList.remove('hidden');
+                    } else {
+                        row.classList.add('hidden');
+                    }
+                }
+            });
+            
+            icon.textContent = isCollapsed ? '▼' : '▶';
+        }
+
+        function toggleGanttResource(resourceId) {
+            const resourceRows = document.querySelectorAll(`.gantt-row[data-resource-id="${resourceId}"]`);
+            const resourceRow = document.querySelector(`.gantt-row[data-row-type="resource"][data-resource-id="${resourceId}"]`);
+            
+            if (!resourceRow) return;
+            
+            const icon = resourceRow.querySelector('.gantt-expand-icon');
+            const isCollapsed = icon.textContent === '▶';
+            
+            resourceRows.forEach(row => {
+                if (row.dataset.rowType === 'resource-task') {
                     if (isCollapsed) {
                         row.classList.remove('hidden');
                     } else {
@@ -5535,6 +5733,51 @@
 
             card.appendChild(header);
 
+            // Barra di carico giornaliero
+            if (assignments.length > 0 && Object.keys(overload.dailyLoad).length > 0) {
+                const loadBarDiv = document.createElement('div');
+                loadBarDiv.className = 'resource-load-bar';
+
+                const label = document.createElement('div');
+                label.className = 'resource-load-bar-label';
+                label.textContent = 'Carico giornaliero:';
+                loadBarDiv.appendChild(label);
+
+                const barContainer = document.createElement('div');
+                barContainer.className = 'resource-load-bar-container';
+
+                // Ordina i giorni e calcola l'altezza massima per normalizzare
+                const maxDailyLoad = Math.max(...Object.values(overload.dailyLoad), 150);
+
+                // Crea una barra per ogni giorno nel periodo
+                let currentDate = new Date(startDate);
+                while (currentDate <= endDate) {
+                    const dateStr = formatDateLocal(currentDate);
+                    const load = overload.dailyLoad[dateStr] || 0;
+
+                    const dailyBar = document.createElement('div');
+                    dailyBar.className = 'resource-daily-bar';
+
+                    // Calcola l'altezza in base al carico (minimo 2px per visibilità)
+                    const heightPercent = load > 0 ? Math.max(2, (load / maxDailyLoad) * 100) : 2;
+                    dailyBar.style.height = `${heightPercent}%`;
+                    dailyBar.style.backgroundColor = getColorForLoad(load);
+
+                    // Tooltip
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'resource-daily-bar-tooltip';
+                    tooltip.textContent = `${dateStr}: ${load.toFixed(0)}%`;
+                    dailyBar.appendChild(tooltip);
+
+                    barContainer.appendChild(dailyBar);
+
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+
+                loadBarDiv.appendChild(barContainer);
+                card.appendChild(loadBarDiv);
+            }
+
             // Assenze
             if (resource.absences && resource.absences.length > 0) {
                 const absencesDiv = document.createElement('div');
@@ -5634,6 +5877,32 @@
             }
 
             return card;
+        }
+
+        function getColorForLoad(percentage) {
+            // Colore graduale: blu (0-50) -> verde (50-100) -> rosso (100+)
+            if (percentage <= 50) {
+                // Blu: da blu scuro a blu chiaro
+                const ratio = percentage / 50;
+                const r = Math.floor(66 + (144 - 66) * ratio);
+                const g = Math.floor(165 + (186 - 165) * ratio);
+                const b = Math.floor(245 + (228 - 245) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else if (percentage <= 100) {
+                // Verde: da blu chiaro a verde
+                const ratio = (percentage - 50) / 50;
+                const r = Math.floor(144 - (144 - 102) * ratio);
+                const g = Math.floor(186 + (156 - 186) * ratio);
+                const b = Math.floor(228 - (228 - 122) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else {
+                // Rosso: da verde a rosso
+                const ratio = Math.min((percentage - 100) / 100, 1);
+                const r = Math.floor(102 + (244 - 102) * ratio);
+                const g = Math.floor(156 - (156 - 67) * ratio);
+                const b = Math.floor(122 - (122 - 54) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
         }
 
         function selectProject(id) {
