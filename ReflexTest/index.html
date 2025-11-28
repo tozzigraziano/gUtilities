@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reflex Test - Misura i Tuoi Riflessi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+
+        body.fullscreen-mode {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #mainContainer {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        #mainContainer.fullscreen-mode {
+            width: 100vw;
+            height: 100vh;
+            max-width: 100%;
+            border-radius: 0;
+            background: #0f0f1e;
+        }
+
+        .screen {
+            display: none;
+            padding: 40px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 2.5em;
+        }
+
+        body.fullscreen-mode h1 {
+            color: #e0e0e0;
+        }
+
+        h3 {
+            color: #333;
+            margin: 20px 0 10px 0;
+        }
+
+        body.fullscreen-mode h3 {
+            color: #e0e0e0;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            border-color: #667eea;
+        }
+
+        body.fullscreen-mode .btn-secondary {
+            background: #2a2a3e;
+            color: #e0e0e0;
+            border-color: #667eea;
+        }
+
+        body.fullscreen-mode .btn-secondary:hover {
+            background: #3a3a4e;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-box p {
+            margin: 10px 0;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .settings-container {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .setting-item {
+            margin-bottom: 20px;
+        }
+
+        .setting-item label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .setting-item input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .setting-item input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .range-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px solid #ddd;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .range-item input,
+        .range-item textarea {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .range-item textarea {
+            grid-column: 3;
+            resize: vertical;
+            min-height: 40px;
+            font-family: inherit;
+        }
+
+        .range-item button {
+            padding: 8px 15px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .range-item button:hover {
+            background: #ff5252;
+        }
+
+        .range-item .label {
+            display: block;
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .test-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .test-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        body.fullscreen-mode .test-info {
+            background: #1a1a2e;
+            border-radius: 0;
+        }
+
+        .test-stat {
+            text-align: center;
+        }
+
+        .test-stat .label {
+            display: block;
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        body.fullscreen-mode .test-stat .label {
+            color: #999;
+        }
+
+        .test-stat .value {
+            display: block;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        body.fullscreen-mode .test-stat .value {
+            color: #4ecdc4;
+        }
+
+        .test-area {
+            flex: 1;
+            background: #f0f0f0;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+            min-height: 300px;
+            user-select: none;
+        }
+
+        body.fullscreen-mode .test-area {
+            background: #0f0f1e;
+            border-radius: 0;
+            margin-bottom: 0;
+            min-height: 100%;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .test-area p {
+            font-size: 1.2em;
+            color: #999;
+        }
+
+        body.fullscreen-mode .test-area p {
+            color: #555;
+            font-size: 1.5em;
+        }
+
+        .target {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #cc5555);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            touch-action: none;
+            z-index: 1000;
+        }
+
+        body.fullscreen-mode .target {
+            position: fixed;
+        }
+
+        .target:hover,
+        .target:active {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
+        }
+
+        .results-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .result-card h3 {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        .big-number {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .range-descriptions {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .range-description-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .range-description-item .range-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .range-description-item .description-text {
+            color: #333;
+            font-size: 1.05em;
+            font-weight: 500;
+        }
+
+        .detailed-times {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .detailed-times table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .detailed-times th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .detailed-times td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            color: #333;
+        }
+
+        .detailed-times tbody tr:hover {
+            background: #e8eaf6;
+        }
+
+        @media (max-width: 768px) {
+            #mainContainer {
+                border-radius: 0;
+                min-height: 100vh;
+            }
+
+            .screen {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .test-info {
+                grid-template-columns: 1fr;
+            }
+
+            .range-item {
+                grid-template-columns: 1fr;
+            }
+
+            .range-item textarea {
+                grid-column: 1;
+            }
+
+            .results-container {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .screen {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .results-container {
+                grid-template-columns: 1fr;
+            }
+
+            .detailed-times table {
+                font-size: 0.9em;
+            }
+
+            .detailed-times th,
+            .detailed-times td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="mainContainer">
+        <!-- Home Screen -->
+        <div id="homeScreen" class="screen active">
+            <div class="content">
+                <h1>Reflex Test</h1>
+                <p class="subtitle">Misura la velocità dei tuoi riflessi</p>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="navigateTo('settings')">Impostazioni</button>
+                    <button class="btn btn-primary" onclick="startTest()">Inizia Test</button>
+                </div>
+                <div class="info-box">
+                    <p><strong>Come funziona:</strong></p>
+                    <p>Aspetta che compaia un target sullo schermo, poi premilo il più velocemente possibile con il dito (se touch) o con il mouse.</p>
+                    <p>Verranno misurati i tuoi tempi di reazione e calcolato uno score finale.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settingsScreen" class="screen">
+            <div class="content">
+                <h1>Impostazioni Scoring</h1>
+                <div class="settings-container">
+                    <div class="setting-item">
+                        <label for="numTargets">Numero di target:</label>
+                        <input type="number" id="numTargets" min="5" max="50" value="10">
+                    </div>
+                    <div class="setting-item">
+                        <label for="delayBetweenTargets">Ritardo tra target (ms):</label>
+                        <input type="number" id="delayBetweenTargets" min="500" max="3000" step="100" value="1000">
+                    </div>
+                    <hr>
+                    <h3>Range di Score</h3>
+                    <div id="rangesContainer"></div>
+                    <button class="btn btn-secondary" onclick="addRange()">+ Aggiungi Range</button>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="saveSettings()">Salva Impostazioni</button>
+                    <button class="btn btn-secondary" onclick="navigateTo('home')">Indietro</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Screen -->
+        <div id="testScreen" class="screen">
+            <div class="test-container">
+                <div class="test-info">
+                    <div class="test-stat">
+                        <span class="label">Target:</span>
+                        <span id="targetCount" class="value">0/10</span>
+                    </div>
+                    <div class="test-stat">
+                        <span class="label">Tempo Medio:</span>
+                        <span id="averageTime" class="value">-</span>
+                    </div>
+                    <div class="test-stat">
+                        <span class="label">Score:</span>
+                        <span id="currentScore" class="value">-</span>
+                    </div>
+                </div>
+                <div id="testArea" class="test-area">
+                    <p id="testMessage">Preparati...</p>
+                </div>
+                <button class="btn btn-secondary" onclick="cancelTest()">Cancella Test</button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="screen">
+            <div class="content">
+                <h1>Risultati del Test</h1>
+                <div class="results-container">
+                    <div class="result-card">
+                        <h3>Score Finale</h3>
+                        <div id="finalScore" class="big-number">-</div>
+                    </div>
+                    <div class="result-card">
+                        <h3>Tempo Medio</h3>
+                        <div id="finalAverageTime" class="big-number">-</div>
+                    </div>
+                    <div class="result-card">
+                        <h3>Tempo Minimo</h3>
+                        <div id="finalMinTime" class="big-number">-</div>
+                    </div>
+                    <div class="result-card">
+                        <h3>Tempo Massimo</h3>
+                        <div id="finalMaxTime" class="big-number">-</div>
+                    </div>
+                </div>
+                
+                <div id="rangeDescriptions" class="range-descriptions">
+                    <h3>Valutazione</h3>
+                </div>
+
+                <div id="detailedTimes" class="detailed-times">
+                    <h3>Dettaglio Tempi di Reazione</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Target</th>
+                                <th>Tempo (ms)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="timesTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="startTest()">Ripeti Test</button>
+                    <button class="btn btn-secondary" onclick="navigateTo('settings')">Impostazioni</button>
+                    <button class="btn btn-secondary" onclick="navigateTo('home')">Home</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default configuration
+        const defaultConfig = {
+            numTargets: 10,
+            delayBetweenTargets: 1000,
+            ranges: [
+                { minScore: 100, maxScore: 85, description: "🔥 Riflessi INCREDIBILI! Sei una macchina da guerra!" },
+                { minScore: 84, maxScore: 70, description: "⚡ Riflessi ECCELLENTI! Velocità impressionante!" },
+                { minScore: 69, maxScore: 50, description: "✅ Riflessi BUONI! Nella media, ben fatto!" },
+                { minScore: 49, maxScore: 30, description: "😴 Riflessi NORMALI! Potresti allenarti un po'..." },
+                { minScore: 29, maxScore: 0, description: "🐢 Riflessi LENTI! Il caffè potrebbe aiutare!" }
+            ]
+        };
+
+        // State
+        let currentConfig = { ...defaultConfig };
+        let testState = {
+            isRunning: false,
+            currentTargetIndex: 0,
+            reactionTimes: [],
+            targetStartTime: 0,
+            isTouchDevice: false
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfiguration();
+            detectTouchDevice();
+            renderSettings();
+        });
+
+        // Detect if device is touch-capable
+        function detectTouchDevice() {
+            const touchCapable = () => {
+                return (('ontouchstart' in window) ||
+                        (navigator.maxTouchPoints > 0) ||
+                        (navigator.msMaxTouchPoints > 0));
+            };
+            testState.isTouchDevice = touchCapable();
+        }
+
+        // Navigation
+        function navigateTo(screenName) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            const screenId = screenName === 'home' ? 'homeScreen' : 
+                            screenName === 'settings' ? 'settingsScreen' :
+                            screenName === 'test' ? 'testScreen' :
+                            screenName === 'results' ? 'resultsScreen' : 'homeScreen';
+
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // ============== SETTINGS ==============
+
+        function renderSettings() {
+            const container = document.getElementById('rangesContainer');
+            container.innerHTML = '';
+
+            currentConfig.ranges.forEach((range, index) => {
+                const rangeDiv = document.createElement('div');
+                rangeDiv.className = 'range-item';
+                rangeDiv.innerHTML = `
+                    <div>
+                        <div class="label">Da Score</div>
+                        <input type="number" class="range-min" value="${range.maxScore}" min="0" max="100" data-index="${index}">
+                    </div>
+                    <div>
+                        <div class="label">A Score</div>
+                        <input type="number" class="range-max" value="${range.minScore}" min="0" max="100" data-index="${index}">
+                    </div>
+                    <div>
+                        <div class="label">Descrizione</div>
+                        <textarea class="range-desc" data-index="${index}">${range.description}</textarea>
+                    </div>
+                    <button onclick="removeRange(${index})">Rimuovi</button>
+                `;
+                container.appendChild(rangeDiv);
+            });
+        }
+
+        function addRange() {
+            currentConfig.ranges.push({
+                minScore: 50,
+                maxScore: 40,
+                description: "Nuova descrizione"
+            });
+            renderSettings();
+        }
+
+        function removeRange(index) {
+            if (currentConfig.ranges.length > 1) {
+                currentConfig.ranges.splice(index, 1);
+                renderSettings();
+            } else {
+                alert('Deve esserci almeno un range!');
+            }
+        }
+
+        function saveSettings() {
+            const numTargets = parseInt(document.getElementById('numTargets').value);
+            const delayBetweenTargets = parseInt(document.getElementById('delayBetweenTargets').value);
+
+            if (numTargets < 5 || numTargets > 50) {
+                alert('Il numero di target deve essere tra 5 e 50');
+                return;
+            }
+
+            if (delayBetweenTargets < 500 || delayBetweenTargets > 3000) {
+                alert('Il ritardo deve essere tra 500 e 3000 ms');
+                return;
+            }
+
+            // Save ranges
+            const ranges = [];
+            document.querySelectorAll('.range-item').forEach(item => {
+                const minScore = parseInt(item.querySelector('.range-max').value);
+                const maxScore = parseInt(item.querySelector('.range-min').value);
+                const description = item.querySelector('.range-desc').value;
+
+                if (minScore > maxScore) {
+                    alert('Il valore "Da" non può essere minore di "A"');
+                    return;
+                }
+
+                if (description.trim() === '') {
+                    alert('La descrizione non può essere vuota');
+                    return;
+                }
+
+                ranges.push({ minScore, maxScore, description });
+            });
+
+            if (ranges.length === 0) return;
+
+            currentConfig.numTargets = numTargets;
+            currentConfig.delayBetweenTargets = delayBetweenTargets;
+            currentConfig.ranges = ranges;
+
+            localStorage.setItem('reflexConfig', JSON.stringify(currentConfig));
+            alert('Impostazioni salvate con successo!');
+            navigateTo('home');
+        }
+
+        function loadConfiguration() {
+            const saved = localStorage.getItem('reflexConfig');
+            if (saved) {
+                currentConfig = JSON.parse(saved);
+            }
+        }
+
+        // ============== TEST ==============
+
+        async function startTest() {
+            testState = {
+                isRunning: true,
+                currentTargetIndex: 0,
+                reactionTimes: [],
+                targetStartTime: 0,
+                isTouchDevice: testState.isTouchDevice
+            };
+
+            // Enable fullscreen and dark mode
+            document.body.classList.add('fullscreen-mode');
+            document.getElementById('mainContainer').classList.add('fullscreen-mode');
+
+            navigateTo('test');
+            updateTestInfo();
+
+            // Initial delay before first target
+            await sleep(2000);
+
+            for (let i = 0; i < currentConfig.numTargets; i++) {
+                testState.currentTargetIndex = i + 1;
+                updateTestInfo();
+
+                // Show target
+                await showTarget();
+
+                // Wait for interaction or timeout (5 seconds)
+                await new Promise(resolve => {
+                    const timeout = setTimeout(() => {
+                        removeTarget();
+                        resolve();
+                    }, 5000);
+
+                    window.testTimeout = timeout;
+                });
+
+                if (!testState.isRunning) break;
+
+                // Delay before next target
+                if (i < currentConfig.numTargets - 1) {
+                    await sleep(currentConfig.delayBetweenTargets);
+                }
+            }
+
+            if (testState.isRunning) {
+                testState.isRunning = false;
+                showResults();
+            }
+        }
+
+        function cancelTest() {
+            testState.isRunning = false;
+            if (window.testTimeout) {
+                clearTimeout(window.testTimeout);
+            }
+            removeTarget();
+            
+            // Disable fullscreen and dark mode
+            document.body.classList.remove('fullscreen-mode');
+            document.getElementById('mainContainer').classList.remove('fullscreen-mode');
+            
+            navigateTo('home');
+        }
+
+        async function showTarget() {
+            const testArea = document.getElementById('testArea');
+            testArea.innerHTML = '';
+
+            const target = document.createElement('div');
+            target.className = 'target';
+            target.textContent = testState.currentTargetIndex;
+            target.id = 'activeTarget';
+
+            // Get area dimensions
+            let width, height;
+            if (document.body.classList.contains('fullscreen-mode')) {
+                width = window.innerWidth;
+                height = window.innerHeight;
+            } else {
+                const rect = testArea.getBoundingClientRect();
+                width = rect.width;
+                height = rect.height;
+            }
+
+            const maxX = Math.max(0, width - 60);
+            const maxY = Math.max(0, height - 60);
+
+            const randomX = Math.random() * maxX;
+            const randomY = Math.random() * maxY;
+
+            target.style.left = randomX + 'px';
+            target.style.top = randomY + 'px';
+
+            testState.targetStartTime = performance.now();
+
+            // Mouse events
+            target.addEventListener('click', onTargetClick);
+
+            // Touch events
+            target.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                onTargetClick();
+            }, { passive: false });
+            target.addEventListener('touchend', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+
+            testArea.appendChild(target);
+        }
+
+        function onTargetClick() {
+            if (!testState.isRunning || !document.getElementById('activeTarget')) return;
+
+            const reactionTime = performance.now() - testState.targetStartTime;
+            testState.reactionTimes.push(reactionTime);
+
+            removeTarget();
+            clearTimeout(window.testTimeout);
+
+            updateTestInfo();
+        }
+
+        function removeTarget() {
+            const target = document.getElementById('activeTarget');
+            if (target) {
+                target.remove();
+            }
+            const testArea = document.getElementById('testArea');
+            if (testArea.children.length === 0) {
+                testArea.innerHTML = '<p>Attendere...</p>';
+            }
+        }
+
+        function updateTestInfo() {
+            document.getElementById('targetCount').textContent = 
+                `${testState.currentTargetIndex}/${currentConfig.numTargets}`;
+
+            if (testState.reactionTimes.length > 0) {
+                const average = testState.reactionTimes.reduce((a, b) => a + b, 0) / testState.reactionTimes.length;
+                document.getElementById('averageTime').textContent = average.toFixed(0) + ' ms';
+
+                const score = calculateScore(testState.reactionTimes);
+                document.getElementById('currentScore').textContent = score.toFixed(1);
+            }
+        }
+
+        // ============== SCORING ==============
+
+        function calculateScore(reactionTimes) {
+            if (reactionTimes.length === 0) return 0;
+
+            const average = reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length;
+            const deviation = Math.sqrt(
+                reactionTimes.reduce((sum, time) => sum + Math.pow(time - average, 2), 0) / reactionTimes.length
+            );
+
+            // Score formula:
+            // Base: 100 - (average / 10)
+            // Bonus for consistency: -deviation / 50
+            let score = 100 - (average / 10) - (deviation / 50);
+            
+            // Ensure score is between 0 and 100
+            score = Math.max(0, Math.min(100, score));
+
+            return score;
+        }
+
+        function findScoreRange(score) {
+            return currentConfig.ranges.find(range => 
+                score <= range.minScore && score >= range.maxScore
+            );
+        }
+
+        // ============== RESULTS ==============
+
+        function showResults() {
+            // Disable fullscreen and dark mode
+            document.body.classList.remove('fullscreen-mode');
+            document.getElementById('mainContainer').classList.remove('fullscreen-mode');
+            
+            navigateTo('results');
+
+            const times = testState.reactionTimes;
+            const average = times.reduce((a, b) => a + b, 0) / times.length;
+            const min = Math.min(...times);
+            const max = Math.max(...times);
+            const score = calculateScore(times);
+            const range = findScoreRange(score);
+
+            // Update result cards
+            document.getElementById('finalScore').textContent = score.toFixed(1);
+            document.getElementById('finalAverageTime').textContent = average.toFixed(0) + ' ms';
+            document.getElementById('finalMinTime').textContent = min.toFixed(0) + ' ms';
+            document.getElementById('finalMaxTime').textContent = max.toFixed(0) + ' ms';
+
+            // Show matching range descriptions
+            const rangeDescContainer = document.getElementById('rangeDescriptions');
+            let descHTML = '<h3>Valutazione</h3>';
+
+            if (range) {
+                descHTML += `
+                    <div class="range-description-item">
+                        <div class="range-text">Score ${range.maxScore} - ${range.minScore}</div>
+                        <div class="description-text">${range.description}</div>
+                    </div>
+                `;
+            }
+
+            // Show all applicable ranges (for reference)
+            descHTML += '<div style="margin-top: 20px;"><strong>Range Disponibili:</strong></div>';
+            currentConfig.ranges.forEach(r => {
+                const highlight = r === range ? ' style="background: #e8f5e9; border-left-color: #4caf50;"' : '';
+                descHTML += `
+                    <div class="range-description-item"${highlight}>
+                        <div class="range-text">Score ${r.maxScore} - ${r.minScore}</div>
+                        <div class="description-text">${r.description}</div>
+                    </div>
+                `;
+            });
+
+            rangeDescContainer.innerHTML = descHTML;
+
+            // Fill times table
+            const tableBody = document.getElementById('timesTableBody');
+            tableBody.innerHTML = '';
+            times.forEach((time, index) => {
+                const row = tableBody.insertRow();
+                row.innerHTML = `<td>${index + 1}</td><td>${time.toFixed(0)} ms</td>`;
+            });
+        }
+
+        // ============== UTILS ==============
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
