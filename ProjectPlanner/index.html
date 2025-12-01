@@ -574,6 +574,7 @@
             white-space: nowrap;
             cursor: pointer;
             box-shadow: 0 2px 4px var(--shadow);
+            z-index: 10;
         }
 
         .gantt-completion-bar {
@@ -4930,7 +4931,7 @@
         function renderGanttByResources(container, filteredProjects, days, minDate, maxDate) {
             const resourceTasks = {};
 
-            // Raggruppa task per risorsa
+            // Raggruppa task per risorsa e poi per progetto
             filteredProjects.forEach(project => {
                 if (project.tasks) {
                     project.tasks.forEach(task => {
@@ -4942,10 +4943,18 @@
                                     if (!resourceTasks[key]) {
                                         resourceTasks[key] = {
                                             resource,
+                                            projectGroups: {}
+                                        };
+                                    }
+                                    // Raggruppa per progetto
+                                    const projectKey = project.id;
+                                    if (!resourceTasks[key].projectGroups[projectKey]) {
+                                        resourceTasks[key].projectGroups[projectKey] = {
+                                            project,
                                             tasks: []
                                         };
                                     }
-                                    resourceTasks[key].tasks.push({
+                                    resourceTasks[key].projectGroups[projectKey].tasks.push({
                                         ...task,
                                         project,
                                         percentage: res.percentage
@@ -4957,8 +4966,11 @@
                 }
             });
 
-            // Renderizza per risorsa
-            Object.values(resourceTasks).forEach(({ resource, tasks }) => {
+            // Renderizza per risorsa e progetto
+            Object.values(resourceTasks).forEach(({ resource, projectGroups }) => {
+                // Calcola tutti i task della risorsa per la barra di carico
+                const allTasks = Object.values(projectGroups).flatMap(pg => pg.tasks);
+                
                 // Crea riga risorsa con barra di carico integrata
                 const resourceRow = createGanttRow(`👤 ${resource.firstName} ${resource.lastName}`, days, 'resource', null, resource.id);
                 resourceRow.dataset.resourceId = resource.id;
@@ -4977,7 +4989,7 @@
                 labelDiv.insertBefore(expandIcon, labelDiv.firstChild);
                 
                 // Calcola e aggiungi barra di carico direttamente sulla riga della risorsa
-                const assignments = tasks.map(task => ({
+                const assignments = allTasks.map(task => ({
                     task,
                     percentage: task.percentage,
                     startDate: task.startDate,
@@ -5017,11 +5029,17 @@
                     
                     const loadBar = document.createElement('div');
                     loadBar.style.width = '100%';
-                    loadBar.style.height = load > 0 ? `${Math.min(load / 150 * 100, 100)}%` : '2px';
-                    loadBar.style.backgroundColor = load > 0 ? getColorForLoad(load) : 'transparent';
-                    loadBar.style.borderRadius = '2px 2px 0 0';
-                    loadBar.style.minHeight = '2px';
-                    loadBar.title = load > 0 ? `${dateStr}: ${load.toFixed(0)}%` : '';
+                    if (load > 0) {
+                        loadBar.style.height = `${Math.min(load / 150 * 100, 100)}%`;
+                        loadBar.style.backgroundColor = getColorForLoad(load);
+                        loadBar.style.borderRadius = '2px 2px 0 0';
+                        loadBar.style.minHeight = '2px';
+                        loadBar.title = `${dateStr}: ${load.toFixed(0)}%`;
+                    } else {
+                        // Nessun carico: nessuna barra visibile
+                        loadBar.style.height = '0';
+                        loadBar.style.backgroundColor = 'transparent';
+                    }
                     
                     dayDiv.appendChild(loadBar);
                     barsDiv.appendChild(dayDiv);
@@ -5029,22 +5047,56 @@
                 
                 container.appendChild(resourceRow);
 
-                tasks.forEach(task => {
-                    const taskRow = createGanttRow(`  ${task.project.code}: ${task.name} (${task.percentage}%)`, days, null, null, resource.id);
-                    taskRow.dataset.resourceId = resource.id;
-                    taskRow.dataset.rowType = 'resource-task';
-                    container.appendChild(taskRow);
+                // Renderizza sotto-gruppi per progetto
+                Object.values(projectGroups).forEach(({ project, tasks }) => {
+                    // Riga progetto (sotto-gruppo)
+                    const projectRow = createGanttRow(`  📁 ${project.code}`, days, 'resource-project', project.id, resource.id);
+                    projectRow.dataset.resourceId = resource.id;
+                    projectRow.dataset.projectId = project.id;
+                    projectRow.style.backgroundColor = 'var(--bg-tertiary)';
+                    projectRow.style.fontWeight = '600';
                     
-                    let barClass = 'task';
-                    if (task.status === 'nessuno') barClass += ' status-none';
-                    if (task.status === 'completata') barClass += ' status-completed';
-                    if (task.status === 'pausa') barClass += ' status-paused';
-                    if (task.status === 'annullata') barClass += ' status-cancelled';
+                    // Icona expand/collapse per progetto
+                    const projectLabelDiv = projectRow.querySelector('.gantt-row-label');
+                    const projectExpandIcon = document.createElement('span');
+                    projectExpandIcon.className = 'gantt-expand-icon';
+                    projectExpandIcon.textContent = '▼';
+                    projectExpandIcon.style.marginLeft = '10px';
+                    projectExpandIcon.onclick = function(e) {
+                        e.stopPropagation();
+                        toggleGanttResourceProject(resource.id, project.id);
+                    };
+                    projectLabelDiv.insertBefore(projectExpandIcon, projectLabelDiv.firstChild);
                     
-                    addGanttBar(taskRow, task.startDate, task.endDate, task.name, days, minDate, barClass, () => {
-                        currentProjectId = task.project.id;
-                        openTaskModal(task.id);
-                    }, task);
+                    container.appendChild(projectRow);
+                    
+                    // Aggiungi barre per ogni task della risorsa su questa riga progetto
+                    if (tasks && tasks.length > 0) {
+                        tasks.forEach(task => {
+                            // Aggiungi una barra per ogni task sulla riga del progetto
+                            addGanttBar(projectRow, task.startDate, task.endDate, task.name, days, minDate, 
+                                       'project', null, task);
+                        });
+                    }
+                    
+                    // Task del progetto
+                    tasks.forEach(task => {
+                        const taskRow = createGanttRow(`    ${task.name} (${task.percentage}%)`, days, 'resource-project-task', null, resource.id);
+                        taskRow.dataset.resourceId = resource.id;
+                        taskRow.dataset.projectId = project.id;
+                        container.appendChild(taskRow);
+                        
+                        let barClass = 'task';
+                        if (task.status === 'nessuno') barClass += ' status-none';
+                        if (task.status === 'completata') barClass += ' status-completed';
+                        if (task.status === 'pausa') barClass += ' status-paused';
+                        if (task.status === 'annullata') barClass += ' status-cancelled';
+                        
+                        addGanttBar(taskRow, task.startDate, task.endDate, task.name, days, minDate, barClass, () => {
+                            currentProjectId = task.project.id;
+                            openTaskModal(task.id);
+                        }, task);
+                    });
                 });
             });
         }
@@ -5181,7 +5233,48 @@
             const isCollapsed = icon.textContent === '▶';
             
             resourceRows.forEach(row => {
-                if (row.dataset.rowType === 'resource-task') {
+                if (row.dataset.rowType === 'resource-project') {
+                    // Mostra/nascondi solo le righe progetto
+                    if (isCollapsed) {
+                        row.classList.remove('hidden');
+                    } else {
+                        row.classList.add('hidden');
+                    }
+                } else if (row.dataset.rowType === 'resource-project-task') {
+                    // I task seguono lo stato del loro progetto padre
+                    const projectId = row.dataset.projectId;
+                    const projectRow = document.querySelector(`.gantt-row[data-row-type="resource-project"][data-resource-id="${resourceId}"][data-project-id="${projectId}"]`);
+                    const projectIcon = projectRow?.querySelector('.gantt-expand-icon');
+                    const isProjectExpanded = projectIcon?.textContent === '▼';
+                    
+                    if (isCollapsed) {
+                        // Risorsa espansa: mostra task solo se il progetto è espanso
+                        if (isProjectExpanded) {
+                            row.classList.remove('hidden');
+                        } else {
+                            row.classList.add('hidden');
+                        }
+                    } else {
+                        // Risorsa collassata: nascondi tutti i task
+                        row.classList.add('hidden');
+                    }
+                }
+            });
+            
+            icon.textContent = isCollapsed ? '▼' : '▶';
+        }
+
+        function toggleGanttResourceProject(resourceId, projectId) {
+            const projectRows = document.querySelectorAll(`.gantt-row[data-resource-id="${resourceId}"][data-project-id="${projectId}"]`);
+            const projectRow = document.querySelector(`.gantt-row[data-row-type="resource-project"][data-resource-id="${resourceId}"][data-project-id="${projectId}"]`);
+            
+            if (!projectRow) return;
+            
+            const icon = projectRow.querySelector('.gantt-expand-icon');
+            const isCollapsed = icon.textContent === '▶';
+            
+            projectRows.forEach(row => {
+                if (row.dataset.rowType === 'resource-project-task') {
                     if (isCollapsed) {
                         row.classList.remove('hidden');
                     } else {
@@ -5197,7 +5290,18 @@
             const currentView = document.getElementById('ganttViewFilter')?.value;
             
             if (currentView === 'resources') {
-                // Vista per risorsa - collapse tutte le risorse
+                // Vista per risorsa - prima collassa tutti i sotto-progetti
+                const allProjectGroupRows = document.querySelectorAll('.gantt-row[data-row-type="resource-project"]');
+                allProjectGroupRows.forEach(projectRow => {
+                    const resourceId = projectRow.dataset.resourceId;
+                    const projectId = projectRow.dataset.projectId;
+                    const icon = projectRow.querySelector('.gantt-expand-icon');
+                    if (icon && icon.textContent === '▼') {
+                        toggleGanttResourceProject(resourceId, projectId);
+                    }
+                });
+                
+                // Poi collassa tutte le risorse
                 const allResourceRows = document.querySelectorAll('.gantt-row[data-row-type="resource"]');
                 allResourceRows.forEach(resourceRow => {
                     const resourceId = resourceRow.dataset.resourceId;
@@ -5223,13 +5327,24 @@
             const currentView = document.getElementById('ganttViewFilter')?.value;
             
             if (currentView === 'resources') {
-                // Vista per risorsa - expand tutte le risorse
+                // Vista per risorsa - prima espandi tutte le risorse
                 const allResourceRows = document.querySelectorAll('.gantt-row[data-row-type="resource"]');
                 allResourceRows.forEach(resourceRow => {
                     const resourceId = resourceRow.dataset.resourceId;
                     const icon = resourceRow.querySelector('.gantt-expand-icon');
                     if (icon && icon.textContent === '▶') {
                         toggleGanttResource(resourceId);
+                    }
+                });
+                
+                // Poi espandi tutti i sotto-progetti
+                const allProjectGroupRows = document.querySelectorAll('.gantt-row[data-row-type="resource-project"]');
+                allProjectGroupRows.forEach(projectRow => {
+                    const resourceId = projectRow.dataset.resourceId;
+                    const projectId = projectRow.dataset.projectId;
+                    const icon = projectRow.querySelector('.gantt-expand-icon');
+                    if (icon && icon.textContent === '▶') {
+                        toggleGanttResourceProject(resourceId, projectId);
                     }
                 });
             } else {
