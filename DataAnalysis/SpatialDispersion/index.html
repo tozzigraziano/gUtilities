@@ -571,10 +571,6 @@ YASKAWA:
                 <div class="data-section">
                     <h3>Visualizzazione 3D</h3>
                     <div class="view-controls">
-                        <button onclick="setView('xy')">Vista XY</button>
-                        <button onclick="setView('xz')">Vista XZ</button>
-                        <button onclick="setView('yz')">Vista YZ</button>
-                        <button class="secondary" onclick="resetView()">Reset</button>
                         <button class="secondary" onclick="toggleGrid()" id="toggleGridBtn">Nascondi Griglia</button>
                         <button class="secondary" onclick="toggleSphere()" id="toggleSphereBtn">Mostra Sfera 3σ</button>
                     </div>
@@ -596,7 +592,7 @@ YASKAWA:
         let filtersModified = false;
         let canvas, ctx;
         let viewCubeCanvas, viewCubeCtx;
-        let rotation = { x: 0, y: 0 }; // Default: vista XY
+        let rotation = { x: 0, y: 0 }; // Default: vista TOP (piano XY)
         let scale = 1.0;
         let offset = { x: 0, y: 0 };
         let autoRotate = false;
@@ -1303,12 +1299,16 @@ YASKAWA:
             currentView = view;
             switch(view) {
                 case 'xy':
+                    // Vista TOP: piano XY (guardando dall'alto lungo Z+)
+                    // X+ verso l'alto, Y+ verso destra, Z uscente
                     rotation = { x: 0, y: 0 };
                     break;
                 case 'xz':
+                    // Vista FRONTALE: piano XZ (guardando lungo Y)
                     rotation = { x: -90, y: 0 };
                     break;
                 case 'yz':
+                    // Vista LATERALE: piano YZ (guardando lungo X)
                     rotation = { x: -90, y: -90 };
                     break;
             }
@@ -2343,7 +2343,7 @@ YASKAWA:
                     path: [topLeft, topRight, bottomRight, bottomLeft],
                     label: 'TOP',
                     labelPos: { x: center, y: center },
-                    view: { x: 0, y: 90 }
+                    view: { x: 0, y: 0 }
                 },
                 
                 // FRONT - rettangolo sotto con gap
@@ -2358,7 +2358,7 @@ YASKAWA:
                     ],
                     label: 'F',
                     labelPos: { x: center, y: bottomLeft.y + gap + edgeWidth/2 },
-                    view: { x: 90, y: 90 }
+                    view: { x: -90, y: 0 }
                 },
                 
                 // BACK - rettangolo sopra con gap
@@ -2373,7 +2373,7 @@ YASKAWA:
                     ],
                     label: 'B',
                     labelPos: { x: center, y: topLeft.y - gap - edgeWidth/2 },
-                    view: { x: -90, y: 90 }
+                    view: { x: -90, y: 180 }
                 },
                 
                 // LEFT - rettangolo a sinistra con gap
@@ -2389,7 +2389,7 @@ YASKAWA:
                     label: 'L',
                     labelPos: { x: topLeft.x - gap - edgeWidth/2, y: center },
                     rotated: true,
-                    view: { x: 0, y: 180 }
+                    view: { x: -90, y: -90 }
                 },
                 
                 // RIGHT - rettangolo a destra con gap
@@ -2405,7 +2405,7 @@ YASKAWA:
                     label: 'R',
                     labelPos: { x: topRight.x + gap + edgeWidth/2, y: center },
                     rotated: true,
-                    view: { x: 0, y: 0 }
+                    view: { x: -90, y: 90 }
                 },
                 
                 // === BORDI INTERMEDI TRASPARENTI NEGLI SPAZI ===
@@ -2420,7 +2420,7 @@ YASKAWA:
                         { x: topRight.x, y: bottomRight.y + gap },
                         { x: topLeft.x, y: bottomLeft.y + gap }
                     ],
-                    view: { x: 45, y: 90 }
+                    view: { x: -45, y: 0 }
                 },
                 'edge-top-back': {
                     type: 'edge',
@@ -2431,7 +2431,7 @@ YASKAWA:
                         { x: topRight.x, y: topRight.y },
                         { x: topLeft.x, y: topLeft.y }
                     ],
-                    view: { x: -45, y: 90 }
+                    view: { x: -135, y: 180 }
                 },
                 'edge-top-right': {
                     type: 'edge',
@@ -2442,7 +2442,7 @@ YASKAWA:
                         { x: bottomRight.x + gap, y: bottomRight.y },
                         { x: bottomRight.x, y: bottomRight.y }
                     ],
-                    view: { x: 0, y: 45 }
+                    view: { x: -90, y: 45 }
                 },
                 'edge-top-left': {
                     type: 'edge',
@@ -2453,7 +2453,7 @@ YASKAWA:
                         { x: bottomLeft.x, y: bottomLeft.y },
                         { x: bottomLeft.x - gap, y: bottomLeft.y }
                     ],
-                    view: { x: 0, y: 135 }
+                    view: { x: -90, y: 135 }
                 },
                 
                 // 4 bordi agli angoli esterni (tra facce adiacenti)
@@ -2466,7 +2466,7 @@ YASKAWA:
                         { x: bottomRight.x + gap + edgeWidth, y: bottomRight.y + gap + edgeWidth },
                         { x: bottomRight.x + gap, y: bottomRight.y + gap + edgeWidth }
                     ],
-                    view: { x: 90, y: 45 }
+                    view: { x: -90, y: 45 }
                 },
                 'edge-right-back': {
                     type: 'edge',
@@ -2477,7 +2477,7 @@ YASKAWA:
                         { x: topRight.x + gap + edgeWidth, y: topRight.y - gap },
                         { x: topRight.x + gap, y: topRight.y - gap }
                     ],
-                    view: { x: -90, y: 45 }
+                    view: { x: -90, y: 135 }
                 },
                 'edge-back-left': {
                     type: 'edge',
@@ -2488,7 +2488,7 @@ YASKAWA:
                         { x: topLeft.x - gap, y: topLeft.y - gap },
                         { x: topLeft.x - gap - edgeWidth, y: topLeft.y - gap }
                     ],
-                    view: { x: -90, y: 135 }
+                    view: { x: -90, y: -135 }
                 },
                 'edge-left-front': {
                     type: 'edge',
@@ -2499,7 +2499,7 @@ YASKAWA:
                         { x: bottomLeft.x - gap, y: bottomLeft.y + gap + edgeWidth },
                         { x: bottomLeft.x - gap - edgeWidth, y: bottomLeft.y + gap + edgeWidth }
                     ],
-                    view: { x: 90, y: 135 }
+                    view: { x: -90, y: -45 }
                 },
                 
                 // === 4 ANGOLI (cerchi) - posizionati negli spazi tra i rettangoli ===
@@ -2509,28 +2509,28 @@ YASKAWA:
                     shape: 'circle',
                     center: { x: bottomRight.x + gap/2, y: bottomRight.y + gap/2 },
                     radius: cornerRadius,
-                    view: { x: 45, y: 45 }
+                    view: { x: -45, y: 45 }
                 },
                 'corner-right-back': {
                     type: 'corner',
                     shape: 'circle',
                     center: { x: topRight.x + gap/2, y: topRight.y - gap/2 },
                     radius: cornerRadius,
-                    view: { x: -45, y: 45 }
+                    view: { x: 45, y: 135 }
                 },
                 'corner-back-left': {
                     type: 'corner',
                     shape: 'circle',
                     center: { x: topLeft.x - gap/2, y: topLeft.y - gap/2 },
                     radius: cornerRadius,
-                    view: { x: -45, y: 135 }
+                    view: { x: 45, y: 225 }
                 },
                 'corner-left-front': {
                     type: 'corner',
                     shape: 'circle',
                     center: { x: bottomLeft.x - gap/2, y: bottomLeft.y + gap/2 },
                     radius: cornerRadius,
-                    view: { x: 45, y: 135 }
+                    view: { x: -45, y: -45 }
                 }
             };
         }
