@@ -23,86 +23,90 @@
             max-width: 1600px;
             margin: 0 auto;
             background-color: #2d2d2d;
-            padding: 30px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
         h1 {
             color: #4da6ff;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-align: center;
+            font-size: 24px;
         }
 
         h2 {
             color: #66b3ff;
-            margin-top: 25px;
-            margin-bottom: 15px;
+            margin-top: 20px;
+            margin-bottom: 12px;
             border-bottom: 2px solid #404040;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
+            font-size: 18px;
         }
 
         h3 {
             color: #80bfff;
-            margin-top: 15px;
-            margin-bottom: 10px;
+            margin-top: 12px;
+            margin-bottom: 8px;
+            font-size: 16px;
         }
 
         .info-box {
             background-color: #3d3d3d;
-            padding: 15px;
+            padding: 10px;
             border-radius: 5px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-left: 4px solid #66b3ff;
         }
 
         .info-box p {
-            margin: 5px 0;
-            font-size: 14px;
+            margin: 3px 0;
+            font-size: 13px;
             color: #b3b3b3;
         }
 
         .grid-2col {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-top: 20px;
+            gap: 20px;
+            margin-top: 15px;
         }
 
         .input-section {
             background-color: #3d3d3d;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             color: #b3b3b3;
             font-weight: 500;
+            font-size: 13px;
         }
 
         select {
             width: 100%;
-            padding: 10px;
+            padding: 6px;
             background-color: #2d2d2d;
             border: 1px solid #555;
             border-radius: 5px;
             color: #e0e0e0;
-            font-size: 14px;
-            margin-bottom: 15px;
+            font-size: 13px;
+            margin-bottom: 10px;
         }
 
         textarea {
             width: 100%;
-            min-height: 300px;
-            padding: 10px;
+            min-height: 250px;
+            padding: 8px;
             background-color: #2d2d2d;
             border: 1px solid #555;
             border-radius: 5px;
             color: #e0e0e0;
             font-family: 'Courier New', monospace;
-            font-size: 13px;
+            font-size: 12px;
             resize: vertical;
         }
 
@@ -113,17 +117,17 @@
         }
 
         button {
-            padding: 12px 25px;
+            padding: 8px 16px;
             background-color: #4da6ff;
             color: #fff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 600;
             transition: background-color 0.3s;
-            margin-right: 10px;
-            margin-top: 10px;
+            margin-right: 8px;
+            margin-top: 8px;
         }
 
         button:hover {
@@ -140,7 +144,7 @@
 
         canvas {
             width: 100%;
-            height: 500px;
+            height: 450px;
             background-color: #2d2d2d;
             border: 2px solid #555;
             border-radius: 8px;
@@ -149,69 +153,69 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
         }
 
         .stat-card {
             background-color: #3d3d3d;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
             border-left: 4px solid #4da6ff;
         }
 
         .stat-card h4 {
             color: #66b3ff;
-            margin-bottom: 10px;
-            font-size: 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
         }
 
         .stat-value {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             color: #4da6ff;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .stat-label {
-            font-size: 12px;
+            font-size: 11px;
             color: #999;
         }
 
         .axis-stats {
             background-color: #454545;
-            padding: 10px;
+            padding: 8px;
             border-radius: 5px;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
         .axis-stats table {
             width: 100%;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         .axis-stats th {
             color: #66b3ff;
             text-align: left;
-            padding: 5px;
+            padding: 4px;
         }
 
         .axis-stats td {
-            padding: 5px;
+            padding: 4px;
             color: #e0e0e0;
         }
 
         .data-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
+            gap: 15px;
+            margin-top: 15px;
         }
 
         .data-section {
             background-color: #3d3d3d;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
         }
 
@@ -221,10 +225,11 @@
             background-color: #3d3d3d;
             border-radius: 8px;
             overflow: hidden;
+            font-size: 11px;
         }
 
         .points-table-container {
-            max-height: 400px;
+            max-height: 350px;
             overflow-y: auto;
         }
 
@@ -238,14 +243,15 @@
         .points-table th {
             background-color: #4da6ff;
             color: #fff;
-            padding: 10px;
+            padding: 6px;
             text-align: left;
             font-weight: 600;
+            font-size: 11px;
         }
 
         .points-table tbody {
             display: block;
-            max-height: 350px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
@@ -256,7 +262,7 @@
         }
 
         .points-table td {
-            padding: 8px 10px;
+            padding: 5px 6px;
             border-bottom: 1px solid #505050;
         }
 
@@ -294,10 +300,41 @@
         .error-message {
             background-color: #5d2d2d;
             border-left: 4px solid #ff4444;
-            padding: 10px;
-            margin-top: 10px;
+            padding: 8px;
+            margin-top: 8px;
             border-radius: 5px;
             color: #ffaaaa;
+            font-size: 13px;
+        }
+
+        .filter-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .filter-status.active {
+            background-color: #2d5d2d;
+            color: #66ff66;
+        }
+
+        .filter-status.inactive {
+            background-color: #5d5d2d;
+            color: #ffcc66;
+        }
+
+        .filter-status.modified {
+            background-color: #5d4d2d;
+            color: #ffaa66;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         @media (max-width: 1024px) {
@@ -351,6 +388,57 @@
                     <option value="fanuc">FANUC</option>
                     <option value="yaskawa">YASKAWA</option>
                 </select>
+
+                <h3 style="margin-top: 20px;">
+                    Filtri Dati
+                    <span id="filterStatusBadge" class="filter-status inactive">NON ATTIVI</span>
+                </h3>
+                <div style="background-color: #454545; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div>
+                            <label for="xMin" style="font-size: 11px;">X Min:</label>
+                            <input type="number" id="xMin" placeholder="Auto" step="1" style="width: 100%; padding: 5px; background-color: #2d2d2d; border: 1px solid #555; border-radius: 5px; color: #e0e0e0; font-size: 12px;" oninput="markFiltersAsModified()">
+                        </div>
+                        <div>
+                            <label for="yMin" style="font-size: 11px;">Y Min:</label>
+                            <input type="number" id="yMin" placeholder="Auto" step="1" style="width: 100%; padding: 5px; background-color: #2d2d2d; border: 1px solid #555; border-radius: 5px; color: #e0e0e0; font-size: 12px;" oninput="markFiltersAsModified()">
+                        </div>
+                        <div>
+                            <label for="zMin" style="font-size: 11px;">Z Min:</label>
+                            <input type="number" id="zMin" placeholder="Auto" step="1" style="width: 100%; padding: 5px; background-color: #2d2d2d; border: 1px solid #555; border-radius: 5px; color: #e0e0e0; font-size: 12px;" oninput="markFiltersAsModified()">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div>
+                            <label for="xMax" style="font-size: 11px;">X Max:</label>
+                            <input type="number" id="xMax" placeholder="Auto" step="1" style="width: 100%; padding: 5px; background-color: #2d2d2d; border: 1px solid #555; border-radius: 5px; color: #e0e0e0; font-size: 12px;" oninput="markFiltersAsModified()">
+                        </div>
+                        <div>
+                            <label for="yMax" style="font-size: 11px;">Y Max:</label>
+                            <input type="number" id="yMax" placeholder="Auto" step="1" style="width: 100%; padding: 5px; background-color: #2d2d2d; border: 1px solid #555; border-radius: 5px; color: #e0e0e0; font-size: 12px;" oninput="markFiltersAsModified()">
+                        </div>
+                        <div>
+                            <label for="zMax" style="font-size: 11px;">Z Max:</label>
+                            <input type="number" id="zMax" placeholder="Auto" step="1" style="width: 100%; padding: 5px; background-color: #2d2d2d; border: 1px solid #555; border-radius: 5px; color: #e0e0e0; font-size: 12px;" oninput="markFiltersAsModified()">
+                        </div>
+                    </div>
+                    <div id="filterStats" style="display: none; background-color: #3d3d3d; padding: 8px; border-radius: 5px; margin-bottom: 8px; font-size: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="color: #4da6ff; font-weight: bold;">✓ In range:</span> 
+                                <span id="pointsInRange" style="color: #66ff66; font-weight: bold;">0</span>
+                            </div>
+                            <div>
+                                <span style="color: #ff8888; font-weight: bold;">✗ Fuori range:</span> 
+                                <span id="pointsOutRange" style="color: #ff6666; font-weight: bold;">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button onclick="applyFiltersAndUpdate()" style="margin-top: 0; width: 100%;">Applica Filtri</button>
+                        <button class="secondary" onclick="clearFilters()" style="margin-top: 0; width: 100%;">Rimuovi Filtri</button>
+                    </div>
+                </div>
 
                 <label for="dataInput">Inserisci coordinate (una per riga):</label>
                 <textarea id="dataInput" placeholder="Esempi:
@@ -504,6 +592,8 @@ YASKAWA:
 
     <script>
         let points = [];
+        let filteredPoints = [];
+        let filtersModified = false;
         let canvas, ctx;
         let viewCubeCanvas, viewCubeCtx;
         let rotation = { x: 0, y: 0 }; // Default: vista XY
@@ -562,16 +652,16 @@ YASKAWA:
         }
 
         function handleCanvasHover(event) {
-            if (points.length === 0) return;
+            if (filteredPoints.length === 0) return;
 
             const rect = canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
 
             // Trova bounds
-            const xValues = points.map(p => p.x);
-            const yValues = points.map(p => p.y);
-            const zValues = points.map(p => p.z);
+            const xValues = filteredPoints.map(p => p.x);
+            const yValues = filteredPoints.map(p => p.y);
+            const zValues = filteredPoints.map(p => p.z);
 
             const bounds = {
                 xMin: Math.min(...xValues),
@@ -589,9 +679,9 @@ YASKAWA:
 
             // Calcola centroide (come in drawGraph)
             const centroid = {
-                x: xValues.reduce((a, b) => a + b, 0) / points.length,
-                y: yValues.reduce((a, b) => a + b, 0) / points.length,
-                z: zValues.reduce((a, b) => a + b, 0) / points.length
+                x: xValues.reduce((a, b) => a + b, 0) / filteredPoints.length,
+                y: yValues.reduce((a, b) => a + b, 0) / filteredPoints.length,
+                z: zValues.reduce((a, b) => a + b, 0) / filteredPoints.length
             };
 
             // Funzione di proiezione locale (DEVE essere identica a quella in drawGraph)
@@ -631,7 +721,7 @@ YASKAWA:
             let closestDist = Infinity;
             const hoverRadius = 15; // Pixel di tolleranza
 
-            points.forEach((p, index) => {
+            filteredPoints.forEach((p, index) => {
                 const proj = project3D(p.x, p.y, p.z);
                 const dist = Math.sqrt(Math.pow(proj.x - mouseX, 2) + Math.pow(proj.y - mouseY, 2));
                 if (dist < closestDist && dist < hoverRadius) {
@@ -891,6 +981,90 @@ YASKAWA:
             return detectedFormat;
         }
 
+        function applyFilters() {
+            const xMin = parseFloat(document.getElementById('xMin').value);
+            const xMax = parseFloat(document.getElementById('xMax').value);
+            const yMin = parseFloat(document.getElementById('yMin').value);
+            const yMax = parseFloat(document.getElementById('yMax').value);
+            const zMin = parseFloat(document.getElementById('zMin').value);
+            const zMax = parseFloat(document.getElementById('zMax').value);
+
+            let outOfRangeCount = 0;
+            
+            filteredPoints = points.filter(p => {
+                if (!isNaN(xMin) && p.x < xMin) { outOfRangeCount++; return false; }
+                if (!isNaN(xMax) && p.x > xMax) { outOfRangeCount++; return false; }
+                if (!isNaN(yMin) && p.y < yMin) { outOfRangeCount++; return false; }
+                if (!isNaN(yMax) && p.y > yMax) { outOfRangeCount++; return false; }
+                if (!isNaN(zMin) && p.z < zMin) { outOfRangeCount++; return false; }
+                if (!isNaN(zMax) && p.z > zMax) { outOfRangeCount++; return false; }
+                return true;
+            });
+
+            // Aggiorna i contatori
+            updateFilterStats(filteredPoints.length, outOfRangeCount);
+
+            return filteredPoints;
+        }
+
+        function markFiltersAsModified() {
+            if (!filtersModified && points.length > 0) {
+                filtersModified = true;
+                const badge = document.getElementById('filterStatusBadge');
+                badge.textContent = 'MODIFICATI';
+                badge.className = 'filter-status modified';
+            }
+        }
+
+        function updateFilterStats(inRange, outRange) {
+            const filterStatsDiv = document.getElementById('filterStats');
+            
+            if (points.length > 0) {
+                filterStatsDiv.style.display = 'block';
+                document.getElementById('pointsInRange').textContent = inRange;
+                document.getElementById('pointsOutRange').textContent = outRange;
+            } else {
+                filterStatsDiv.style.display = 'none';
+            }
+        }
+
+        function applyFiltersAndUpdate() {
+            if (points.length === 0) return;
+            
+            applyFilters();
+            
+            // Reset flag modificato e aggiorna badge stato filtri
+            filtersModified = false;
+            const badge = document.getElementById('filterStatusBadge');
+            badge.textContent = 'ATTIVI';
+            badge.className = 'filter-status active';
+            
+            if (filteredPoints.length > 0) {
+                calculateStatistics();
+                drawGraph();
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('xMin').value = '';
+            document.getElementById('xMax').value = '';
+            document.getElementById('yMin').value = '';
+            document.getElementById('yMax').value = '';
+            document.getElementById('zMin').value = '';
+            document.getElementById('zMax').value = '';
+            document.getElementById('filterStats').style.display = 'none';
+            
+            // Reset flag modificato e badge stato filtri
+            filtersModified = false;
+            const badge = document.getElementById('filterStatusBadge');
+            badge.textContent = 'NON ATTIVI';
+            badge.className = 'filter-status inactive';
+            
+            if (points.length > 0) {
+                analyzeData();
+            }
+        }
+
         function analyzeData() {
             const input = document.getElementById('dataInput').value.trim();
             const robotType = document.getElementById('robotType').value;
@@ -910,8 +1084,32 @@ YASKAWA:
                 return;
             }
 
+            // Auto-popola i filtri con i valori min/max dei dati
+            const xValues = points.map(p => p.x);
+            const yValues = points.map(p => p.y);
+            const zValues = points.map(p => p.z);
+            
+            document.getElementById('xMin').value = Math.min(...xValues).toFixed(3);
+            document.getElementById('xMax').value = Math.max(...xValues).toFixed(3);
+            document.getElementById('yMin').value = Math.min(...yValues).toFixed(3);
+            document.getElementById('yMax').value = Math.max(...yValues).toFixed(3);
+            document.getElementById('zMin').value = Math.min(...zValues).toFixed(3);
+            document.getElementById('zMax').value = Math.max(...zValues).toFixed(3);
+
+            // Reset flag modificato
+            filtersModified = false;
+
+            // Applica filtri
+            applyFilters();
+
+            if (filteredPoints.length === 0) {
+                showError('Nessun punto rimasto dopo l\'applicazione dei filtri. Modificare i range.');
+                document.getElementById('statisticsSection').classList.add('hidden');
+                return;
+            }
+
             document.getElementById('detectedFormat').textContent = detectedFormat;
-            document.getElementById('numPoints').textContent = points.length;
+            document.getElementById('numPoints').textContent = `${filteredPoints.length} (${points.length} totali)`;
             document.getElementById('basicStats').classList.remove('hidden');
 
             calculateStatistics();
@@ -931,17 +1129,17 @@ YASKAWA:
         }
 
         function calculateStatistics() {
-            if (points.length === 0) return;
+            if (filteredPoints.length === 0) return;
 
             // Calcola centroide
             const centroid = {
-                x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
-                y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
-                z: points.reduce((sum, p) => sum + p.z, 0) / points.length
+                x: filteredPoints.reduce((sum, p) => sum + p.x, 0) / filteredPoints.length,
+                y: filteredPoints.reduce((sum, p) => sum + p.y, 0) / filteredPoints.length,
+                z: filteredPoints.reduce((sum, p) => sum + p.z, 0) / filteredPoints.length
             };
 
             // Distanza media dal centroide
-            const distances = points.map(p => 
+            const distances = filteredPoints.map(p => 
                 Math.sqrt(
                     Math.pow(p.x - centroid.x, 2) +
                     Math.pow(p.y - centroid.y, 2) +
@@ -951,9 +1149,9 @@ YASKAWA:
             const avgDistance = distances.reduce((a, b) => a + b, 0) / distances.length;
 
             // Deviazione standard per ogni asse
-            const stdX = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.x - centroid.x, 2), 0) / points.length);
-            const stdY = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.y - centroid.y, 2), 0) / points.length);
-            const stdZ = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.z - centroid.z, 2), 0) / points.length);
+            const stdX = Math.sqrt(filteredPoints.reduce((sum, p) => sum + Math.pow(p.x - centroid.x, 2), 0) / filteredPoints.length);
+            const stdY = Math.sqrt(filteredPoints.reduce((sum, p) => sum + Math.pow(p.y - centroid.y, 2), 0) / filteredPoints.length);
+            const stdZ = Math.sqrt(filteredPoints.reduce((sum, p) => sum + Math.pow(p.z - centroid.z, 2), 0) / filteredPoints.length);
             
             const std3d = Math.sqrt(stdX*stdX + stdY*stdY + stdZ*stdZ);
             const sphereRadius = 3 * std3d; // 3 sigma
@@ -983,7 +1181,7 @@ YASKAWA:
             tbody.innerHTML = '';
 
             axisKeys.forEach((key, i) => {
-                const values = points.map(p => p[key]);
+                const values = filteredPoints.map(p => p[key]);
                 const min = Math.min(...values);
                 const max = Math.max(...values);
                 const range = max - min;
@@ -1003,13 +1201,13 @@ YASKAWA:
         }
 
         function calculateCovarianceMatrix(centroid) {
-            const n = points.length;
+            const n = filteredPoints.length;
             
             // Calcola covarianze
             let covXX = 0, covYY = 0, covZZ = 0;
             let covXY = 0, covXZ = 0, covYZ = 0;
 
-            points.forEach(p => {
+            filteredPoints.forEach(p => {
                 const dx = p.x - centroid.x;
                 const dy = p.y - centroid.y;
                 const dz = p.z - centroid.z;
@@ -1066,7 +1264,7 @@ YASKAWA:
             const tbody = document.getElementById('pointsTableBody');
             tbody.innerHTML = '';
 
-            points.forEach((p, index) => {
+            filteredPoints.forEach((p, index) => {
                 const dist = Math.sqrt(
                     Math.pow(p.x - centroid.x, 2) +
                     Math.pow(p.y - centroid.y, 2) +
@@ -1146,7 +1344,7 @@ YASKAWA:
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (points.length === 0) {
+            if (filteredPoints.length === 0) {
                 ctx.fillStyle = '#666';
                 ctx.font = '16px Arial';
                 ctx.textAlign = 'center';
@@ -1155,9 +1353,9 @@ YASKAWA:
             }
 
             // Trova bounds
-            const xValues = points.map(p => p.x);
-            const yValues = points.map(p => p.y);
-            const zValues = points.map(p => p.z);
+            const xValues = filteredPoints.map(p => p.x);
+            const yValues = filteredPoints.map(p => p.y);
+            const zValues = filteredPoints.map(p => p.z);
 
             const bounds = {
                 xMin: Math.min(...xValues),
@@ -1175,9 +1373,9 @@ YASKAWA:
 
             // Calcola centroide
             const centroid = {
-                x: xValues.reduce((a, b) => a + b, 0) / points.length,
-                y: yValues.reduce((a, b) => a + b, 0) / points.length,
-                z: zValues.reduce((a, b) => a + b, 0) / points.length
+                x: xValues.reduce((a, b) => a + b, 0) / filteredPoints.length,
+                y: yValues.reduce((a, b) => a + b, 0) / filteredPoints.length,
+                z: zValues.reduce((a, b) => a + b, 0) / filteredPoints.length
             };
 
             // Proiezione 3D -> 2D (usa centroide come centro di rotazione)
@@ -1213,7 +1411,7 @@ YASKAWA:
             }
 
             // Ordina punti per Z (per corretto rendering in base alla profondità)
-            const sortedPoints = points.map((p, i) => ({ ...p, index: i }))
+            const sortedPoints = filteredPoints.map((p, i) => ({ ...p, index: i }))
                 .sort((a, b) => {
                     const projA = project3D(a.x, a.y, a.z);
                     const projB = project3D(b.x, b.y, b.z);
@@ -1334,7 +1532,7 @@ YASKAWA:
             ctx.fillStyle = '#b3b3b3';
             ctx.font = '12px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText(`Punti: ${points.length}`, 10, 20);
+            ctx.fillText(`Punti: ${filteredPoints.length}${filteredPoints.length !== points.length ? ' (filtrati da ' + points.length + ')' : ''}`, 10, 20);
             ctx.fillText(`Rotazione: X=${rotation.x.toFixed(1)}° Y=${rotation.y.toFixed(1)}°`, 10, 35);
             ctx.fillText(`Zoom: ${scale.toFixed(2)}x`, 10, 50);
             ctx.fillText(`Griglia: ${gridStep.toFixed(3)} mm`, 10, 65);
@@ -1354,9 +1552,9 @@ YASKAWA:
 
         function drawContainmentSphere(project3D, centroid, xRange, yRange, zRange) {
             // Calcola il raggio 3σ
-            const stdX = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.x - centroid.x, 2), 0) / points.length);
-            const stdY = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.y - centroid.y, 2), 0) / points.length);
-            const stdZ = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p.z - centroid.z, 2), 0) / points.length);
+            const stdX = Math.sqrt(filteredPoints.reduce((sum, p) => sum + Math.pow(p.x - centroid.x, 2), 0) / filteredPoints.length);
+            const stdY = Math.sqrt(filteredPoints.reduce((sum, p) => sum + Math.pow(p.y - centroid.y, 2), 0) / filteredPoints.length);
+            const stdZ = Math.sqrt(filteredPoints.reduce((sum, p) => sum + Math.pow(p.z - centroid.z, 2), 0) / filteredPoints.length);
             const std3d = Math.sqrt(stdX*stdX + stdY*stdY + stdZ*stdZ);
             const sphereRadius = 3 * std3d;
             
@@ -1436,9 +1634,9 @@ YASKAWA:
             const origin = project3D(originX, originY, originZ);
             
             // Calcola valori dati reali
-            const xValues = points.map(p => p.x);
-            const yValues = points.map(p => p.y);
-            const zValues = points.map(p => p.z);
+            const xValues = filteredPoints.map(p => p.x);
+            const yValues = filteredPoints.map(p => p.y);
+            const zValues = filteredPoints.map(p => p.z);
             const xMin = Math.min(...xValues);
             const xMax = Math.max(...xValues);
             const yMin = Math.min(...yValues);
@@ -1939,9 +2137,19 @@ YASKAWA:
         function clearData() {
             document.getElementById('dataInput').value = '';
             points = [];
+            filteredPoints = [];
+            filtersModified = false;
+            clearFilters();
             document.getElementById('basicStats').classList.add('hidden');
             document.getElementById('statisticsSection').classList.add('hidden');
             document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('filterStats').style.display = 'none';
+            
+            // Reset badge stato filtri
+            const badge = document.getElementById('filterStatusBadge');
+            badge.textContent = 'NON ATTIVI';
+            badge.className = 'filter-status inactive';
+            
             resetView();
             drawGraph();
         }
