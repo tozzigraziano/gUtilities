@@ -3776,23 +3776,18 @@
             container.innerHTML = '';
 
             if (task.resources && task.resources.length > 0) {
-                task.resources.forEach((res, index) => {
-                    console.log(`Loading resource ${index}:`, JSON.stringify(res));
+                task.resources.forEach((res) => {
                     addTaskResourceRow();
                     const items = container.querySelectorAll('.resource-item');
                     const item = items[items.length - 1];
                     const selectElement = item.querySelector('.task-resource-select');
                     const percentageElement = item.querySelector('.task-resource-percentage');
-                    console.log(`Setting select to resourceId: ${res.resourceId}`);
                     selectElement.value = res.resourceId;
                     percentageElement.value = res.percentage;
-                    console.log(`After setting - select value: ${selectElement.value}, percentage: ${percentageElement.value}`);
                 });
             } else {
-                console.log('No resources to load, adding empty row');
                 addTaskResource();
             }
-            console.log('=== EDIT TASK END ===');
             
             // Mostra indicatore assenze se presenti
             if (task.startDate && task.endDate && task.resources) {
@@ -6634,6 +6629,7 @@
                         dayAssignments.forEach(assignment => {
                             const taskCard = document.createElement('div');
                             taskCard.className = 'week-task-card';
+                            taskCard.style.cursor = 'pointer';
                             
                             // Aggiungi classe per stato
                             const status = assignment.task.status || 'nessuno';
@@ -6652,6 +6648,12 @@
                                     <span style="margin-left: 8px;">Compl: ${assignment.task.completion}%</span>
                                 </div>
                             `;
+                            
+                            // Imposta click handler DOPO innerHTML
+                            taskCard.onclick = () => {
+                                currentProjectId = assignment.project.id;
+                                openTaskModal(assignment.task.id);
+                            };
                             
                             dayColumn.appendChild(taskCard);
                         });
@@ -6674,6 +6676,7 @@
                     assignmentsInPeriod.forEach(assignment => {
                         const assignDiv = document.createElement('div');
                         assignDiv.className = 'resource-assignment';
+                        assignDiv.style.cursor = 'pointer';
 
                         // Aggiungi classe per stato
                         const status = assignment.task.status || 'nessuno';
@@ -6741,6 +6744,12 @@
                             <span style="color: var(--warning-color); font-weight: bold;">${absenceWarning}</span>
                         `;
                         assignDiv.appendChild(dateRow);
+                        
+                        // Imposta click handler DOPO aver creato tutto l'HTML
+                        assignDiv.onclick = () => {
+                            currentProjectId = assignment.project.id;
+                            openTaskModal(assignment.task.id);
+                        };
 
                         timeline.appendChild(assignDiv);
                     });
