@@ -2410,52 +2410,6 @@ YASKAWA:
                 
                 // === BORDI INTERMEDI TRASPARENTI NEGLI SPAZI ===
                 
-                // 4 bordi tra TOP e le facce laterali (negli spazi gap)
-                'edge-top-front': {
-                    type: 'edge',
-                    shape: 'rect',
-                    path: [
-                        { x: topLeft.x, y: bottomLeft.y },
-                        { x: topRight.x, y: bottomRight.y },
-                        { x: topRight.x, y: bottomRight.y + gap },
-                        { x: topLeft.x, y: bottomLeft.y + gap }
-                    ],
-                    view: { x: -45, y: 0 }
-                },
-                'edge-top-back': {
-                    type: 'edge',
-                    shape: 'rect',
-                    path: [
-                        { x: topLeft.x, y: topLeft.y - gap },
-                        { x: topRight.x, y: topRight.y - gap },
-                        { x: topRight.x, y: topRight.y },
-                        { x: topLeft.x, y: topLeft.y }
-                    ],
-                    view: { x: -135, y: 180 }
-                },
-                'edge-top-right': {
-                    type: 'edge',
-                    shape: 'rect',
-                    path: [
-                        { x: topRight.x, y: topRight.y },
-                        { x: topRight.x + gap, y: topRight.y },
-                        { x: bottomRight.x + gap, y: bottomRight.y },
-                        { x: bottomRight.x, y: bottomRight.y }
-                    ],
-                    view: { x: -90, y: 45 }
-                },
-                'edge-top-left': {
-                    type: 'edge',
-                    shape: 'rect',
-                    path: [
-                        { x: topLeft.x - gap, y: topLeft.y },
-                        { x: topLeft.x, y: topLeft.y },
-                        { x: bottomLeft.x, y: bottomLeft.y },
-                        { x: bottomLeft.x - gap, y: bottomLeft.y }
-                    ],
-                    view: { x: -90, y: 135 }
-                },
-                
                 // 4 bordi agli angoli esterni (tra facce adiacenti)
                 'edge-front-right': {
                     type: 'edge',
@@ -2500,37 +2454,6 @@ YASKAWA:
                         { x: bottomLeft.x - gap - edgeWidth, y: bottomLeft.y + gap + edgeWidth }
                     ],
                     view: { x: -90, y: -45 }
-                },
-                
-                // === 4 ANGOLI (cerchi) - posizionati negli spazi tra i rettangoli ===
-                
-                'corner-front-right': {
-                    type: 'corner',
-                    shape: 'circle',
-                    center: { x: bottomRight.x + gap/2, y: bottomRight.y + gap/2 },
-                    radius: cornerRadius,
-                    view: { x: -45, y: 45 }
-                },
-                'corner-right-back': {
-                    type: 'corner',
-                    shape: 'circle',
-                    center: { x: topRight.x + gap/2, y: topRight.y - gap/2 },
-                    radius: cornerRadius,
-                    view: { x: 45, y: 135 }
-                },
-                'corner-back-left': {
-                    type: 'corner',
-                    shape: 'circle',
-                    center: { x: topLeft.x - gap/2, y: topLeft.y - gap/2 },
-                    radius: cornerRadius,
-                    view: { x: 45, y: 225 }
-                },
-                'corner-left-front': {
-                    type: 'corner',
-                    shape: 'circle',
-                    center: { x: bottomLeft.x - gap/2, y: bottomLeft.y + gap/2 },
-                    radius: cornerRadius,
-                    view: { x: -45, y: -45 }
                 }
             };
         }
