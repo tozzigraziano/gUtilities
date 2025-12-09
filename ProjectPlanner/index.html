@@ -2854,17 +2854,26 @@
             const month = Math.floor((h + l - 7 * m + 114) / 31);
             const day = ((h + l - 7 * m + 114) % 31) + 1;
 
-            const easter = new Date(year, month - 1, day);
+            // Usa formato locale invece di ISO per evitare problemi di timezone
+            const easterMonth = String(month).padStart(2, '0');
+            const easterDay = String(day).padStart(2, '0');
+            const easterDate = `${year}-${easterMonth}-${easterDay}`;
+            
             holidays.push({ 
-                date: easter.toISOString().split('T')[0], 
+                date: easterDate, 
                 name: 'Pasqua' 
             });
 
-            // Lunedì dell'Angelo (Pasquetta)
+            // Lunedì dell'Angelo (Pasquetta) - aggiungi 1 giorno
+            const easter = new Date(year, month - 1, day);
             const easterMonday = new Date(easter);
             easterMonday.setDate(easter.getDate() + 1);
+            const mondayMonth = String(easterMonday.getMonth() + 1).padStart(2, '0');
+            const mondayDay = String(easterMonday.getDate()).padStart(2, '0');
+            const mondayDate = `${easterMonday.getFullYear()}-${mondayMonth}-${mondayDay}`;
+            
             holidays.push({ 
-                date: easterMonday.toISOString().split('T')[0], 
+                date: mondayDate, 
                 name: "Lunedì dell'Angelo" 
             });
 
@@ -5762,8 +5771,10 @@
                 const month = String(day.getMonth() + 1).padStart(2, '0');
                 const dayOfMonth = String(day.getDate()).padStart(2, '0');
                 const dateStr = `${year}-${month}-${dayOfMonth}`;
-                if (holidays.some(h => h.date === dateStr)) {
+                const holiday = holidays.find(h => h.date === dateStr);
+                if (holiday) {
                     dayDiv.classList.add('holiday');
+                    dayDiv.title = holiday.name;
                 }
                 
                 // Segna oggi (normalizza entrambe le date per il confronto)
