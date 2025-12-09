@@ -3746,7 +3746,13 @@
             calculateHolidays();
             renderHolidays();
             renderTasks();
+            
+            // Salva stato Gantt prima di aggiornare
+            const ganttState = saveGanttState();
             renderGantt(); // Aggiorna vista Gantt
+            // Ripristina stato Gantt
+            restoreGanttState(ganttState);
+            
             closeTaskModal();
             
             // Applica collegamenti tra attività
@@ -4977,6 +4983,104 @@
         }
 
         // === GANTT CHART ===
+        function saveGanttState() {
+            const container = document.getElementById('ganttChart');
+            if (!container) return null;
+            
+            // Salva zoom (larghezza giorno)
+            const dayWidth = parseFloat(getComputedStyle(document.documentElement)
+                .getPropertyValue('--gantt-day-width'));
+            
+            // Salva posizione scroll
+            const scrollLeft = container.scrollLeft;
+            const scrollTop = container.scrollTop;
+            
+            // Salva stati collapse dei progetti
+            const collapsedProjects = [];
+            document.querySelectorAll('.gantt-expand-icon').forEach(icon => {
+                if (icon.textContent === '▶') {
+                    const row = icon.closest('.gantt-row');
+                    if (row) {
+                        const projectId = row.dataset.projectId;
+                        const resourceId = row.dataset.resourceId;
+                        const rowType = row.dataset.rowType;
+                        collapsedProjects.push({ projectId, resourceId, rowType });
+                    }
+                }
+            });
+            
+            return {
+                dayWidth,
+                scrollLeft,
+                scrollTop,
+                collapsedProjects
+            };
+        }
+        
+        function restoreGanttState(state) {
+            if (!state) return;
+            
+            const container = document.getElementById('ganttChart');
+            if (!container) return;
+            
+            // Ripristina zoom
+            if (state.dayWidth) {
+                document.documentElement.style.setProperty('--gantt-day-width', `${state.dayWidth}px`);
+                
+                // Aggiorna larghezza barre
+                if (state.dayWidth < 30) {
+                    container.classList.add('zoomed-out');
+                } else {
+                    container.classList.remove('zoomed-out');
+                }
+                updateGanttBarsWidth(container);
+            }
+            
+            // Ripristina stati collapse
+            if (state.collapsedProjects && state.collapsedProjects.length > 0) {
+                state.collapsedProjects.forEach(item => {
+                    if (item.rowType === 'project') {
+                        // Collapse progetto nella vista progetti
+                        const projectRow = document.querySelector(`.gantt-row[data-row-type="project"][data-project-id="${item.projectId}"]`);
+                        if (projectRow) {
+                            const icon = projectRow.querySelector('.gantt-expand-icon');
+                            if (icon && icon.textContent === '▼') {
+                                toggleGanttProject(item.projectId);
+                            }
+                        }
+                    } else if (item.rowType === 'resource') {
+                        // Collapse risorsa nella vista risorse
+                        const resourceRow = document.querySelector(`.gantt-row[data-row-type="resource"][data-resource-id="${item.resourceId}"]`);
+                        if (resourceRow) {
+                            const icon = resourceRow.querySelector('.gantt-expand-icon');
+                            if (icon && icon.textContent === '▼') {
+                                toggleGanttResource(item.resourceId);
+                            }
+                        }
+                    } else if (item.rowType === 'resource-project') {
+                        // Collapse progetto dentro risorsa
+                        const projectRow = document.querySelector(`.gantt-row[data-row-type="resource-project"][data-resource-id="${item.resourceId}"][data-project-id="${item.projectId}"]`);
+                        if (projectRow) {
+                            const icon = projectRow.querySelector('.gantt-expand-icon');
+                            if (icon && icon.textContent === '▼') {
+                                toggleGanttResourceProject(item.resourceId, item.projectId);
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Ripristina scroll (dopo un piccolo delay per permettere al DOM di aggiornarsi)
+            setTimeout(() => {
+                if (state.scrollLeft !== undefined) {
+                    container.scrollLeft = state.scrollLeft;
+                }
+                if (state.scrollTop !== undefined) {
+                    container.scrollTop = state.scrollTop;
+                }
+            }, 50);
+        }
+        
         function renderGantt() {
             const projectFilter = document.getElementById('ganttProjectFilter')?.value;
             const periodFilter = document.getElementById('ganttPeriodFilter')?.value || 'month';
