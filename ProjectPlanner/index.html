@@ -2583,6 +2583,104 @@
         function removeAbsenceRange(button) {
             button.parentElement.remove();
         }
+        
+        // Trova tutte le attività con ritardi causati da assenze
+        function findTasksWithAbsenceDelays() {
+            const tasksWithDelays = [];
+            
+            projects.forEach(project => {
+                if (!project.tasks) return;
+                
+                project.tasks.forEach(task => {
+                    if (!task.resources || task.resources.length === 0) return;
+                    if (!task.startDate || !task.duration) return;
+                    
+                    // Calcola la data di fine teorica senza assenze
+                    const endDateWithoutAbsences = calculateEndDateForTask(
+                        task.startDate, 
+                        task.duration, 
+                        task.saturdayWork, 
+                        task.sundayWork,
+                        task.holidayWork,
+                        [] // Nessuna risorsa = nessuna assenza
+                    );
+                    
+                    // Calcola la data di fine effettiva con assenze
+                    const endDateWithAbsences = calculateEndDateForTask(
+                        task.startDate, 
+                        task.duration, 
+                        task.saturdayWork, 
+                        task.sundayWork,
+                        task.holidayWork,
+                        task.resources
+                    );
+                    
+                    // Se le date differiscono, c'è un ritardo
+                    if (endDateWithoutAbsences !== endDateWithAbsences) {
+                        // Calcola i giorni di differenza
+                        const date1 = new Date(endDateWithoutAbsences);
+                        const date2 = new Date(endDateWithAbsences);
+                        const delayDays = Math.round((date2 - date1) / (1000 * 60 * 60 * 24));
+                        
+                        if (delayDays > 0) {
+                            tasksWithDelays.push({
+                                project,
+                                task,
+                                delayDays,
+                                affectedResources: task.resources.map(tr => {
+                                    const resource = resources.find(r => r.id == tr.resourceId);
+                                    return resource ? `${resource.firstName} ${resource.lastName}` : 'Sconosciuta';
+                                }).join(', ')
+                            });
+                        }
+                    }
+                });
+            });
+            
+            return tasksWithDelays;
+        }
+        
+        // Controlla se le nuove assenze sovrapporranno progetti attivi
+        function checkAbsenceProjectOverlap(resourceId, newAbsences) {
+            const overlaps = [];
+            
+            projects.forEach(project => {
+                if (!project.tasks) return;
+                
+                project.tasks.forEach(task => {
+                    if (!task.resources || !task.startDate || !task.endDate) return;
+                    
+                    // Controlla se questa task ha la risorsa specificata
+                    const hasResource = task.resources.some(tr => tr.resourceId == resourceId);
+                    if (!hasResource) return;
+                    
+                    // Controlla sovrapposizione con le nuove assenze
+                    newAbsences.forEach(absence => {
+                        const absenceStart = new Date(absence.start);
+                        const absenceEnd = new Date(absence.end || absence.start);
+                        const taskStart = new Date(task.startDate);
+                        const taskEnd = new Date(task.endDate);
+                        
+                        absenceStart.setHours(0, 0, 0, 0);
+                        absenceEnd.setHours(0, 0, 0, 0);
+                        taskStart.setHours(0, 0, 0, 0);
+                        taskEnd.setHours(0, 0, 0, 0);
+                        
+                        // Controlla sovrapposizione
+                        if (absenceStart <= taskEnd && absenceEnd >= taskStart) {
+                            overlaps.push({
+                                project,
+                                task,
+                                absenceStart: absence.start,
+                                absenceEnd: absence.end || absence.start
+                            });
+                        }
+                    });
+                });
+            });
+            
+            return overlaps;
+        }
 
         function saveResource() {
             const firstName = document.getElementById('resourceFirstName').value.trim();
@@ -2609,6 +2707,27 @@
                 type: document.getElementById('resourceType').value || '',
                 absences
             };
+            
+            // Controlla se le nuove assenze sovrapporranno progetti attivi
+            if (absences.length > 0 && resource.id) {
+                const overlaps = checkAbsenceProjectOverlap(resource.id, absences);
+                if (overlaps.length > 0) {
+                    let message = `⚠️ ATTENZIONE: Questa risorsa ha ${overlaps.length} attività in corso durante il periodo di assenza:\n\n`;
+                    overlaps.forEach((overlap, index) => {
+                        if (index < 5) { // Mostra max 5
+                            message += `• ${overlap.project.code} - ${overlap.task.name} (${overlap.task.startDate} - ${overlap.task.endDate})\n`;
+                        }
+                    });
+                    if (overlaps.length > 5) {
+                        message += `\n... e altre ${overlaps.length - 5} attività`;
+                    }
+                    message += '\nLe date delle attività verranno automaticamente ricalcolate.\n\nVuoi procedere comunque?';
+                    
+                    if (!confirm(message)) {
+                        return;
+                    }
+                }
+            }
 
             if (editingResourceId) {
                 const index = resources.findIndex(r => r.id === editingResourceId);
@@ -2618,8 +2737,29 @@
             }
 
             saveToIndexedDBAll();
+            
+            // Ricalcola le attività collegate
+            projects.forEach(project => {
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (task.resources && task.resources.some(tr => tr.resourceId == resource.id)) {
+                            // Se l'attività ha collegamenti, verrà ricalcolata da applyTaskLinks
+                            if (task.startLinkedTo || task.endLinkedTo) {
+                                // Verrà ricalcolato
+                            } else if (task.startDate && task.duration) {
+                                // Ricalcola la data di fine considerando le nuove assenze
+                                task.endDate = calculateEndDateForTask(task.startDate, task.duration, 
+                                    task.saturdayWork, task.sundayWork, task.holidayWork, task.resources);
+                            }
+                        }
+                    });
+                }
+            });
+            
             renderResources();
             updateResourceSelects();
+            renderTasks();
+            renderGantt();
             closeResourceModal();
         }
 
@@ -3128,14 +3268,23 @@
                 }
             });
 
+            // Trova attività con ritardi da assenze
+            const tasksWithDelays = findTasksWithAbsenceDelays();
+            
             sortedProjects.forEach(project => {
                 const stats = calculateProjectStats(project);
+                
+                // Conta quante attività di questo progetto hanno ritardi
+                const projectDelays = tasksWithDelays.filter(td => td.project.id === project.id);
+                const delayIndicator = projectDelays.length > 0 ? 
+                    `<span style="color: #ff6b6b; font-weight: bold;" title="${projectDelays.length} attività con ritardi da assenze"> ⚠️ ${projectDelays.length}</span>` : '';
+                
                 const tr = document.createElement('tr');
                 tr.className = 'project-item';
                 
                 tr.innerHTML = `
                     <td>${project.client}</td>
-                    <td>${project.code}</td>
+                    <td>${project.code}${delayIndicator}</td>
                     <td>${project.description}</td>
                     <td>${stats.startDate || '-'}</td>
                     <td>${stats.endDate || '-'}</td>
@@ -3629,6 +3778,19 @@
             const sundayWork = document.getElementById('taskSundayWork').checked;
             const holidayWork = document.getElementById('taskHolidayWork').checked;
             
+            // Ottieni le risorse assegnate
+            const assignedResources = [];
+            const resourceItems = document.querySelectorAll('.resource-item');
+            resourceItems.forEach((item) => {
+                const selectElement = item.querySelector('.task-resource-select');
+                const percentageElement = item.querySelector('.task-resource-percentage');
+                const resourceId = selectElement.value;
+                const percentage = parseInt(percentageElement.value);
+                if (resourceId && percentage >= 0) {
+                    assignedResources.push({ resourceId, percentage });
+                }
+            });
+            
             // Ottieni il progetto corrente
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
@@ -3648,11 +3810,11 @@
                 if (linkedDate) {
                     // Se collegato alla fine di un task o a una milestone, aggiungi +1 per iniziare il giorno dopo
                     const adjustedOffset = (type === 'end' || type === 'milestone') ? startOffset + 1 : startOffset;
-                    const calculatedStart = calculateDateWithOffset(linkedDate, adjustedOffset, saturdayWork, sundayWork, holidayWork);
+                    const calculatedStart = calculateDateWithOffset(linkedDate, adjustedOffset, saturdayWork, sundayWork, holidayWork, assignedResources);
                     startDateField.value = calculatedStart;
                     
                     // Calcola data fine da inizio + durata
-                    const calcEnd = calculateDateWithOffset(calculatedStart, duration - 1, saturdayWork, sundayWork, holidayWork);
+                    const calcEnd = calculateDateWithOffset(calculatedStart, duration - 1, saturdayWork, sundayWork, holidayWork, assignedResources);
                     endDateField.value = calcEnd;
                 }
             } else if (endLinkedTo) {
@@ -3668,15 +3830,24 @@
                 }
                 
                 if (linkedDate) {
-                    // Se collegato all'inizio di un task o a una milestone, sottrai -1 per finire il giorno prima
-                    const adjustedOffset = (type === 'start' || type === 'milestone') ? endOffset - 1 : endOffset;
-                    const calculatedEnd = calculateDateWithOffset(linkedDate, adjustedOffset, saturdayWork, sundayWork, holidayWork);
+                    // Calcola la data di fine: applica l'offset alla data collegata
+                    // Se collegato all'inizio di un task, sottrai -1 per finire il giorno prima
+                    // Se collegato a milestone o fine di un task, usa l'offset direttamente
+                    const adjustedOffset = (type === 'start') ? endOffset - 1 : endOffset;
+                    const calculatedEnd = calculateDateWithOffset(linkedDate, adjustedOffset, saturdayWork, sundayWork, holidayWork, assignedResources);
                     endDateField.value = calculatedEnd;
                     
-                    // Calcola data inizio da fine - durata
-                    const calcStart = calculateDateWithOffset(calculatedEnd, -(duration - 1), saturdayWork, sundayWork, holidayWork);
+                    // Calcola data inizio all'indietro dalla data di fine usando la durata
+                    const calcStart = calculateStartDateForTask(calculatedEnd, duration, saturdayWork, sundayWork, holidayWork, assignedResources);
                     startDateField.value = calcStart;
                 }
+            }
+            
+            // Mostra avviso assenze se presenti
+            const startDate = startDateField.value;
+            const endDate = endDateField.value;
+            if (startDate && endDate && assignedResources.length > 0) {
+                showAbsenceWarning(startDate, endDate, assignedResources);
             }
         }
 
@@ -3785,6 +3956,10 @@
             document.getElementById('taskSundayWork').checked = task.sundayWork || false;
             document.getElementById('taskHolidayWork').checked = task.holidayWork || false;
             document.getElementById('taskEndDate').value = task.endDate;
+            document.getElementById('taskStartLinkedTo').value = task.startLinkedTo || '';
+            document.getElementById('taskEndLinkedTo').value = task.endLinkedTo || '';
+            document.getElementById('taskStartOffset').value = task.startOffset || 0;
+            document.getElementById('taskEndOffset').value = task.endOffset || 0;
 
             // Clear and rebuild resource assignments
             const container = document.getElementById('taskResources');
@@ -3804,8 +3979,11 @@
                 addTaskResource();
             }
             
-            // Mostra indicatore assenze se presenti
-            if (task.startDate && task.endDate && task.resources) {
+            // Aggiorna le date se collegate (ricalcola con assenze)
+            updateLinkedDates();
+            
+            // Se non ci sono collegamenti, mostra comunque l'avviso assenze
+            if (!task.startLinkedTo && !task.endLinkedTo && task.startDate && task.endDate && task.resources) {
                 showAbsenceWarning(task.startDate, task.endDate, task.resources);
             }
 
@@ -4251,6 +4429,10 @@
 
             if (!project.tasks) project.tasks = [];
 
+            // Trova attività con ritardi da assenze
+            const tasksWithDelays = findTasksWithAbsenceDelays();
+            const projectDelays = tasksWithDelays.filter(td => td.project.id === project.id);
+
             // Ordina le attività per data di inizio
             const sortedTasks = [...project.tasks].sort((a, b) => {
                 if (!a.startDate && !b.startDate) return 0;
@@ -4361,8 +4543,13 @@
                     linksStr = links.join(' | ') || '-';
                 }
 
+                // Verifica se questa attività ha ritardi da assenze
+                const taskDelay = projectDelays.find(td => td.task.id === task.id);
+                const delayIndicator = taskDelay ? 
+                    `<span style="color: #ff6b6b; font-weight: bold;" title="Ritardo di ${taskDelay.delayDays} giorni per assenze: ${taskDelay.affectedResources}"> ⚠️ ${taskDelay.delayDays}gg</span>` : '';
+
                 tr.innerHTML = `
-                    <td>${task.name}</td>
+                    <td>${task.name} ${delayIndicator}</td>
                     <td>${resourcesStr}</td>
                     <td>${task.startDate || '-'}</td>
                     <td>${task.endDate || '-'}</td>
