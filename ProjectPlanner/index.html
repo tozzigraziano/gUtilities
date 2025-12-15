@@ -104,6 +104,146 @@
             border-bottom: 2px solid var(--border-color);
         }
 
+        /* Bacheca Kanban Style */
+        .bacheca-container {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .bacheca-column {
+            flex: 1;
+            min-width: 300px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .bacheca-column h3 {
+            margin: 0 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bacheca-column.in-ritardo h3 {
+            color: #ff6b6b;
+            border-bottom-color: #ff6b6b;
+        }
+
+        .bacheca-column.in-corso h3 {
+            color: #5b8db8;
+            border-bottom-color: #5b8db8;
+        }
+
+        .bacheca-column.pausa h3 {
+            color: #d4b95f;
+            border-bottom-color: #d4b95f;
+        }
+
+        .bacheca-column.annullata h3 {
+            color: #666;
+            border-bottom-color: #666;
+        }
+
+        .bacheca-column.non-assegnata h3 {
+            color: #c9885f;
+            border-bottom-color: #c9885f;
+        }
+
+        .bacheca-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .bacheca-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow);
+            border-color: var(--accent-color);
+        }
+
+        .bacheca-card-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 0.95em;
+        }
+
+        .bacheca-card-project {
+            font-size: 0.85em;
+            color: var(--text-tertiary);
+            margin-bottom: 6px;
+            font-style: italic;
+        }
+
+        .bacheca-card-info {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .bacheca-card-dates {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .bacheca-card-resources {
+            color: var(--info-color);
+        }
+
+        .bacheca-card-completion {
+            background: var(--bg-tertiary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .bacheca-progress-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            margin-top: 8px;
+        }
+
+        .bacheca-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #66bb6a);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
+        .bacheca-empty {
+            text-align: center;
+            color: var(--text-tertiary);
+            padding: 30px;
+            font-style: italic;
+        }
+
         .tab {
             padding: 4px 10px;
             background: var(--bg-tertiary);
@@ -660,6 +800,12 @@
             background: #d4b95f !important; /* giallo tenue per "in pausa" */
         }
 
+        .gantt-bar.task.status-in-ritardo {
+            background: #ff6b6b !important; /* rosso per "in ritardo" */
+            border: 2px solid #d32f2f;
+            box-shadow: 0 0 8px rgba(255, 107, 107, 0.5);
+        }
+
         .gantt-bar.task.status-cancelled {
             background: #333333 !important; /* nero per "annullata" */
         }
@@ -992,6 +1138,10 @@
         .week-task-card.status-in-progress {
             border-left-color: #2196f3;
         }
+
+        .week-task-card.status-in-ritardo {
+            border-left-color: #ff6b6b;
+        }
         
         .week-task-card.status-paused {
             border-left-color: #d4b95f;
@@ -1094,6 +1244,10 @@
 
         .resource-assignment.status-in-progress {
             border-left-color: #5b8db8 !important;
+        }
+
+        .resource-assignment.status-in-ritardo {
+            border-left-color: #ff6b6b !important;
         }
 
         .resource-assignment.status-paused {
@@ -1276,6 +1430,7 @@
             <button class="tab" onclick="switchTab('holidays')">Festività</button>
             <button class="tab" onclick="switchTab('projects')">Progetti</button>
             <button class="tab" onclick="switchTab('templates')">Template</button>
+            <button class="tab" onclick="switchTab('bacheca')">📋 Bacheca</button>
             <button class="tab" onclick="switchTab('gantt')">Gantt</button>
             <button class="tab" onclick="switchTab('resourceView')">Vista Risorse</button>
             <button class="tab" onclick="switchTab('data')">Import/Export</button>
@@ -1495,6 +1650,33 @@
             </div>
         </div>
 
+        <!-- TAB BACHECA -->
+        <div id="bacheca" class="tab-content">
+            <h2>📋 Bacheca Attività</h2>
+            
+            <div class="bacheca-container" id="bachecaContainer">
+                <!-- Contenuto generato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- TAB BACHECA -->
+        <div id="bacheca" class="tab-content">
+            <h2>📋 Bacheca Attività</h2>
+            
+            <div class="bacheca-container" id="bachecaContainer">
+                <!-- Contenuto generato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- TAB BACHECA -->
+        <div id="bacheca" class="tab-content">
+            <h2>📋 Bacheca Attività</h2>
+            
+            <div class="bacheca-container" id="bachecaContainer">
+                <!-- Contenuto generato dinamicamente -->
+            </div>
+        </div>
+
         <!-- TAB IMPORT/EXPORT -->
         <div id="data" class="tab-content">
             <h2>Import/Export Dati</h2>
@@ -1566,6 +1748,10 @@
                 <div class="legend-item">
                     <div class="legend-color" style="background: #5b8db8;"></div>
                     <span>In corso</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff6b6b;"></div>
+                    <span>In ritardo</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #d4b95f;"></div>
@@ -1870,6 +2056,7 @@
                     <select id="taskStatus">
                         <option value="">-- Nessuno --</option>
                         <option value="in-corso">In Corso</option>
+                        <option value="in-ritardo">In Ritardo</option>
                         <option value="pausa">In Pausa</option>
                         <option value="completata">Completata</option>
                         <option value="annullata">Annullata</option>
@@ -2202,6 +2389,10 @@
             if (tabName === 'resourceView') {
                 updateResourceViewPeriod();
                 renderResourceView();
+            }
+            // Renderizza la Bacheca quando si apre la tab
+            if (tabName === 'bacheca') {
+                renderBacheca();
             }
         }
 
@@ -3933,6 +4124,12 @@
             // Ripristina stato Gantt
             restoreGanttState(ganttState);
             
+            // Aggiorna bacheca se visibile
+            const bachecaTab = document.getElementById('bacheca');
+            if (bachecaTab && bachecaTab.classList.contains('active')) {
+                renderBacheca();
+            }
+            
             closeTaskModal();
             
             // Applica collegamenti tra attività
@@ -3999,6 +4196,13 @@
             project.tasks = project.tasks.filter(t => t.id !== id);
             saveToIndexedDBAll();
             renderTasks();
+            renderGantt();
+            
+            // Aggiorna bacheca se visibile
+            const bachecaTab = document.getElementById('bacheca');
+            if (bachecaTab && bachecaTab.classList.contains('active')) {
+                renderBacheca();
+            }
         }
 
         function updateTaskLinkSelects(excludeTaskId = null) {
@@ -4420,6 +4624,135 @@
             updateResourceSelects();
         }
 
+        // === GESTIONE BACHECA ===
+        function updateTaskStatusBasedOnDates() {
+            const today = formatDateLocal(new Date());
+            
+            projects.forEach(project => {
+                if (!project.tasks) return;
+                
+                project.tasks.forEach(task => {
+                    // Aggiorna solo attività in-corso o nessuno stato
+                    if (task.status !== 'in-corso' && task.status !== 'nessuno' && task.status !== '') return;
+                    
+                    // Se ha una data di fine ed è scaduta, imposta come in-ritardo
+                    if (task.endDate && task.endDate < today && task.completion < 100) {
+                        task.status = 'in-ritardo';
+                    }
+                });
+            });
+        }
+
+        function renderBacheca() {
+            const container = document.getElementById('bachecaContainer');
+            container.innerHTML = '';
+
+            // Aggiorna stati basati sulle date
+            updateTaskStatusBasedOnDates();
+            saveToIndexedDBAll();
+
+            // Trova attività con ritardi da assenze
+            const tasksWithDelays = findTasksWithAbsenceDelays();
+
+            // Raccogli tutte le attività da tutti i progetti
+            const allTasks = [];
+            projects.forEach(project => {
+                if (!project.tasks) return;
+                project.tasks.forEach(task => {
+                    // Escludi le attività completate
+                    if (task.status === 'completata' || task.completion >= 100) return;
+                    
+                    allTasks.push({
+                        task,
+                        project,
+                        delay: tasksWithDelays.find(td => td.task.id === task.id)
+                    });
+                });
+            });
+
+            // Raggruppa per stato
+            const columns = [
+                { id: 'in-ritardo', title: '🚨 In Ritardo', status: 'in-ritardo' },
+                { id: 'in-corso', title: '🔄 In Corso', status: 'in-corso' },
+                { id: 'pausa', title: '⏸️ In Pausa', status: 'pausa' },
+                { id: 'non-assegnata', title: '📌 Non Assegnate', status: 'nessuno' },
+                { id: 'annullata', title: '❌ Annullate', status: 'annullata' }
+            ];
+
+            columns.forEach(column => {
+                const columnDiv = document.createElement('div');
+                columnDiv.className = `bacheca-column ${column.id}`;
+                
+                const tasksInColumn = allTasks.filter(item => {
+                    if (column.status === 'nessuno') {
+                        // Non assegnata: status nessuno O senza risorse
+                        return item.task.status === 'nessuno' || 
+                               !item.task.resources || 
+                               item.task.resources.length === 0;
+                    }
+                    return item.task.status === column.status;
+                });
+                
+                const count = tasksInColumn.length;
+                columnDiv.innerHTML = `<h3>${column.title} <span style="opacity: 0.6;">(${count})</span></h3>`;
+                
+                if (count === 0) {
+                    columnDiv.innerHTML += '<div class="bacheca-empty">Nessuna attività</div>';
+                } else {
+                    tasksInColumn.forEach(item => {
+                        const card = createBachecaCard(item.task, item.project, item.delay);
+                        columnDiv.appendChild(card);
+                    });
+                }
+                
+                container.appendChild(columnDiv);
+            });
+        }
+
+        function createBachecaCard(task, project, delayInfo) {
+            const card = document.createElement('div');
+            card.className = 'bacheca-card';
+            card.onclick = () => openTaskFromBacheca(task.id, project.id);
+            
+            // Risorse
+            let resourcesStr = 'Nessuna risorsa';
+            if (task.resources && task.resources.length > 0) {
+                resourcesStr = task.resources.map(r => {
+                    const resource = resources.find(res => res.id == r.resourceId);
+                    return resource ? `${resource.firstName} ${resource.lastName}` : '';
+                }).filter(s => s).join(', ');
+            }
+            
+            // Indicatore ritardo
+            const delayIndicator = delayInfo ? 
+                `<span style="color: #ff6b6b; font-weight: bold;"> ⚠️ +${delayInfo.delayDays}gg</span>` : '';
+            
+            card.innerHTML = `
+                <div class="bacheca-card-title">${task.name}${delayIndicator}</div>
+                <div class="bacheca-card-project">📁 ${project.client} - ${project.code}</div>
+                <div class="bacheca-card-info">
+                    <div class="bacheca-card-dates">
+                        <span>📅 ${task.startDate || '-'}</span>
+                        <span>🏁 ${task.endDate || '-'}</span>
+                    </div>
+                    <div class="bacheca-card-resources">👤 ${resourcesStr}</div>
+                    <div class="bacheca-progress-bar">
+                        <div class="bacheca-progress-fill" style="width: ${task.completion}%">${task.completion}%</div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function openTaskFromBacheca(taskId, projectId) {
+            // Imposta il progetto corrente
+            currentProjectId = projectId;
+            
+            // Apri il modal dell'attività
+            openTaskModal(taskId);
+        }
+
         function renderTasks() {
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
@@ -4456,6 +4789,8 @@
                     rowClass = 'status-completed';
                 } else if (task.status === 'annullata') {
                     rowClass = 'status-cancelled';
+                } else if (task.status === 'in-ritardo') {
+                    rowClass = 'status-in-ritardo';
                 } else if (task.status === 'pausa') {
                     rowClass = 'status-paused';
                 } else if (task.status === 'in-corso') {
@@ -4479,6 +4814,7 @@
 
                 const statusLabels = {
                     'in-corso': 'In Corso',
+                    'in-ritardo': 'In Ritardo',
                     'pausa': 'In Pausa',
                     'completata': 'Completata',
                     'annullata': 'Annullata'
@@ -5714,6 +6050,7 @@
                             let barClass = 'task';
                             if (task.status === 'nessuno') barClass += ' status-none';
                             if (task.status === 'completata') barClass += ' status-completed';
+                            if (task.status === 'in-ritardo') barClass += ' status-in-ritardo';
                             if (task.status === 'pausa') barClass += ' status-paused';
                             if (task.status === 'annullata') barClass += ' status-cancelled';
                             if (!task.resources || task.resources.length === 0) barClass += ' not-assigned';
@@ -6938,6 +7275,7 @@
                             if (status === 'nessuno') taskCard.classList.add('status-none');
                             if (status === 'completata') taskCard.classList.add('status-completed');
                             if (status === 'in-corso') taskCard.classList.add('status-in-progress');
+                            if (status === 'in-ritardo') taskCard.classList.add('status-in-ritardo');
                             if (status === 'pausa') taskCard.classList.add('status-paused');
                             if (status === 'non-assegnata') taskCard.classList.add('status-not-assigned');
                             if (status === 'annullata') taskCard.classList.add('status-cancelled');
@@ -6985,6 +7323,7 @@
                         if (status === 'nessuno') assignDiv.classList.add('status-none');
                         if (status === 'completata') assignDiv.classList.add('status-completed');
                         if (status === 'in-corso') assignDiv.classList.add('status-in-progress');
+                        if (status === 'in-ritardo') assignDiv.classList.add('status-in-ritardo');
                         if (status === 'pausa') assignDiv.classList.add('status-paused');
                         if (status === 'non-assegnata') assignDiv.classList.add('status-not-assigned');
                         if (status === 'annullata') assignDiv.classList.add('status-cancelled');
