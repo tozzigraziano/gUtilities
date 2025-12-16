@@ -2598,6 +2598,7 @@
             </div>
             <div class="modal-footer">
                 <button onclick="closeTaskModal()" class="secondary">Annulla</button>
+                <button onclick="sendTaskEmail()" class="secondary">📧 Invia Email</button>
                 <button onclick="saveTask()">💾 Salva</button>
             </div>
         </div>
@@ -3180,6 +3181,73 @@
         function closeTaskModal() {
             document.getElementById('taskModal').classList.remove('active');
             clearTaskForm();
+        }
+
+        function sendTaskEmail() {
+            const taskName = document.getElementById('taskName').value;
+            const startDate = document.getElementById('taskStartDate').value;
+            const endDate = document.getElementById('taskEndDate').value;
+            const duration = document.getElementById('taskDuration').value;
+            const completion = document.getElementById('taskCompletion').value;
+            const status = document.getElementById('taskStatus').value;
+            const notes = document.getElementById('taskNotes').value;
+            const flexibleDate = document.getElementById('taskFlexibleDate').checked;
+            
+            // Ottieni il progetto corrente
+            const project = projects.find(p => p.id === currentProjectId);
+            const projectName = project ? `${project.client} (${project.code})` : 'N/A';
+            
+            // Ottieni le risorse assegnate
+            const resourcesContainer = document.getElementById('taskResources');
+            const resourceDivs = resourcesContainer.querySelectorAll('.resource-item');
+            let resourcesText = '';
+            
+            resourceDivs.forEach(div => {
+                const select = div.querySelector('select');
+                const input = div.querySelector('input[type="number"]');
+                if (select && input && select.value) {
+                    const resource = resources.find(r => r.id == select.value);
+                    if (resource) {
+                        resourcesText += `  - ${resource.firstName} ${resource.lastName}: ${input.value}%\n`;
+                    }
+                }
+            });
+            
+            if (!resourcesText) {
+                resourcesText = '  Nessuna risorsa assegnata\n';
+            }
+            
+            // Ottieni testo stato
+            const statusText = {
+                '': 'Da Fare',
+                'in-corso': 'In Corso',
+                'in-ritardo': 'In Ritardo',
+                'pausa': 'In Pausa',
+                'completata': 'Completata',
+                'annullata': 'Annullata'
+            }[status] || 'Da Fare';
+            
+            // Prepara il subject e il body dell'email
+            const subject = `Attività: ${taskName} - ${projectName}`;
+            const body = `Dettagli Attività\n` +
+                        `================\n\n` +
+                        `Nome: ${taskName}\n` +
+                        `Progetto: ${projectName}\n\n` +
+                        `Date:\n` +
+                        `  - Inizio: ${startDate || 'Non definita'}\n` +
+                        `  - Fine: ${endDate || 'Non definita'}\n` +
+                        `  - Durata: ${duration} giorni lavorativi\n` +
+                        `  - Data Flessibile: ${flexibleDate ? 'Sì' : 'No'}\n\n` +
+                        `Stato: ${statusText}\n` +
+                        `Completamento: ${completion}%\n\n` +
+                        `Risorse Assegnate:\n${resourcesText}\n` +
+                        `Note:\n${notes || 'Nessuna nota'}\n`;
+            
+            // Crea il link mailto
+            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // Apri il client email
+            window.location.href = mailtoLink;
         }
 
         function openTemplateModal(id = null) {
