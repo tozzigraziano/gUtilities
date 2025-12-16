@@ -1262,6 +1262,60 @@
             border-left-color: #333333 !important;
         }
 
+        .resource-assignment.flexible-suggestion {
+            border-left: none !important;
+            animation: pulse-suggestion 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-suggestion {
+            0%, 100% {
+                box-shadow: 0 0 5px var(--info-color);
+            }
+            50% {
+                box-shadow: 0 0 15px var(--info-color);
+            }
+        }
+
+        .resource-suggestions {
+            margin-top: 15px;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            border: 1px solid var(--info-color);
+        }
+
+        .resource-suggestions.week-view {
+            margin-top: 10px;
+        }
+
+        .week-task-card.flexible-suggestion {
+            animation: pulse-suggestion 2s ease-in-out infinite;
+            background-color: var(--bg-tertiary);
+            border: 2px dashed var(--info-color);
+        }
+
+        .week-task-card.flexible-suggestion.would-overlap {
+            border-color: var(--warning-border);
+            background-color: var(--warning-bg);
+            animation: pulse-warning 2s ease-in-out infinite;
+        }
+
+        .week-task-card.flexible-suggestion.unassigned-task,
+        .resource-assignment.flexible-suggestion.unassigned-task {
+            border-color: var(--accent-color);
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        @keyframes pulse-warning {
+            0%, 100% {
+                box-shadow: 0 0 5px var(--warning-border);
+            }
+            50% {
+                box-shadow: 0 0 15px var(--warning-border);
+            }
+        }
+
         .assignment-header {
             display: flex;
             justify-content: space-between;
@@ -2041,6 +2095,13 @@
                     <label>Durata (giorni):</label>
                     <input type="number" id="taskDuration" min="1" value="1">
                 </div>
+                <div class="form-group">
+                    <label></label>
+                    <div class="inline-group">
+                        <input type="checkbox" id="taskFlexibleDate" onchange="toggleFlexibleDate()">
+                        <label for="taskFlexibleDate">Data Flessibile (proposta automatica quando risorsa libera)</label>
+                    </div>
+                </div>
                 <div class="form-group" id="absenceWarningContainer" style="display: none;">
                     <label></label>
                     <div style="padding: 10px; background-color: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: 4px; color: var(--text-primary);">
@@ -2321,6 +2382,7 @@
         let editingLocalHolidayId = null;
         let editingTemplateMilestoneId = null;
         let editingTemplateTaskId = null;
+        let suggestedStartDate = null; // Data suggerita dal click su attività flessibile
 
         // Helper per formattare date in locale (evita problemi UTC)
         function formatDateLocal(date) {
@@ -2565,6 +2627,12 @@
                         document.getElementById('taskSundayWork').checked = task.sundayWork;
                         document.getElementById('taskHolidayWork').checked = task.holidayWork || false;
                         document.getElementById('taskEndDate').value = task.endDate;
+                        document.getElementById('taskFlexibleDate').checked = task.flexibleDate || false;
+                        
+                        // Gestisci stato campi in base a data flessibile
+                        if (task.flexibleDate) {
+                            toggleFlexibleDate();
+                        }
                         
                         // Imposta collegamenti
                         document.getElementById('taskStartLinkedTo').value = task.startLinkedTo || '';
@@ -2582,38 +2650,41 @@
                         const startOffsetField = document.getElementById('taskStartOffset');
                         const endOffsetField = document.getElementById('taskEndOffset');
                         
-                        if (task.startLinkedTo) {
-                            // Collegamento Dopo: imposta Inizio + durata, disabilita tutto tranne Dopo e suo offset
-                            calcFromStart.checked = true;
-                            calcFromStart.disabled = true;
-                            calcFromEnd.disabled = true;
-                            startDateField.disabled = true;
-                            endDateField.disabled = true;
-                            endLinkedSelect.disabled = true;
-                            endOffsetField.disabled = true;
-                        } else if (task.endLinkedTo) {
-                            // Collegamento Prima: imposta Fine + durata, disabilita tutto tranne Prima e suo offset
-                            calcFromEnd.checked = true;
-                            calcFromStart.disabled = true;
-                            calcFromEnd.disabled = true;
-                            startDateField.disabled = true;
-                            endDateField.disabled = true;
-                            startLinkedSelect.disabled = true;
-                            startOffsetField.disabled = true;
-                        } else {
-                            // Nessun collegamento: abilita tutto
-                            calcFromStart.disabled = false;
-                            calcFromEnd.disabled = false;
-                            startDateField.disabled = false;
-                            endDateField.disabled = false;
-                            startLinkedSelect.disabled = false;
-                            endLinkedSelect.disabled = false;
-                            startOffsetField.disabled = false;
-                            endOffsetField.disabled = false;
+                        // Se data flessibile è attiva, non gestire i collegamenti
+                        if (!task.flexibleDate) {
+                            if (task.startLinkedTo) {
+                                // Collegamento Dopo: imposta Inizio + durata, disabilita tutto tranne Dopo e suo offset
+                                calcFromStart.checked = true;
+                                calcFromStart.disabled = true;
+                                calcFromEnd.disabled = true;
+                                startDateField.disabled = true;
+                                endDateField.disabled = true;
+                                endLinkedSelect.disabled = true;
+                                endOffsetField.disabled = true;
+                            } else if (task.endLinkedTo) {
+                                // Collegamento Prima: imposta Fine + durata, disabilita tutto tranne Prima e suo offset
+                                calcFromEnd.checked = true;
+                                calcFromStart.disabled = true;
+                                calcFromEnd.disabled = true;
+                                startDateField.disabled = true;
+                                endDateField.disabled = true;
+                                startLinkedSelect.disabled = true;
+                                startOffsetField.disabled = true;
+                            } else {
+                                // Nessun collegamento: abilita tutto
+                                calcFromStart.disabled = false;
+                                calcFromEnd.disabled = false;
+                                startDateField.disabled = false;
+                                endDateField.disabled = false;
+                                startLinkedSelect.disabled = false;
+                                endLinkedSelect.disabled = false;
+                                startOffsetField.disabled = false;
+                                endOffsetField.disabled = false;
+                            }
+                            
+                            // Calcola e mostra le date risultanti
+                            updateLinkedDates();
                         }
-                        
-                        // Calcola e mostra le date risultanti
-                        updateLinkedDates();
 
                         const container = document.getElementById('taskResources');
                         console.log('Clearing resource container');
@@ -4042,9 +4113,74 @@
             }
         }
 
+        function toggleFlexibleDate() {
+            const flexibleDate = document.getElementById('taskFlexibleDate').checked;
+            const startDateField = document.getElementById('taskStartDate');
+            const endDateField = document.getElementById('taskEndDate');
+            const calcFromStart = document.getElementById('calcFromStart');
+            const calcFromEnd = document.getElementById('calcFromEnd');
+            const startLinkedSelect = document.getElementById('taskStartLinkedTo');
+            const endLinkedSelect = document.getElementById('taskEndLinkedTo');
+            const startOffsetField = document.getElementById('taskStartOffset');
+            const endOffsetField = document.getElementById('taskEndOffset');
+            
+            if (flexibleDate) {
+                // Data flessibile attiva: disabilita campi data e collegamenti
+                startDateField.disabled = true;
+                endDateField.disabled = true;
+                calcFromStart.disabled = true;
+                calcFromEnd.disabled = true;
+                startLinkedSelect.disabled = true;
+                endLinkedSelect.disabled = true;
+                startOffsetField.disabled = true;
+                endOffsetField.disabled = true;
+                
+                // Svuota i valori
+                startDateField.value = '';
+                endDateField.value = '';
+                startLinkedSelect.value = '';
+                endLinkedSelect.value = '';
+                startOffsetField.value = '0';
+                endOffsetField.value = '0';
+            } else {
+                // Data flessibile disattivata: riabilita campi e calcola date
+                startDateField.disabled = false;
+                endDateField.disabled = false;
+                calcFromStart.disabled = false;
+                calcFromEnd.disabled = false;
+                startLinkedSelect.disabled = false;
+                endLinkedSelect.disabled = false;
+                startOffsetField.disabled = false;
+                endOffsetField.disabled = false;
+                
+                // Usa la data suggerita dal click se disponibile, altrimenti oggi
+                const startDate = suggestedStartDate ? new Date(suggestedStartDate) : new Date();
+                const duration = parseInt(document.getElementById('taskDuration').value) || 1;
+                const saturdayWork = document.getElementById('taskSaturdayWork').checked;
+                const sundayWork = document.getElementById('taskSundayWork').checked;
+                const holidayWork = document.getElementById('taskHolidayWork').checked;
+                
+                startDateField.value = formatDateLocal(startDate);
+                
+                // Calcola data fine
+                const endDate = calculateEndDateForTask(
+                    formatDateLocal(startDate), 
+                    duration, 
+                    saturdayWork, 
+                    sundayWork, 
+                    holidayWork, 
+                    []
+                );
+                endDateField.value = endDate;
+                
+                // Reset della data suggerita dopo l'uso
+                suggestedStartDate = null;
+            }
+        }
+
         function saveTask() {
             const name = document.getElementById('taskName').value.trim();
-            const startDate = document.getElementById('taskStartDate').value;
+            let startDate = document.getElementById('taskStartDate').value;
             const duration = parseInt(document.getElementById('taskDuration').value);
             const completion = parseInt(document.getElementById('taskCompletion').value);
             let status = document.getElementById('taskStatus').value;
@@ -4052,11 +4188,20 @@
             const saturdayWork = document.getElementById('taskSaturdayWork').checked;
             const sundayWork = document.getElementById('taskSundayWork').checked;
             const holidayWork = document.getElementById('taskHolidayWork').checked;
-            const endDate = document.getElementById('taskEndDate').value;
+            let endDate = document.getElementById('taskEndDate').value;
             const startLinkedTo = document.getElementById('taskStartLinkedTo').value;
             const endLinkedTo = document.getElementById('taskEndLinkedTo').value;
             const startOffset = parseInt(document.getElementById('taskStartOffset').value) || 0;
             const endOffset = parseInt(document.getElementById('taskEndOffset').value) || 0;
+            let flexibleDate = document.getElementById('taskFlexibleDate').checked;
+            
+            // Se completion passa da 0 a > 0, rimuovi automaticamente data flessibile e calcola le date
+            if (completion > 0 && flexibleDate) {
+                flexibleDate = false;
+                const today = new Date();
+                startDate = formatDateLocal(today);
+                endDate = calculateEndDateForTask(startDate, duration, saturdayWork, sundayWork, holidayWork, []);
+            }
             
             // Gestione automatica dello stato in base al completamento
             if (completion === 100) {
@@ -4103,7 +4248,8 @@
                 startOffset,
                 endOffset,
                 notes,
-                resources: assignedResources
+                resources: assignedResources,
+                flexibleDate: flexibleDate || false
             };
 
             if (editingTaskId) {
@@ -4604,6 +4750,7 @@
             document.getElementById('taskEndLinkedTo').value = '';
             document.getElementById('taskStartOffset').value = '0';
             document.getElementById('taskEndOffset').value = '0';
+            document.getElementById('taskFlexibleDate').checked = false;
             
             // Nascondi indicatore assenze
             document.getElementById('absenceWarningContainer').style.display = 'none';
@@ -7242,7 +7389,36 @@
             
             if (isWeekView) {
                 // Vista settimanale: incolonna le attività sotto i giorni
-                if (assignmentsInPeriod.length > 0) {
+                // Prima raccogliamo i task flessibili
+                const flexibleTasks = [];
+                projects.forEach(project => {
+                    if (project.tasks) {
+                        project.tasks.forEach(task => {
+                            if (task.flexibleDate && task.completion === 0) {
+                                // Se ha risorse assegnate, mostra solo per quelle risorse
+                                if (task.resources && task.resources.length > 0) {
+                                    const res = task.resources.find(r => r.resourceId == resource.id);
+                                    if (res) {
+                                        flexibleTasks.push({
+                                            project,
+                                            task,
+                                            percentage: res.percentage
+                                        });
+                                    }
+                                } else {
+                                    // Nessuna risorsa assegnata: mostra per tutti con carico 100%
+                                    flexibleTasks.push({
+                                        project,
+                                        task,
+                                        percentage: 100
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                if (assignmentsInPeriod.length > 0 || flexibleTasks.length > 0) {
                     const weekTimeline = document.createElement('div');
                     weekTimeline.className = 'resource-week-timeline';
                     
@@ -7252,6 +7428,9 @@
                         const dateStr = formatDateLocal(currentDate);
                         const dayColumn = document.createElement('div');
                         dayColumn.className = 'week-tasks-column';
+                        
+                        // Calcola carico per questo giorno
+                        const dailyLoad = overload.dailyLoad[dateStr] || 0;
                         
                         // Filtra attività per questo giorno
                         const dayAssignments = assignmentsInPeriod.filter(assignment => {
@@ -7297,6 +7476,82 @@
                             
                             dayColumn.appendChild(taskCard);
                         });
+                        
+                        // Aggiungi suggerimenti se carico < 100% per questo specifico giorno
+                        // Solo per giorni da oggi in avanti e non in assenza
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const checkDate = new Date(currentDate);
+                        checkDate.setHours(0, 0, 0, 0);
+                        
+                        // Verifica se la risorsa è in assenza in questo giorno
+                        const isAbsent = resource.absences && resource.absences.some(absence => {
+                            const absStart = new Date(absence.start);
+                            const absEnd = new Date(absence.end);
+                            absStart.setHours(0, 0, 0, 0);
+                            absEnd.setHours(23, 59, 59, 999);
+                            return checkDate >= absStart && checkDate <= absEnd;
+                        });
+                        
+                        if (checkDate >= today && !isAbsent && dailyLoad < 100 && flexibleTasks.length > 0) {
+                            // Aggiungi separatore visivo
+                            if (dayAssignments.length > 0) {
+                                const separator = document.createElement('div');
+                                separator.style.borderTop = '1px dashed var(--info-color)';
+                                separator.style.margin = '6px 0';
+                                dayColumn.appendChild(separator);
+                            }
+                            
+                            // Aggiungi suggerimenti per questo giorno
+                            flexibleTasks.forEach(suggestion => {
+                                // Verifica se l'attività causerebbe sovrapposizioni
+                                const wouldOverlap = checkFlexibleTaskOverlap(
+                                    currentDate,
+                                    suggestion.task,
+                                    overload.dailyLoad,
+                                    suggestion.percentage,
+                                    endDate
+                                );
+                                
+                                const suggestionCard = document.createElement('div');
+                                suggestionCard.className = 'week-task-card flexible-suggestion';
+                                if (wouldOverlap) {
+                                    suggestionCard.classList.add('would-overlap');
+                                }
+                                // Aggiungi classe se attività non assegnata
+                                if (!suggestion.task.resources || suggestion.task.resources.length === 0) {
+                                    suggestionCard.classList.add('unassigned-task');
+                                }
+                                suggestionCard.style.cursor = 'pointer';
+                                
+                                const warningIcon = wouldOverlap ? '⚠️ ' : '💡 ';
+                                const warningText = wouldOverlap ? 'Sovrapposizione!' : '';
+                                const unassignedText = (!suggestion.task.resources || suggestion.task.resources.length === 0) ? '👤 Non assegnata' : '';
+                                
+                                suggestionCard.innerHTML = `
+                                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.task.name}">${warningIcon}${suggestion.task.name}</div>
+                                    <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.client}">${suggestion.project.client}</div>
+                                    <div style="font-size: 10px; margin-top: 2px;">
+                                        <span>Durata: ${suggestion.task.duration}gg</span>
+                                    </div>
+                                    <div style="font-size: 10px;">
+                                        <span>Carico: ${suggestion.percentage}%</span>
+                                    </div>
+                                    ${wouldOverlap ? '<div style="font-size: 9px; color: var(--danger-color); font-weight: bold; margin-top: 2px;">' + warningText + '</div>' : ''}
+                                    ${unassignedText ? '<div style="font-size: 9px; color: var(--accent-color); font-weight: bold; margin-top: 2px;">' + unassignedText + '</div>' : ''}
+                                `;
+                                
+                                // Imposta click handler con data suggerita
+                                const clickedDate = formatDateLocal(currentDate);
+                                suggestionCard.onclick = () => {
+                                    suggestedStartDate = clickedDate;
+                                    currentProjectId = suggestion.project.id;
+                                    openTaskModal(suggestion.task.id);
+                                };
+                                
+                                dayColumn.appendChild(suggestionCard);
+                            });
+                        }
                         
                         weekTimeline.appendChild(dayColumn);
                         currentDate.setDate(currentDate.getDate() + 1);
@@ -7412,6 +7667,85 @@
                 noAssign.textContent = 'Nessuna assegnazione nel periodo selezionato';
                 card.appendChild(noAssign);
             }
+            
+            // Aggiungi suggerimenti per attività con data flessibile se carico < 100%
+            // Solo per viste NON settimanali (nella vista settimanale sono già mostrati nelle colonne)
+            if (!isWeekView && overload.maxLoad < 100) {
+                const flexibleTasks = [];
+                projects.forEach(project => {
+                    if (project.tasks) {
+                        project.tasks.forEach(task => {
+                            if (task.flexibleDate && task.completion === 0) {
+                                // Se ha risorse assegnate, mostra solo per quelle risorse
+                                if (task.resources && task.resources.length > 0) {
+                                    const res = task.resources.find(r => r.resourceId == resource.id);
+                                    if (res) {
+                                        flexibleTasks.push({
+                                            project,
+                                            task,
+                                            percentage: res.percentage
+                                        });
+                                    }
+                                } else {
+                                    // Nessuna risorsa assegnata: mostra per tutti con carico 100%
+                                    flexibleTasks.push({
+                                        project,
+                                        task,
+                                        percentage: 100
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                if (flexibleTasks.length > 0) {
+                    const suggestionsDiv = document.createElement('div');
+                    suggestionsDiv.className = 'resource-suggestions';
+                    suggestionsDiv.innerHTML = '<div style="font-weight: bold; margin-bottom: 8px; color: var(--info-color);">💡 Attività Proposte (Data Flessibile):</div>';
+                    
+                    flexibleTasks.forEach(suggestion => {
+                        const suggestionCard = document.createElement('div');
+                        suggestionCard.className = 'resource-assignment flexible-suggestion';
+                        // Aggiungi classe se attività non assegnata
+                        if (!suggestion.task.resources || suggestion.task.resources.length === 0) {
+                            suggestionCard.classList.add('unassigned-task');
+                        }
+                        suggestionCard.style.cursor = 'pointer';
+                        suggestionCard.style.backgroundColor = 'var(--bg-tertiary)';
+                        suggestionCard.style.border = '2px dashed var(--info-color)';
+                        
+                        const unassignedBadge = (!suggestion.task.resources || suggestion.task.resources.length === 0) ? '<span style="color: var(--accent-color); font-weight: bold; margin-left: 10px;">👤 Non assegnata</span>' : '';
+                        
+                        const suggestionInfo = document.createElement('div');
+                        suggestionInfo.style.fontSize = '13px';
+                        suggestionInfo.style.padding = '8px 10px';
+                        suggestionInfo.style.display = 'grid';
+                        suggestionInfo.style.gridTemplateColumns = '200px 100px 1fr 120px 110px';
+                        suggestionInfo.style.gap = '15px';
+                        suggestionInfo.style.alignItems = 'center';
+                        suggestionInfo.innerHTML = `
+                            <span style="font-weight: bold; color: var(--info-color);">${suggestion.project.client}</span>
+                            <span>${suggestion.project.code}</span>
+                            <span style="font-weight: bold;">${suggestion.task.name}${unassignedBadge}</span>
+                            <span>Durata: <strong>${suggestion.task.duration} gg</strong></span>
+                            <span>Carico: <strong>${suggestion.percentage}%</strong></span>
+                        `;
+                        suggestionCard.appendChild(suggestionInfo);
+                        
+                        // Imposta click handler (usa oggi come data suggerita per viste non settimanali)
+                        suggestionCard.onclick = () => {
+                            suggestedStartDate = formatDateLocal(new Date());
+                            currentProjectId = suggestion.project.id;
+                            openTaskModal(suggestion.task.id);
+                        };
+                        
+                        suggestionsDiv.appendChild(suggestionCard);
+                    });
+                    
+                    card.appendChild(suggestionsDiv);
+                }
+            }
 
             return card;
         }
@@ -7440,6 +7774,45 @@
                 const b = Math.floor(122 - (122 - 54) * ratio);
                 return `rgb(${r}, ${g}, ${b})`;
             }
+        }
+
+        function checkFlexibleTaskOverlap(startDate, task, dailyLoadMap, taskPercentage, periodEnd) {
+            // Verifica se l'attività flessibile causerebbe sovrapposizioni se iniziata da startDate
+            const duration = task.duration || 1;
+            const saturdayWork = task.saturdayWork || false;
+            const sundayWork = task.sundayWork || false;
+            const holidayWork = task.holidayWork || false;
+            
+            let daysProcessed = 0;
+            let currentDate = new Date(startDate);
+            
+            while (daysProcessed < duration && currentDate <= periodEnd) {
+                const dateStr = formatDateLocal(currentDate);
+                const currentLoad = dailyLoadMap[dateStr] || 0;
+                
+                // Verifica se è un giorno lavorativo per questo task
+                const dayOfWeek = currentDate.getDay();
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isHoliday = holidays.some(h => h.date === dateStr);
+                
+                let isWorkingDay = true;
+                if (isSaturday && !saturdayWork) isWorkingDay = false;
+                if (isSunday && !sundayWork) isWorkingDay = false;
+                if (isHoliday && !holidayWork) isWorkingDay = false;
+                
+                if (isWorkingDay) {
+                    // Se aggiungendo questo task supereremmo il 100%, c'è sovrapposizione
+                    if (currentLoad + taskPercentage > 100) {
+                        return true;
+                    }
+                    daysProcessed++;
+                }
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            return false;
         }
 
         function selectProject(id) {
