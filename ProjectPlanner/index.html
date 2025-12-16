@@ -1316,6 +1316,152 @@
             }
         }
 
+        /* Stili per pagina avvisi */
+        .warnings-category {
+            margin-bottom: 20px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .warnings-category-header {
+            padding: 12px 15px;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .warnings-category-header.critical {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+        }
+
+        .warnings-category-header.warning {
+            background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+            color: white;
+        }
+
+        .warnings-category-header.info {
+            background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+            color: white;
+        }
+
+        .warnings-category-count {
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .warnings-list {
+            padding: 10px;
+        }
+
+        .warning-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--bg-tertiary);
+            border-left: 4px solid;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .warning-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+
+        .warning-item.critical {
+            border-left-color: #ff6b6b;
+        }
+
+        .warning-item.warning {
+            border-left-color: #ffa726;
+        }
+
+        .warning-item.info {
+            border-left-color: #42a5f5;
+        }
+
+        .warning-item-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .warning-item-details {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .warning-item-action {
+            font-size: 12px;
+            color: var(--info-color);
+            margin-top: 6px;
+        }
+
+        .warnings-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-tertiary);
+            font-style: italic;
+        }
+
+        .warnings-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .warnings-summary-card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .warnings-summary-card.critical {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+        }
+
+        .warnings-summary-card.warning {
+            background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+            color: white;
+        }
+
+        .warnings-summary-card.info {
+            background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+            color: white;
+        }
+
+        .warnings-summary-card.success {
+            background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+            color: white;
+        }
+
+        .warnings-summary-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .warnings-summary-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
         .assignment-header {
             display: flex;
             justify-content: space-between;
@@ -1487,6 +1633,7 @@
             <button class="tab" onclick="switchTab('bacheca')">📋 Bacheca</button>
             <button class="tab" onclick="switchTab('gantt')">Gantt</button>
             <button class="tab" onclick="switchTab('resourceView')">Vista Risorse</button>
+            <button class="tab" onclick="switchTab('warnings')">⚠️ Avvisi</button>
             <button class="tab" onclick="switchTab('data')">Import/Export</button>
         </div>
 
@@ -1728,6 +1875,19 @@
             
             <div class="bacheca-container" id="bachecaContainer">
                 <!-- Contenuto generato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- TAB AVVISI -->
+        <div id="warnings" class="tab-content">
+            <h2>⚠️ Avvisi e Problemi</h2>
+            
+            <div class="action-bar">
+                <button onclick="renderWarnings()">🔄 Aggiorna Avvisi</button>
+            </div>
+
+            <div id="warningsContainer">
+                <!-- Gli avvisi verranno caricati dinamicamente -->
             </div>
         </div>
 
@@ -2456,6 +2616,10 @@
             // Renderizza la Bacheca quando si apre la tab
             if (tabName === 'bacheca') {
                 renderBacheca();
+            }
+            // Renderizza gli Avvisi quando si apre la tab
+            if (tabName === 'warnings') {
+                renderWarnings();
             }
         }
 
@@ -6950,6 +7114,307 @@
                     projectSelect.appendChild(option);
                 });
             }
+        }
+
+        // === PAGINA AVVISI ===
+        function renderWarnings() {
+            const container = document.getElementById('warningsContainer');
+            if (!container) return;
+            
+            const warnings = collectAllWarnings();
+            
+            // Riepilogo
+            const summary = document.createElement('div');
+            summary.className = 'warnings-summary';
+            
+            const criticalCount = warnings.filter(w => w.severity === 'critical').length;
+            const warningCount = warnings.filter(w => w.severity === 'warning').length;
+            const infoCount = warnings.filter(w => w.severity === 'info').length;
+            
+            summary.innerHTML = `
+                <div class="warnings-summary-card critical">
+                    <div class="warnings-summary-number">${criticalCount}</div>
+                    <div class="warnings-summary-label">Critici</div>
+                </div>
+                <div class="warnings-summary-card warning">
+                    <div class="warnings-summary-number">${warningCount}</div>
+                    <div class="warnings-summary-label">Avvisi</div>
+                </div>
+                <div class="warnings-summary-card info">
+                    <div class="warnings-summary-number">${infoCount}</div>
+                    <div class="warnings-summary-label">Informativi</div>
+                </div>
+                <div class="warnings-summary-card ${warnings.length === 0 ? 'success' : 'info'}">
+                    <div class="warnings-summary-number">${warnings.length}</div>
+                    <div class="warnings-summary-label">Totali</div>
+                </div>
+            `;
+            
+            container.innerHTML = '';
+            container.appendChild(summary);
+            
+            if (warnings.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'warnings-empty';
+                empty.innerHTML = '✅ <strong>Nessun problema rilevato!</strong><br>Tutti i progetti sono in buono stato.';
+                container.appendChild(empty);
+                return;
+            }
+            
+            // Raggruppa per severità
+            const categories = [
+                { severity: 'critical', title: '🚨 Problemi Critici', warnings: warnings.filter(w => w.severity === 'critical') },
+                { severity: 'warning', title: '⚠️ Avvisi Importanti', warnings: warnings.filter(w => w.severity === 'warning') },
+                { severity: 'info', title: 'ℹ️ Informazioni', warnings: warnings.filter(w => w.severity === 'info') }
+            ];
+            
+            categories.forEach(category => {
+                if (category.warnings.length === 0) return;
+                
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'warnings-category';
+                
+                const header = document.createElement('div');
+                header.className = `warnings-category-header ${category.severity}`;
+                header.innerHTML = `
+                    <span>${category.title}</span>
+                    <span class="warnings-category-count">${category.warnings.length}</span>
+                `;
+                categoryDiv.appendChild(header);
+                
+                const list = document.createElement('div');
+                list.className = 'warnings-list';
+                
+                category.warnings.forEach(warning => {
+                    const item = document.createElement('div');
+                    item.className = `warning-item ${warning.severity}`;
+                    
+                    item.innerHTML = `
+                        <div class="warning-item-title">
+                            ${warning.icon} ${warning.title}
+                        </div>
+                        <div class="warning-item-details">${warning.description}</div>
+                        ${warning.action ? `<div class="warning-item-action">💡 ${warning.action}</div>` : ''}
+                    `;
+                    
+                    if (warning.onClick) {
+                        item.style.cursor = 'pointer';
+                        item.onclick = warning.onClick;
+                    }
+                    
+                    list.appendChild(item);
+                });
+                
+                categoryDiv.appendChild(list);
+                container.appendChild(categoryDiv);
+            });
+        }
+        
+        function collectAllWarnings() {
+            const warnings = [];
+            const today = formatDateLocal(new Date());
+            
+            // 1. Sovraccarichi di risorse
+            resources.forEach(resource => {
+                const assignments = [];
+                projects.forEach(project => {
+                    if (project.tasks) {
+                        project.tasks.forEach(task => {
+                            if (task.resources && task.startDate && task.endDate && task.completion < 100 && task.status !== 'completata' && task.status !== 'pausa') {
+                                const res = task.resources.find(r => r.resourceId == resource.id);
+                                if (res) {
+                                    assignments.push({
+                                        project,
+                                        task,
+                                        percentage: res.percentage,
+                                        startDate: task.startDate,
+                                        endDate: task.endDate
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                // Calcola sovraccarichi per questa risorsa
+                const dailyLoad = {};
+                assignments.forEach(assignment => {
+                    const start = new Date(assignment.startDate);
+                    const end = new Date(assignment.endDate);
+                    let currentDate = new Date(start);
+                    
+                    while (currentDate <= end) {
+                        if (isWorkingDay(currentDate, assignment.task)) {
+                            const dateStr = formatDateLocal(currentDate);
+                            if (!dailyLoad[dateStr]) dailyLoad[dateStr] = 0;
+                            dailyLoad[dateStr] += assignment.percentage;
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                });
+                
+                // Trova giorni con sovraccarico
+                Object.keys(dailyLoad).forEach(dateStr => {
+                    if (dailyLoad[dateStr] > 100 && dateStr >= today) {
+                        const tasksOnDay = assignments.filter(a => {
+                            const start = new Date(a.startDate);
+                            const end = new Date(a.endDate);
+                            const checkDate = new Date(dateStr);
+                            return checkDate >= start && checkDate <= end;
+                        });
+                        
+                        warnings.push({
+                            severity: 'critical',
+                            icon: '🔴',
+                            title: `Sovraccarico ${resource.firstName} ${resource.lastName}`,
+                            description: `Il ${dateStr} carico al ${dailyLoad[dateStr].toFixed(0)}% (${tasksOnDay.length} attività in sovrapposizione)`,
+                            action: 'Ridistribuire il carico o ripianificare le attività',
+                            onClick: () => {
+                                switchTab('resourceView');
+                                document.getElementById('resourceViewFilter').value = resource.id;
+                                document.getElementById('resourceViewPeriod').value = 'day';
+                                document.getElementById('resourceViewSpecificDay').value = dateStr;
+                                renderResourceView();
+                            }
+                        });
+                    }
+                });
+            });
+            
+            // 2. Attività in ritardo
+            projects.forEach(project => {
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (task.endDate && task.endDate < today && task.completion < 100 && task.status !== 'completata' && task.status !== 'annullata') {
+                            const daysLate = Math.floor((new Date() - new Date(task.endDate)) / (1000 * 60 * 60 * 24));
+                            warnings.push({
+                                severity: task.completion === 0 ? 'critical' : 'warning',
+                                icon: '⏰',
+                                title: `Attività in ritardo: ${task.name}`,
+                                description: `Progetto: ${project.client} - Scaduta ${daysLate} giorni fa (${task.endDate}). Completamento: ${task.completion}%`,
+                                action: 'Aggiornare la data o il completamento',
+                                onClick: () => {
+                                    currentProjectId = project.id;
+                                    switchTab('projects');
+                                    openTaskModal(task.id);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // 3. Attività con assenze risorse
+            projects.forEach(project => {
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (task.startDate && task.endDate && task.resources && task.resources.length > 0 && task.completion < 100 && task.status !== 'completata') {
+                            let hasAbsences = false;
+                            let absenceDays = [];
+                            
+                            let currentDate = new Date(task.startDate);
+                            const endDate = new Date(task.endDate);
+                            
+                            while (currentDate <= endDate) {
+                                const dateStr = formatDateLocal(currentDate);
+                                task.resources.forEach(taskRes => {
+                                    const resource = resources.find(r => r.id == taskRes.resourceId);
+                                    if (resource && resource.absences) {
+                                        resource.absences.forEach(absence => {
+                                            const absStart = new Date(absence.start);
+                                            const absEnd = new Date(absence.end);
+                                            if (currentDate >= absStart && currentDate <= absEnd) {
+                                                hasAbsences = true;
+                                                if (!absenceDays.includes(dateStr)) {
+                                                    absenceDays.push(dateStr);
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+                                currentDate.setDate(currentDate.getDate() + 1);
+                            }
+                            
+                            if (hasAbsences && absenceDays.length > 0) {
+                                warnings.push({
+                                    severity: 'warning',
+                                    icon: '📅',
+                                    title: `Assenze durante attività: ${task.name}`,
+                                    description: `Progetto: ${project.client} - ${absenceDays.length} giorni con risorse assenti tra ${task.startDate} e ${task.endDate}`,
+                                    action: 'Verificare e ripianificare se necessario',
+                                    onClick: () => {
+                                        currentProjectId = project.id;
+                                        switchTab('projects');
+                                        openTaskModal(task.id);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // 4. Attività senza risorse assegnate (non flessibili)
+            projects.forEach(project => {
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if ((!task.resources || task.resources.length === 0) && !task.flexibleDate && task.startDate && task.completion < 100 && task.status !== 'completata' && task.status !== 'annullata') {
+                            warnings.push({
+                                severity: 'warning',
+                                icon: '👤',
+                                title: `Nessuna risorsa assegnata: ${task.name}`,
+                                description: `Progetto: ${project.client} - Attività pianificata dal ${task.startDate} senza risorse`,
+                                action: 'Assegnare una o più risorse',
+                                onClick: () => {
+                                    currentProjectId = project.id;
+                                    switchTab('projects');
+                                    openTaskModal(task.id);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // 5. Progetti senza attività
+            projects.forEach(project => {
+                if (!project.tasks || project.tasks.length === 0) {
+                    warnings.push({
+                        severity: 'info',
+                        icon: '📋',
+                        title: `Progetto vuoto: ${project.client}`,
+                        description: `Il progetto "${project.code}" non ha attività definite`,
+                        action: 'Aggiungere attività o template',
+                        onClick: () => {
+                            currentProjectId = project.id;
+                            switchTab('projects');
+                        }
+                    });
+                }
+            });
+            
+            // 6. Attività con data flessibile da molto tempo
+            projects.forEach(project => {
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (task.flexibleDate && task.completion === 0) {
+                            warnings.push({
+                                severity: 'info',
+                                icon: '💡',
+                                title: `Attività da pianificare: ${task.name}`,
+                                description: `Progetto: ${project.client} - Attività flessibile in attesa di pianificazione (${task.duration} giorni)`,
+                                action: 'Pianificare nella Vista Risorse o rimuovere data flessibile',
+                                onClick: () => {
+                                    currentProjectId = project.id;
+                                    switchTab('resourceView');
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+            
+            return warnings;
         }
 
         // === VISTA RISORSE ===
