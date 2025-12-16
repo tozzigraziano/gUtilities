@@ -2383,6 +2383,7 @@
         let editingTemplateMilestoneId = null;
         let editingTemplateTaskId = null;
         let suggestedStartDate = null; // Data suggerita dal click su attività flessibile
+        let suggestedResourceId = null; // Risorsa suggerita dal click su attività non assegnata
 
         // Helper per formattare date in locale (evita problemi UTC)
         function formatDateLocal(date) {
@@ -4173,8 +4174,55 @@
                 );
                 endDateField.value = endDate;
                 
-                // Reset della data suggerita dopo l'uso
+                // Se c'è una risorsa suggerita (task non assegnato), assegnala automaticamente
+                if (suggestedResourceId) {
+                    const container = document.getElementById('taskResources');
+                    // Verifica se la risorsa non è già presente
+                    const existingItems = container.querySelectorAll('.resource-item');
+                    let resourceAlreadyAssigned = false;
+                    
+                    existingItems.forEach(item => {
+                        const selectElement = item.querySelector('.task-resource-select');
+                        if (selectElement && selectElement.value == suggestedResourceId) {
+                            resourceAlreadyAssigned = true;
+                        }
+                    });
+                    
+                    if (!resourceAlreadyAssigned) {
+                        // Se c'è un solo elemento vuoto, usalo
+                        if (existingItems.length === 1) {
+                            const firstItem = existingItems[0];
+                            const selectElement = firstItem.querySelector('.task-resource-select');
+                            const percentageElement = firstItem.querySelector('.task-resource-percentage');
+                            if (!selectElement.value) {
+                                selectElement.value = suggestedResourceId;
+                                percentageElement.value = 100;
+                            } else {
+                                // Aggiungi nuova riga
+                                addTaskResourceRow();
+                                const newItems = container.querySelectorAll('.resource-item');
+                                const newItem = newItems[newItems.length - 1];
+                                const newSelect = newItem.querySelector('.task-resource-select');
+                                const newPercentage = newItem.querySelector('.task-resource-percentage');
+                                newSelect.value = suggestedResourceId;
+                                newPercentage.value = 100;
+                            }
+                        } else {
+                            // Aggiungi nuova riga
+                            addTaskResourceRow();
+                            const items = container.querySelectorAll('.resource-item');
+                            const item = items[items.length - 1];
+                            const selectElement = item.querySelector('.task-resource-select');
+                            const percentageElement = item.querySelector('.task-resource-percentage');
+                            selectElement.value = suggestedResourceId;
+                            percentageElement.value = 100;
+                        }
+                    }
+                }
+                
+                // Reset delle variabili suggerite dopo l'uso
                 suggestedStartDate = null;
+                suggestedResourceId = null;
             }
         }
 
@@ -4269,6 +4317,14 @@
             renderGantt(); // Aggiorna vista Gantt
             // Ripristina stato Gantt
             restoreGanttState(ganttState);
+            
+            // Salva e ripristina stato Vista Risorse se visibile
+            const resourceViewTab = document.getElementById('resourceView');
+            if (resourceViewTab && resourceViewTab.classList.contains('active')) {
+                const resourceViewState = saveResourceViewState();
+                renderResourceView(); // Aggiorna vista risorse
+                restoreResourceViewState(resourceViewState);
+            }
             
             // Aggiorna bacheca se visibile
             const bachecaTab = document.getElementById('bacheca');
@@ -5694,6 +5750,91 @@
                 scrollTop,
                 collapsedProjects
             };
+        }
+        
+        function saveResourceViewState() {
+            const container = document.getElementById('resourceViewContainer');
+            if (!container) return null;
+            
+            // Salva posizione scroll
+            const scrollTop = container.scrollTop;
+            
+            // Salva filtri e periodo
+            const filterValue = document.getElementById('resourceViewFilter')?.value || '';
+            const periodValue = document.getElementById('resourceViewPeriod')?.value || 'week';
+            const startDate = document.getElementById('resourceViewStartDate')?.value || '';
+            const endDate = document.getElementById('resourceViewEndDate')?.value || '';
+            const specificDay = document.getElementById('resourceViewSpecificDay')?.value || '';
+            const specificWeek = document.getElementById('resourceViewSpecificWeek')?.value || '';
+            const specificMonth = document.getElementById('resourceViewSpecificMonth')?.value || '';
+            const specificYear = document.getElementById('resourceViewSpecificYear')?.value || '';
+            
+            return {
+                scrollTop,
+                filterValue,
+                periodValue,
+                startDate,
+                endDate,
+                specificDay,
+                specificWeek,
+                specificMonth,
+                specificYear
+            };
+        }
+        
+        function restoreResourceViewState(state) {
+            if (!state) return;
+            
+            const container = document.getElementById('resourceViewContainer');
+            if (!container) return;
+            
+            // Ripristina filtri e periodo (prima di renderizzare)
+            if (state.filterValue !== undefined) {
+                const filterSelect = document.getElementById('resourceViewFilter');
+                if (filterSelect) filterSelect.value = state.filterValue;
+            }
+            
+            if (state.periodValue !== undefined) {
+                const periodSelect = document.getElementById('resourceViewPeriod');
+                if (periodSelect) periodSelect.value = state.periodValue;
+            }
+            
+            if (state.startDate) {
+                const startDateInput = document.getElementById('resourceViewStartDate');
+                if (startDateInput) startDateInput.value = state.startDate;
+            }
+            
+            if (state.endDate) {
+                const endDateInput = document.getElementById('resourceViewEndDate');
+                if (endDateInput) endDateInput.value = state.endDate;
+            }
+            
+            if (state.specificDay) {
+                const dayInput = document.getElementById('resourceViewSpecificDay');
+                if (dayInput) dayInput.value = state.specificDay;
+            }
+            
+            if (state.specificWeek) {
+                const weekSelect = document.getElementById('resourceViewSpecificWeek');
+                if (weekSelect) weekSelect.value = state.specificWeek;
+            }
+            
+            if (state.specificMonth) {
+                const monthSelect = document.getElementById('resourceViewSpecificMonth');
+                if (monthSelect) monthSelect.value = state.specificMonth;
+            }
+            
+            if (state.specificYear) {
+                const yearSelect = document.getElementById('resourceViewSpecificYear');
+                if (yearSelect) yearSelect.value = state.specificYear;
+            }
+            
+            // Ripristina scroll dopo un breve delay per permettere il rendering
+            setTimeout(() => {
+                if (state.scrollTop !== undefined) {
+                    container.scrollTop = state.scrollTop;
+                }
+            }, 50);
         }
         
         function restoreGanttState(state) {
@@ -7478,7 +7619,7 @@
                         });
                         
                         // Aggiungi suggerimenti se carico < 100% per questo specifico giorno
-                        // Solo per giorni da oggi in avanti e non in assenza
+                        // Solo per giorni da oggi in avanti, non in assenza, non weekend e non festivi
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         const checkDate = new Date(currentDate);
@@ -7493,7 +7634,13 @@
                             return checkDate >= absStart && checkDate <= absEnd;
                         });
                         
-                        if (checkDate >= today && !isAbsent && dailyLoad < 100 && flexibleTasks.length > 0) {
+                        // Verifica se è weekend o festivo
+                        const dayOfWeek = currentDate.getDay();
+                        const isSaturday = dayOfWeek === 6;
+                        const isSunday = dayOfWeek === 0;
+                        const isHoliday = holidays.some(h => h.date === dateStr);
+                        
+                        if (checkDate >= today && !isAbsent && !isSaturday && !isSunday && !isHoliday && dailyLoad < 100 && flexibleTasks.length > 0) {
                             // Aggiungi separatore visivo
                             if (dayAssignments.length > 0) {
                                 const separator = document.createElement('div');
@@ -7541,10 +7688,14 @@
                                     ${unassignedText ? '<div style="font-size: 9px; color: var(--accent-color); font-weight: bold; margin-top: 2px;">' + unassignedText + '</div>' : ''}
                                 `;
                                 
-                                // Imposta click handler con data suggerita
+                                // Imposta click handler con data suggerita e risorsa
                                 const clickedDate = formatDateLocal(currentDate);
                                 suggestionCard.onclick = () => {
                                     suggestedStartDate = clickedDate;
+                                    // Se attività non assegnata, suggerisci questa risorsa
+                                    if (!suggestion.task.resources || suggestion.task.resources.length === 0) {
+                                        suggestedResourceId = resource.id;
+                                    }
                                     currentProjectId = suggestion.project.id;
                                     openTaskModal(suggestion.task.id);
                                 };
@@ -7736,6 +7887,10 @@
                         // Imposta click handler (usa oggi come data suggerita per viste non settimanali)
                         suggestionCard.onclick = () => {
                             suggestedStartDate = formatDateLocal(new Date());
+                            // Se attività non assegnata, suggerisci questa risorsa
+                            if (!suggestion.task.resources || suggestion.task.resources.length === 0) {
+                                suggestedResourceId = resource.id;
+                            }
                             currentProjectId = suggestion.project.id;
                             openTaskModal(suggestion.task.id);
                         };
