@@ -8543,8 +8543,12 @@
                             if (status === 'non-assegnata') taskCard.classList.add('status-not-assigned');
                             if (status === 'annullata') taskCard.classList.add('status-cancelled');
                             
+                            // Indicatore note
+                            const notesIndicator = assignment.task.notes && assignment.task.notes.trim() ? 
+                                `<span style="color: var(--warning-color); margin-left: 3px; cursor: help;" title="${assignment.task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
+                            
                             taskCard.innerHTML = `
-                                <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}</div>
+                                <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}</div>
                                 <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.client}">${assignment.project.client}</div>
                                 <div style="font-size: 10px; margin-top: 2px;">
                                     <span>Carico: ${assignment.percentage}%</span>
@@ -8618,8 +8622,12 @@
                                 const warningText = wouldOverlap ? 'Sovrapposizione!' : '';
                                 const unassignedText = (!suggestion.task.resources || suggestion.task.resources.length === 0) ? '👤 Non assegnata' : '';
                                 
+                                // Indicatore note
+                                const notesIndicator = suggestion.task.notes && suggestion.task.notes.trim() ? 
+                                    `<span style="color: var(--warning-color); margin-left: 3px; cursor: help;" title="${suggestion.task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
+                                
                                 suggestionCard.innerHTML = `
-                                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.task.name}">${warningIcon}${suggestion.task.name}</div>
+                                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.task.name}">${warningIcon}${suggestion.task.name}${notesIndicator}</div>
                                     <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.client}">${suggestion.project.client}</div>
                                     <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.code}">${suggestion.project.code}</div>
                                     <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 3px;" title="${suggestion.project.description}">${suggestion.project.description}</div>
@@ -8707,6 +8715,10 @@
                             }
                         }
 
+                        // Indicatore note
+                        const notesIndicator = assignment.task.notes && assignment.task.notes.trim() ? 
+                            `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${assignment.task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
+                        
                         const assignInfo = document.createElement('div');
                         assignInfo.style.fontSize = '13px';
                         assignInfo.style.padding = '8px 10px';
@@ -8717,7 +8729,7 @@
                         assignInfo.innerHTML = `
                             <span style="font-weight: bold; color: var(--primary-color);">${assignment.project.client}</span>
                             <span>${assignment.project.code}</span>
-                            <span style="font-weight: bold;">${assignment.task.name}</span>
+                            <span style="font-weight: bold;">${assignment.task.name}${notesIndicator}</span>
                             <span>Compl: <strong>${assignment.task.completion}%</strong></span>
                             <span>Carico: <strong style="color: ${assignment.percentage > 100 ? 'var(--danger-color)' : 'var(--primary-color)'};">${assignment.percentage}%</strong></span>
                             <span style="color: var(--danger-color); font-weight: bold;">${hasConflict ? '⚠️ SOVRAPPOSIZIONE' : ''}</span>
@@ -8813,6 +8825,10 @@
                         
                         const unassignedBadge = (!suggestion.task.resources || suggestion.task.resources.length === 0) ? '<span style="color: var(--accent-color); font-weight: bold; margin-left: 10px;">👤 Non assegnata</span>' : '';
                         
+                        // Indicatore note
+                        const notesIndicator = suggestion.task.notes && suggestion.task.notes.trim() ? 
+                            `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${suggestion.task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
+                        
                         const suggestionInfo = document.createElement('div');
                         suggestionInfo.style.fontSize = '13px';
                         suggestionInfo.style.padding = '8px 10px';
@@ -8823,7 +8839,7 @@
                         suggestionInfo.innerHTML = `
                             <span style="font-weight: bold; color: var(--info-color);">${suggestion.project.client}</span>
                             <span style="color: var(--text-secondary);">${suggestion.project.code}</span>
-                            <span style="font-weight: bold;">${suggestion.task.name}${unassignedBadge}<br><span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal;">${suggestion.project.description}</span></span>
+                            <span style="font-weight: bold;">${suggestion.task.name}${notesIndicator}${unassignedBadge}<br><span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal;">${suggestion.project.description}</span></span>
                             <span>Durata: <strong>${suggestion.task.duration} gg</strong></span>
                             <span>Carico: <strong>${suggestion.percentage}%</strong></span>
                         `;
