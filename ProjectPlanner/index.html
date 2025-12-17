@@ -5526,8 +5526,12 @@
             const delayIndicator = delayInfo ? 
                 `<span style="color: #ff6b6b; font-weight: bold;"> ⚠️ +${delayInfo.delayDays}gg</span>` : '';
             
+            // Indicatore note
+            const notesIndicator = task.notes && task.notes.trim() ? 
+                `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
+            
             card.innerHTML = `
-                <div class="bacheca-card-title">${task.name}${delayIndicator}</div>
+                <div class="bacheca-card-title">${task.name}${delayIndicator}${notesIndicator}</div>
                 <div class="bacheca-card-project">📁 ${project.client} - ${project.code}</div>
                 <div class="bacheca-card-info">
                     <div class="bacheca-card-dates">
