@@ -362,6 +362,20 @@
         #projectsTable th:nth-child(7) { width: 10%; }
         #projectsTable th:nth-child(8) { width: 12%; }
 
+        #taskReviewTable {
+            table-layout: fixed;
+        }
+        
+        #taskReviewTable th:nth-child(1) { width: 12%; }
+        #taskReviewTable th:nth-child(2) { width: 10%; }
+        #taskReviewTable th:nth-child(3) { width: 17%; }
+        #taskReviewTable th:nth-child(4) { width: 17%; }
+        #taskReviewTable th:nth-child(5) { width: 17%; }
+        #taskReviewTable th:nth-child(6) { width: 6%; }
+        #taskReviewTable th:nth-child(7) { width: 6%; }
+        #taskReviewTable th:nth-child(8) { width: 9%; }
+        #taskReviewTable th:nth-child(9) { width: 6%; }
+
         th, td {
             border: 1px solid var(--border-color);
             padding: 5px 8px;
@@ -385,6 +399,8 @@
 
         .action-buttons {
             white-space: nowrap;
+            text-align: center;
+            vertical-align: middle;
         }
 
         .action-buttons button {
@@ -1756,6 +1772,7 @@
             <button class="tab" onclick="switchTab('gantt')">Gantt</button>
             <button class="tab" onclick="switchTab('resourceView')">Vista Risorse</button>
             <button class="tab" onclick="switchTab('warnings')">⚠️ Avvisi</button>
+            <button class="tab" onclick="switchTab('taskReview')">🔍 Revisione Attività</button>
             <button class="tab" onclick="switchTab('help')">❓ Guida</button>
             <button class="tab" onclick="switchTab('data')">Import/Export</button>
         </div>
@@ -2038,6 +2055,67 @@
             <div id="warningsContainer">
                 <!-- Gli avvisi verranno caricati dinamicamente -->
             </div>
+        </div>
+
+        <!-- TAB REVISIONE ATTIVITÀ -->
+        <div id="taskReview" class="tab-content">
+            <h2>🔍 Revisione Attività</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">Visualizza tutte le attività con data flessibile o in pausa</p>
+            
+            <div class="action-bar">
+                <button onclick="renderTaskReview()">🔄 Aggiorna</button>
+            </div>
+
+            <table id="taskReviewTable">
+                <thead>
+                    <tr class="filter-row">
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="taskReviewFilterClient" placeholder="Filtra cliente" onkeyup="renderTaskReview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('taskReviewFilterClient').value=''; renderTaskReview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="taskReviewFilterCode" placeholder="Filtra codice" onkeyup="renderTaskReview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('taskReviewFilterCode').value=''; renderTaskReview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="taskReviewFilterDescription" placeholder="Filtra descrizione" onkeyup="renderTaskReview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('taskReviewFilterDescription').value=''; renderTaskReview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="taskReviewFilterTaskName" placeholder="Filtra attività" onkeyup="renderTaskReview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('taskReviewFilterTaskName').value=''; renderTaskReview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Codice Lavoro</th>
+                        <th>Descrizione Progetto</th>
+                        <th>Attività</th>
+                        <th>Risorse</th>
+                        <th>Carico</th>
+                        <th>Durata</th>
+                        <th>Tipo</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
 
         <!-- TAB GUIDA -->
@@ -2964,6 +3042,10 @@
             // Renderizza gli Avvisi quando si apre la tab
             if (tabName === 'warnings') {
                 renderWarnings();
+            }
+            // Renderizza la Revisione Attività quando si apre la tab
+            if (tabName === 'taskReview') {
+                renderTaskReview();
             }
         }
 
@@ -7919,6 +8001,144 @@
             });
             
             return warnings;
+        }
+
+        // === REVISIONE ATTIVITÀ ===
+        function renderTaskReview() {
+            const tbody = document.querySelector('#taskReviewTable tbody');
+            tbody.innerHTML = '';
+
+            const filterClient = document.getElementById('taskReviewFilterClient')?.value.toLowerCase() || '';
+            const filterCode = document.getElementById('taskReviewFilterCode')?.value.toLowerCase() || '';
+            const filterDescription = document.getElementById('taskReviewFilterDescription')?.value.toLowerCase() || '';
+            const filterTaskName = document.getElementById('taskReviewFilterTaskName')?.value.toLowerCase() || '';
+
+            // Raccogli tutte le attività con data flessibile o in pausa
+            const reviewTasks = [];
+            projects.forEach(project => {
+                if (!project.tasks) return;
+                project.tasks.forEach(task => {
+                    // Include attività con data flessibile o in pausa
+                    if (task.flexibleDate || task.status === 'pausa') {
+                        reviewTasks.push({
+                            project,
+                            task
+                        });
+                    }
+                });
+            });
+
+            // Applica filtri
+            let filteredTasks = reviewTasks;
+            
+            if (filterClient) {
+                filteredTasks = filteredTasks.filter(item => 
+                    (item.project.client || '').toLowerCase().includes(filterClient)
+                );
+            }
+            if (filterCode) {
+                filteredTasks = filteredTasks.filter(item => 
+                    (item.project.code || '').toLowerCase().includes(filterCode)
+                );
+            }
+            if (filterDescription) {
+                filteredTasks = filteredTasks.filter(item => 
+                    (item.project.description || '').toLowerCase().includes(filterDescription)
+                );
+            }
+            if (filterTaskName) {
+                filteredTasks = filteredTasks.filter(item => 
+                    (item.task.name || '').toLowerCase().includes(filterTaskName)
+                );
+            }
+
+            // Ordina per cliente, poi per attività
+            filteredTasks.sort((a, b) => {
+                const clientCompare = (a.project.client || '').localeCompare(b.project.client || '');
+                if (clientCompare !== 0) return clientCompare;
+                return (a.task.name || '').localeCompare(b.task.name || '');
+            });
+
+            // Renderizza righe
+            filteredTasks.forEach(item => {
+                const { project, task } = item;
+                const tr = document.createElement('tr');
+                
+                // Applica classe per tipo
+                if (task.flexibleDate) {
+                    tr.className = 'task-flexible-date';
+                } else if (task.status === 'pausa') {
+                    tr.className = 'status-paused';
+                }
+
+                // Get resource names and calculate total load
+                let resourcesStr = '-';
+                let totalLoad = 0;
+                if (task.resources && task.resources.length > 0) {
+                    resourcesStr = task.resources.map(r => {
+                        const resource = resources.find(res => res.id == r.resourceId);
+                        totalLoad += r.percentage || 0;
+                        if (resource) {
+                            return `${resource.firstName} ${resource.lastName} (${r.percentage}%)`;
+                        }
+                        return '';
+                    }).filter(s => s).join(', ');
+                }
+                
+                const loadStr = totalLoad > 0 ? `${totalLoad}%` : '-';
+
+                // Indicatore tipo
+                let typeIndicator = '';
+                if (task.flexibleDate) {
+                    typeIndicator = '<span style="color: var(--info-color); font-weight: bold;" title="Attività con data flessibile">💡 Data Flessibile</span>';
+                }
+                if (task.status === 'pausa') {
+                    typeIndicator += (typeIndicator ? '<br>' : '') + '<span style="color: var(--warning-color); font-weight: bold;" title="Attività in pausa">⏸️ In Pausa</span>';
+                }
+                
+                // Indicatore note
+                const notesIndicator = task.notes && task.notes.trim() ? 
+                    `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
+
+                tr.innerHTML = `
+                    <td>${project.client}</td>
+                    <td>${project.code}</td>
+                    <td>${project.description || '-'}</td>
+                    <td>${task.name}${notesIndicator}</td>
+                    <td>${resourcesStr}</td>
+                    <td>${loadStr}</td>
+                    <td>${task.duration} giorni</td>
+                    <td>${typeIndicator}</td>
+                    <td class="action-buttons">
+                        <button onclick="openTaskFromReview(${task.id}, ${project.id})" class="secondary" title="Modifica attività">✏️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Mostra contatore
+            const countMsg = filteredTasks.length === reviewTasks.length
+                ? `Trovate ${filteredTasks.length} attività`
+                : `Mostrate ${filteredTasks.length} di ${reviewTasks.length} attività`;
+            
+            const existingCount = document.querySelector('#taskReview .task-count');
+            if (existingCount) {
+                existingCount.textContent = countMsg;
+            } else {
+                const countDiv = document.createElement('div');
+                countDiv.className = 'task-count';
+                countDiv.style.marginBottom = '10px';
+                countDiv.style.color = 'var(--text-secondary)';
+                countDiv.style.fontStyle = 'italic';
+                countDiv.textContent = countMsg;
+                const table = document.getElementById('taskReviewTable');
+                table.parentNode.insertBefore(countDiv, table);
+            }
+        }
+
+        function openTaskFromReview(taskId, projectId) {
+            currentProjectId = projectId;
+            openTaskModal(taskId);
         }
 
         // === VISTA RISORSE ===
