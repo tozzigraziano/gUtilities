@@ -420,6 +420,12 @@
             background-color: #ffeb3b !important;
             color: #000 !important;
         }
+        
+        .task-flexible-date {
+            background-color: var(--bg-tertiary) !important;
+            border: 2px dashed var(--info-color) !important;
+            animation: pulse-suggestion 2s ease-in-out infinite;
+        }
 
         [data-theme="dark"] .status-not-assigned {
             background-color: #8b7500 !important;
@@ -5576,7 +5582,10 @@
                 const today = formatDateLocal(new Date());
                 const isOverdue = !isCompleted && task.endDate && task.endDate < today;
                 
-                if (isOverdue) {
+                // Priorità alla data flessibile
+                if (task.flexibleDate) {
+                    rowClass = 'task-flexible-date';
+                } else if (isOverdue) {
                     rowClass = 'status-overdue';
                 } else if (isCompleted) {
                     rowClass = 'status-completed';
@@ -5676,9 +5685,13 @@
                 const taskDelay = projectDelays.find(td => td.task.id === task.id);
                 const delayIndicator = taskDelay ? 
                     `<span style="color: #ff6b6b; font-weight: bold;" title="Ritardo di ${taskDelay.delayDays} giorni per assenze: ${taskDelay.affectedResources}"> ⚠️ ${taskDelay.delayDays}gg</span>` : '';
+                
+                // Indicatore data flessibile
+                const flexibleIndicator = task.flexibleDate ? 
+                    `<span style="color: var(--info-color); font-weight: bold; margin-left: 5px;" title="Attività con data flessibile">💡</span>` : '';
 
                 tr.innerHTML = `
-                    <td>${task.name} ${delayIndicator}</td>
+                    <td>${task.name} ${delayIndicator}${flexibleIndicator}</td>
                     <td>${resourcesStr}</td>
                     <td>${task.startDate || '-'}</td>
                     <td>${task.endDate || '-'}</td>
