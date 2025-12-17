@@ -1858,7 +1858,12 @@
                                 <button onclick="document.getElementById('projectFilterCode').value=''; renderProjects();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
                             </div>
                         </th>
-                        <th></th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="projectFilterDescription" placeholder="Filtra descrizione" onkeyup="renderProjects()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('projectFilterDescription').value=''; renderProjects();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
                         <th></th>
                         <th></th>
                         <th></th>
@@ -2493,7 +2498,8 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>Cliente:</label>
-                    <input type="text" id="projectClient" placeholder="Nome Cliente">
+                    <input type="text" id="projectClient" placeholder="Nome Cliente" list="clientSuggestions">
+                    <datalist id="clientSuggestions"></datalist>
                 </div>
                 <div class="form-group">
                     <label>Codice Lavoro:</label>
@@ -3049,6 +3055,16 @@
                     templateSelect.appendChild(option);
                 });
             }
+            
+            // Popola suggerimenti clienti
+            const clientDatalist = document.getElementById('clientSuggestions');
+            clientDatalist.innerHTML = '';
+            const uniqueClients = [...new Set(projects.map(p => p.client).filter(c => c))];
+            uniqueClients.sort().forEach(client => {
+                const option = document.createElement('option');
+                option.value = client;
+                clientDatalist.appendChild(option);
+            });
             
             if (id) {
                 title.textContent = 'Modifica Progetto';
@@ -4079,6 +4095,7 @@
             const hideCompleted = document.getElementById('hideCompletedProjects')?.checked || false;
             const filterClient = document.getElementById('projectFilterClient')?.value.toLowerCase() || '';
             const filterCode = document.getElementById('projectFilterCode')?.value.toLowerCase() || '';
+            const filterDescription = document.getElementById('projectFilterDescription')?.value.toLowerCase() || '';
 
             // Filtra progetti completati se richiesto
             let filteredProjects = projects;
@@ -4089,7 +4106,7 @@
                 });
             }
             
-            // Applica filtri per cliente e codice
+            // Applica filtri per cliente, codice e descrizione
             if (filterClient) {
                 filteredProjects = filteredProjects.filter(project => 
                     (project.client || '').toLowerCase().includes(filterClient)
@@ -4098,6 +4115,11 @@
             if (filterCode) {
                 filteredProjects = filteredProjects.filter(project => 
                     (project.code || '').toLowerCase().includes(filterCode)
+                );
+            }
+            if (filterDescription) {
+                filteredProjects = filteredProjects.filter(project => 
+                    (project.description || '').toLowerCase().includes(filterDescription)
                 );
             }
 
