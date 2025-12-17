@@ -1104,7 +1104,7 @@
         /* Vista settimanale con colonne */
         .resource-load-bar-container.week-view {
             display: flex;
-            gap: 5px;
+            gap: 0;
             align-items: flex-end;
             height: 80px;
         }
@@ -1115,7 +1115,8 @@
         }
         
         .resource-day-column {
-            flex: 1;
+            flex: 1 1 0;
+            min-width: 0;
             display: flex;
             flex-direction: column;
             align-items: stretch;
@@ -1145,11 +1146,13 @@
             color: var(--text-secondary);
             text-align: center;
             white-space: nowrap;
+            position: relative;
+            z-index: 10;
         }
         
         .resource-week-timeline {
             display: flex;
-            gap: 5px;
+            gap: 0;
             margin-top: 10px;
         }
         
@@ -1159,7 +1162,8 @@
         }
         
         .week-tasks-column {
-            flex: 1;
+            flex: 1 1 0;
+            min-width: 0;
             display: flex;
             flex-direction: column;
             gap: 5px;
@@ -1254,10 +1258,11 @@
 
         .resource-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
             margin-bottom: 6px;
             padding: 4px 0;
+            gap: 10px;
         }
 
         .resource-name {
@@ -1271,6 +1276,7 @@
             padding: 3px 8px;
             border-radius: 3px;
             font-weight: 600;
+            margin-left: auto;
         }
 
         .resource-load.normal {
