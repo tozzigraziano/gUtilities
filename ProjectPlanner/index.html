@@ -8423,6 +8423,12 @@
             renderResourceView();
         }
 
+        // Helper: verifica se un'attività ha risorse effettivamente assegnate (con resourceId valido)
+        function hasAssignedResources(task) {
+            if (!task.resources || task.resources.length === 0) return false;
+            return task.resources.some(r => r.resourceId && r.resourceId !== null && r.resourceId !== '');
+        }
+
         function renderResourceView() {
             const resourceFilter = document.getElementById('resourceViewFilter')?.value;
             const period = document.getElementById('resourceViewPeriod')?.value;
@@ -8740,9 +8746,9 @@
                 projects.forEach(project => {
                     if (project.tasks) {
                         project.tasks.forEach(task => {
-                            if (task.flexibleDate && task.completion === 0) {
+                            if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa') {
                                 // Se ha risorse assegnate, mostra solo per quelle risorse
-                                if (task.resources && task.resources.length > 0) {
+                                if (hasAssignedResources(task)) {
                                     const res = task.resources.find(r => r.resourceId == resource.id);
                                     if (res) {
                                         flexibleTasks.push({
@@ -8875,14 +8881,14 @@
                                     suggestionCard.classList.add('would-overlap');
                                 }
                                 // Aggiungi classe se attività non assegnata
-                                if (!suggestion.task.resources || suggestion.task.resources.length === 0) {
+                                if (!hasAssignedResources(suggestion.task)) {
                                     suggestionCard.classList.add('unassigned-task');
                                 }
                                 suggestionCard.style.cursor = 'pointer';
                                 
                                 const warningIcon = wouldOverlap ? '⚠️ ' : '💡 ';
                                 const warningText = wouldOverlap ? 'Sovrapposizione!' : '';
-                                const unassignedText = (!suggestion.task.resources || suggestion.task.resources.length === 0) ? '👤 Non assegnata' : '';
+                                const unassignedText = !hasAssignedResources(suggestion.task) ? '👤 Non assegnata' : '';
                                 
                                 // Indicatore note
                                 const notesIndicator = suggestion.task.notes && suggestion.task.notes.trim() ? 
@@ -8908,7 +8914,7 @@
                                 suggestionCard.onclick = () => {
                                     suggestedStartDate = clickedDate;
                                     // Se attività non assegnata, suggerisci questa risorsa
-                                    if (!suggestion.task.resources || suggestion.task.resources.length === 0) {
+                                    if (!hasAssignedResources(suggestion.task)) {
                                         suggestedResourceId = resource.id;
                                     }
                                     currentProjectId = suggestion.project.id;
@@ -9045,9 +9051,9 @@
                 projects.forEach(project => {
                     if (project.tasks) {
                         project.tasks.forEach(task => {
-                            if (task.flexibleDate && task.completion === 0) {
+                            if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa') {
                                 // Se ha risorse assegnate, mostra solo per quelle risorse
-                                if (task.resources && task.resources.length > 0) {
+                                if (hasAssignedResources(task)) {
                                     const res = task.resources.find(r => r.resourceId == resource.id);
                                     if (res) {
                                         flexibleTasks.push({
@@ -9078,14 +9084,14 @@
                         const suggestionCard = document.createElement('div');
                         suggestionCard.className = 'resource-assignment flexible-suggestion';
                         // Aggiungi classe se attività non assegnata
-                        if (!suggestion.task.resources || suggestion.task.resources.length === 0) {
+                        if (!hasAssignedResources(suggestion.task)) {
                             suggestionCard.classList.add('unassigned-task');
                         }
                         suggestionCard.style.cursor = 'pointer';
                         suggestionCard.style.backgroundColor = 'var(--bg-tertiary)';
                         suggestionCard.style.border = '2px dashed var(--info-color)';
                         
-                        const unassignedBadge = (!suggestion.task.resources || suggestion.task.resources.length === 0) ? '<span style="color: var(--accent-color); font-weight: bold; margin-left: 10px;">👤 Non assegnata</span>' : '';
+                        const unassignedBadge = !hasAssignedResources(suggestion.task) ? '<span style="color: var(--accent-color); font-weight: bold; margin-left: 10px;">👤 Non assegnata</span>' : '';
                         
                         // Indicatore note
                         const notesIndicator = suggestion.task.notes && suggestion.task.notes.trim() ? 
@@ -9111,7 +9117,7 @@
                         suggestionCard.onclick = () => {
                             suggestedStartDate = formatDateLocal(new Date());
                             // Se attività non assegnata, suggerisci questa risorsa
-                            if (!suggestion.task.resources || suggestion.task.resources.length === 0) {
+                            if (!hasAssignedResources(suggestion.task)) {
                                 suggestedResourceId = resource.id;
                             }
                             currentProjectId = suggestion.project.id;
