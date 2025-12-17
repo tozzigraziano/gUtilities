@@ -949,9 +949,9 @@
         /* Resource View Styles */
         .resource-card {
             background: var(--bg-tertiary);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
             border-left: 4px solid var(--accent-color);
         }
 
@@ -1109,6 +1109,11 @@
             height: 80px;
         }
         
+        /* Vista mese: gap ridotto per allineamento */
+        .resource-load-bar-container.week-view.month-view {
+            gap: 0;
+        }
+        
         .resource-day-column {
             flex: 1;
             display: flex;
@@ -1119,10 +1124,10 @@
             position: relative;
         }
         
-        /* Vista mese: larghezza minima ridotta */
+        /* Vista mese: larghezza fissa per allineamento preciso */
         .resource-day-column.month-view {
-            min-width: 45px;
-            max-width: 60px;
+            flex: 1 1 0;
+            min-width: 0;
             gap: 1px;
         }
         
@@ -1148,6 +1153,11 @@
             margin-top: 10px;
         }
         
+        /* Vista mese: gap ridotto per allineamento */
+        .resource-week-timeline.month-view {
+            gap: 0;
+        }
+        
         .week-tasks-column {
             flex: 1;
             display: flex;
@@ -1156,10 +1166,10 @@
             min-height: 50px;
         }
         
-        /* Vista mese: colonne più strette e gap ridotto */
+        /* Vista mese: larghezza fissa per allineamento preciso */
         .week-tasks-column.month-view {
-            min-width: 45px;
-            max-width: 60px;
+            flex: 1 1 0;
+            min-width: 0;
             gap: 2px;
         }
         
@@ -1176,10 +1186,13 @@
         
         /* Vista mese: dimensioni ultra ridotte */
         .week-task-card.month-view {
-            padding: 2px 3px;
-            margin-bottom: 2px;
-            border-radius: 2px;
-            border-left-width: 2px;
+            padding: 1px;
+            margin-bottom: 1px;
+            border-radius: 1px;
+            border: none;
+            border-left: 2px solid var(--accent-color);
+            box-sizing: border-box;
+            width: 100%;
         }
         
         .week-task-card:hover {
@@ -1243,19 +1256,20 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
+            padding: 4px 0;
         }
 
         .resource-name {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 600;
             color: var(--text-primary);
         }
 
         .resource-load {
-            font-size: 14px;
-            padding: 5px 10px;
-            border-radius: 4px;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 3px;
             font-weight: 600;
         }
 
@@ -2988,6 +3002,7 @@
         let editingTemplateTaskId = null;
         let suggestedStartDate = null; // Data suggerita dal click su attività flessibile
         let suggestedResourceId = null; // Risorsa suggerita dal click su attività non assegnata
+        let collapsedResources = {}; // Salva lo stato di collapse per ogni risorsa
 
         // Helper per formattare date in locale (evita problemi UTC)
         function formatDateLocal(date) {
@@ -8460,6 +8475,18 @@
             
             if (!container) return;
             
+            // Salva lo stato di collapse delle risorse prima di cancellare il DOM
+            const existingCards = container.querySelectorAll('.resource-card');
+            existingCards.forEach((card, index) => {
+                const resourceId = card.dataset.resourceId;
+                if (resourceId) {
+                    const contentWrapper = card.querySelector('.resource-content');
+                    if (contentWrapper) {
+                        collapsedResources[resourceId] = contentWrapper.style.display === 'none';
+                    }
+                }
+            });
+            
             container.innerHTML = '';
 
             // Calcola date in base al periodo
@@ -8537,6 +8564,7 @@
         function createResourceCard(resource, startDate, endDate, period) {
             const card = document.createElement('div');
             card.className = 'resource-card';
+            card.dataset.resourceId = resource.id;
 
             // Raccogli tutte le assegnazioni per questa risorsa
             const assignments = [];
@@ -8576,6 +8604,15 @@
             // Header
             const header = document.createElement('div');
             header.className = 'resource-header';
+            header.style.cursor = 'pointer';
+            header.title = 'Clicca per espandere/comprimere';
+            
+            // Indicatore collapse/expand
+            const collapseIndicator = document.createElement('span');
+            collapseIndicator.textContent = '▼';
+            collapseIndicator.style.marginRight = '8px';
+            collapseIndicator.style.transition = 'transform 0.2s';
+            header.appendChild(collapseIndicator);
             
             const name = document.createElement('div');
             name.className = 'resource-name';
@@ -8597,6 +8634,26 @@
             header.appendChild(load);
 
             card.appendChild(header);
+            
+            // Contenitore per il contenuto collassabile
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'resource-content';
+            
+            // Ripristina lo stato di collapse se era salvato
+            const wasCollapsed = collapsedResources[resource.id] || false;
+            contentWrapper.style.display = wasCollapsed ? 'none' : 'block';
+            if (wasCollapsed) {
+                collapseIndicator.style.transform = 'rotate(-90deg)';
+            }
+            
+            // Click handler per collapse/expand
+            header.onclick = () => {
+                const isCollapsed = contentWrapper.style.display === 'none';
+                contentWrapper.style.display = isCollapsed ? 'block' : 'none';
+                collapseIndicator.style.transform = isCollapsed ? 'rotate(0deg)' : 'rotate(-90deg)';
+                // Salva lo stato
+                collapsedResources[resource.id] = !isCollapsed;
+            };
 
             // Determina se è vista settimanale o mensile (entrambe con layout a colonne)
             const isWeekView = period === 'week';
@@ -8616,6 +8673,9 @@
             barContainer.className = 'resource-load-bar-container';
             if (isColumnView) {
                 barContainer.classList.add('week-view');
+                if (isMonthView) {
+                    barContainer.classList.add('month-view');
+                }
             }
 
             // Ordina i giorni e calcola l'altezza massima per normalizzare
@@ -8735,7 +8795,7 @@
             }
 
             loadBarDiv.appendChild(barContainer);
-            card.appendChild(loadBarDiv);
+            contentWrapper.appendChild(loadBarDiv);
 
             // Assenze
             if (resource.absences && resource.absences.length > 0) {
@@ -8748,7 +8808,7 @@
                         if (a.start === a.end) return a.start;
                         return `${a.start} - ${a.end}`;
                     }).join(', ');
-                card.appendChild(absencesDiv);
+                contentWrapper.appendChild(absencesDiv);
             }
 
             // Timeline assegnazioni
@@ -8804,6 +8864,7 @@
                 if (assignmentsInPeriod.length > 0 || flexibleTasks.length > 0) {
                     const weekTimeline = document.createElement('div');
                     weekTimeline.className = 'resource-week-timeline';
+                    if (isMonthView) weekTimeline.classList.add('month-view');
                     
                     // Crea una griglia con colonne per ogni giorno
                     let currentDate = new Date(startDate);
@@ -8993,7 +9054,7 @@
                         currentDate.setDate(currentDate.getDate() + 1);
                     }
                     
-                    card.appendChild(weekTimeline);
+                    contentWrapper.appendChild(weekTimeline);
                 }
             } else if (assignments.length > 0) {
                 // Altre viste: timeline normale
@@ -9090,14 +9151,14 @@
                         timeline.appendChild(assignDiv);
                     });
 
-                card.appendChild(timeline);
+                contentWrapper.appendChild(timeline);
                 } else {
                     const noAssign = document.createElement('div');
                     noAssign.style.padding = '10px';
                     noAssign.style.fontStyle = 'italic';
                     noAssign.style.color = 'var(--text-tertiary)';
                     noAssign.textContent = 'Nessuna assegnazione nel periodo selezionato';
-                    card.appendChild(noAssign);
+                    contentWrapper.appendChild(noAssign);
                 }
             } else {
                 const noAssign = document.createElement('div');
@@ -9105,7 +9166,7 @@
                 noAssign.style.fontStyle = 'italic';
                 noAssign.style.color = 'var(--text-tertiary)';
                 noAssign.textContent = 'Nessuna assegnazione nel periodo selezionato';
-                card.appendChild(noAssign);
+                contentWrapper.appendChild(noAssign);
             }
             
             // Aggiungi suggerimenti per attività con data flessibile se carico < 100%
@@ -9191,9 +9252,12 @@
                         suggestionsDiv.appendChild(suggestionCard);
                     });
                     
-                    card.appendChild(suggestionsDiv);
+                    contentWrapper.appendChild(suggestionsDiv);
                 }
             }
+            
+            // Aggiungi il contenitore collassabile alla card
+            card.appendChild(contentWrapper);
 
             return card;
         }
