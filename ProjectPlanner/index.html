@@ -1832,6 +1832,7 @@
                         <th>Descrizione</th>
                         <th>Data Inizio</th>
                         <th>Data Fine</th>
+                        <th>Attività</th>
                         <th>Completamento</th>
                         <th>Azioni</th>
                     </tr>
@@ -4071,8 +4072,13 @@
                 const delayIndicator = projectDelays.length > 0 ? 
                     `<span style="color: #ff6b6b; font-weight: bold;" title="${projectDelays.length} attività con ritardi da assenze"> ⚠️ ${projectDelays.length}</span>` : '';
                 
+                const taskCount = project.tasks ? project.tasks.length : 0;
+                const incompleteTasks = project.tasks ? project.tasks.filter(t => t.completion < 100 && t.status !== 'completata').length : 0;
+                const taskCountDisplay = `${incompleteTasks}/${taskCount}`;
+                
                 const tr = document.createElement('tr');
                 tr.className = 'project-item';
+                tr.style.cursor = 'pointer';
                 
                 tr.innerHTML = `
                     <td>${project.client}</td>
@@ -4080,13 +4086,21 @@
                     <td>${project.description}</td>
                     <td>${stats.startDate || '-'}</td>
                     <td>${stats.endDate || '-'}</td>
+                    <td>${taskCountDisplay}</td>
                     <td>${stats.completion}%</td>
                     <td class="action-buttons">
-                        <button onclick="openProjectModal(${project.id})" class="secondary">✏️ Modifica</button>
-                        <button onclick="openProjectDetails(${project.id})" class="secondary">📋 Dettagli</button>
-                        <button onclick="deleteProject(${project.id})" class="delete">🗑️ Elimina</button>
+                        <button onclick="event.stopPropagation(); openProjectModal(${project.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="event.stopPropagation(); deleteProject(${project.id})" class="delete">🗑️ Elimina</button>
                     </td>
                 `;
+                
+                // Click sulla riga per aprire i dettagli
+                tr.onclick = function(e) {
+                    if (!e.target.closest('.action-buttons')) {
+                        openProjectDetails(project.id);
+                    }
+                };
+                
                 tbody.appendChild(tr);
             });
         }
@@ -8543,6 +8557,8 @@
                                 suggestionCard.innerHTML = `
                                     <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.task.name}">${warningIcon}${suggestion.task.name}</div>
                                     <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.client}">${suggestion.project.client}</div>
+                                    <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.code}">${suggestion.project.code}</div>
+                                    <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 3px;" title="${suggestion.project.description}">${suggestion.project.description}</div>
                                     <div style="font-size: 10px; margin-top: 2px;">
                                         <span>Durata: ${suggestion.task.duration}gg</span>
                                     </div>
@@ -8742,8 +8758,8 @@
                         suggestionInfo.style.alignItems = 'center';
                         suggestionInfo.innerHTML = `
                             <span style="font-weight: bold; color: var(--info-color);">${suggestion.project.client}</span>
-                            <span>${suggestion.project.code}</span>
-                            <span style="font-weight: bold;">${suggestion.task.name}${unassignedBadge}</span>
+                            <span style="color: var(--text-secondary);">${suggestion.project.code}</span>
+                            <span style="font-weight: bold;">${suggestion.task.name}${unassignedBadge}<br><span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal;">${suggestion.project.description}</span></span>
                             <span>Durata: <strong>${suggestion.task.duration} gg</strong></span>
                             <span>Carico: <strong>${suggestion.percentage}%</strong></span>
                         `;
