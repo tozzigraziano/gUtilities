@@ -4969,9 +4969,10 @@
                 const selectElement = item.querySelector('.task-resource-select');
                 const percentageElement = item.querySelector('.task-resource-percentage');
                 const resourceId = selectElement.value;
-                const percentage = parseInt(percentageElement.value);
-                if (resourceId && percentage >= 0) {
-                    assignedResources.push({ resourceId, percentage });
+                const percentage = parseInt(percentageElement.value) || 0;
+                // Salva la risorsa se ha una percentuale >= 0, anche senza resourceId
+                if (!isNaN(percentage) && percentage >= 0) {
+                    assignedResources.push({ resourceId: resourceId || null, percentage });
                 }
             });
 
@@ -5030,6 +5031,14 @@
             const bachecaTab = document.getElementById('bacheca');
             if (bachecaTab && bachecaTab.classList.contains('active')) {
                 renderBacheca();
+            }
+            
+            // Aggiorna Revisione Attività se visibile e mantieni posizione scroll
+            const taskReviewTab = document.getElementById('taskReview');
+            if (taskReviewTab && taskReviewTab.classList.contains('active')) {
+                const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+                renderTaskReview();
+                window.scrollTo(0, scrollPosition);
             }
             
             closeTaskModal();
@@ -8075,17 +8084,24 @@
                 let resourcesStr = '-';
                 let totalLoad = 0;
                 if (task.resources && task.resources.length > 0) {
-                    resourcesStr = task.resources.map(r => {
-                        const resource = resources.find(res => res.id == r.resourceId);
+                    const resourceNames = [];
+                    task.resources.forEach(r => {
+                        // Aggiungi sempre la percentuale al carico totale
                         totalLoad += r.percentage || 0;
-                        if (resource) {
-                            return `${resource.firstName} ${resource.lastName} (${r.percentage}%)`;
+                        
+                        // Aggiungi il nome solo se la risorsa è stata trovata
+                        if (r.resourceId) {
+                            const resource = resources.find(res => res.id == r.resourceId);
+                            if (resource) {
+                                resourceNames.push(`${resource.firstName} ${resource.lastName} (${r.percentage}%)`);
+                            }
                         }
-                        return '';
-                    }).filter(s => s).join(', ');
+                    });
+                    resourcesStr = resourceNames.length > 0 ? resourceNames.join(', ') : '-';
                 }
                 
-                const loadStr = totalLoad > 0 ? `${totalLoad}%` : '-';
+                // Mostra percentuale se ci sono risorse, altrimenti "-"
+                const loadStr = (task.resources && task.resources.length > 0) ? `${totalLoad}%` : '-';
 
                 // Indicatore tipo
                 let typeIndicator = '';
