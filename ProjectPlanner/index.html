@@ -1335,6 +1335,16 @@
             cursor: pointer;
             user-select: none;
         }
+        
+        .warnings-category-header:hover {
+            opacity: 0.9;
+        }
+        
+        .warnings-category-toggle {
+            font-size: 0.8em;
+            margin-left: auto;
+            transition: transform 0.3s ease;
+        }
 
         .warnings-category-header.critical {
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
@@ -7534,7 +7544,20 @@
                 header.innerHTML = `
                     <span>${category.title}</span>
                     <span class="warnings-category-count">${category.warnings.length}</span>
+                    <span class="warnings-category-toggle">▼</span>
                 `;
+                header.style.cursor = 'pointer';
+                header.onclick = function() {
+                    const list = this.nextElementSibling;
+                    const toggle = this.querySelector('.warnings-category-toggle');
+                    if (list.style.display === 'none') {
+                        list.style.display = 'block';
+                        toggle.textContent = '▼';
+                    } else {
+                        list.style.display = 'none';
+                        toggle.textContent = '▶';
+                    }
+                };
                 categoryDiv.appendChild(header);
                 
                 const list = document.createElement('div');
@@ -7762,6 +7785,28 @@
                                 onClick: () => {
                                     currentProjectId = project.id;
                                     switchTab('resourceView');
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // 7. Attività in pausa
+            projects.forEach(project => {
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (task.status === 'pausa') {
+                            warnings.push({
+                                severity: 'info',
+                                icon: '⏸️',
+                                title: `Attività in pausa: ${task.name}`,
+                                description: `Progetto: ${project.client} - Completamento: ${task.completion}%. ${task.startDate && task.endDate ? `Periodo: ${task.startDate} - ${task.endDate}` : 'Date non definite'}`,
+                                action: 'Riattivare o aggiornare lo stato',
+                                onClick: () => {
+                                    currentProjectId = project.id;
+                                    switchTab('projects');
+                                    openTaskModal(task.id);
                                 }
                             });
                         }
