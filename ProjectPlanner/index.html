@@ -2509,6 +2509,8 @@
                     <input type="date" id="resourceViewEndDate" onchange="renderResourceView()">
                 </div>
                 <button onclick="renderResourceView()" class="secondary" style="margin-left: auto;">🔄 Aggiorna</button>
+                <button onclick="expandAllResources()" class="secondary" title="Espandi tutte le risorse">▼ Espandi</button>
+                <button onclick="collapseAllResources()" class="secondary" title="Collassa tutte le risorse">▶ Collassa</button>
             </div>
 
             <div class="holidays-info">
@@ -8470,6 +8472,48 @@
         function hasAssignedResources(task) {
             if (!task.resources || task.resources.length === 0) return false;
             return task.resources.some(r => r.resourceId && r.resourceId !== null && r.resourceId !== '');
+        }
+
+        // Espandi tutte le risorse
+        function expandAllResources() {
+            const container = document.getElementById('resourceViewContainer');
+            if (!container) return;
+            
+            const allCards = container.querySelectorAll('.resource-card');
+            allCards.forEach(card => {
+                const resourceId = card.dataset.resourceId;
+                const contentWrapper = card.querySelector('.resource-content');
+                const collapseIndicator = card.querySelector('.resource-header span');
+                
+                if (contentWrapper && resourceId) {
+                    contentWrapper.style.display = 'block';
+                    if (collapseIndicator) {
+                        collapseIndicator.style.transform = 'rotate(0deg)';
+                    }
+                    collapsedResources[resourceId] = false;
+                }
+            });
+        }
+
+        // Collassa tutte le risorse
+        function collapseAllResources() {
+            const container = document.getElementById('resourceViewContainer');
+            if (!container) return;
+            
+            const allCards = container.querySelectorAll('.resource-card');
+            allCards.forEach(card => {
+                const resourceId = card.dataset.resourceId;
+                const contentWrapper = card.querySelector('.resource-content');
+                const collapseIndicator = card.querySelector('.resource-header span');
+                
+                if (contentWrapper && resourceId) {
+                    contentWrapper.style.display = 'none';
+                    if (collapseIndicator) {
+                        collapseIndicator.style.transform = 'rotate(-90deg)';
+                    }
+                    collapsedResources[resourceId] = true;
+                }
+            });
         }
 
         function renderResourceView() {
