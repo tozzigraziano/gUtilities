@@ -1119,6 +1119,13 @@
             position: relative;
         }
         
+        /* Vista mese: larghezza minima ridotta */
+        .resource-day-column.month-view {
+            min-width: 45px;
+            max-width: 60px;
+            gap: 1px;
+        }
+        
         .resource-day-column .resource-daily-bar {
             width: 100%;
             position: absolute;
@@ -1149,6 +1156,13 @@
             min-height: 50px;
         }
         
+        /* Vista mese: colonne più strette e gap ridotto */
+        .week-tasks-column.month-view {
+            min-width: 45px;
+            max-width: 60px;
+            gap: 2px;
+        }
+        
         .week-task-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -1158,6 +1172,14 @@
             cursor: pointer;
             transition: all 0.2s;
             border-left: 3px solid var(--accent-color);
+        }
+        
+        /* Vista mese: dimensioni ultra ridotte */
+        .week-task-card.month-view {
+            padding: 2px 3px;
+            margin-bottom: 2px;
+            border-radius: 2px;
+            border-left-width: 2px;
         }
         
         .week-task-card:hover {
@@ -8576,8 +8598,10 @@
 
             card.appendChild(header);
 
-            // Determina se è vista settimanale
+            // Determina se è vista settimanale o mensile (entrambe con layout a colonne)
             const isWeekView = period === 'week';
+            const isMonthView = period === 'month';
+            const isColumnView = isWeekView || isMonthView;
             
             // Barra di carico giornaliero - mostra sempre, anche senza assegnazioni
             const loadBarDiv = document.createElement('div');
@@ -8590,7 +8614,7 @@
 
             const barContainer = document.createElement('div');
             barContainer.className = 'resource-load-bar-container';
-            if (isWeekView) {
+            if (isColumnView) {
                 barContainer.classList.add('week-view');
             }
 
@@ -8682,15 +8706,22 @@
                 tooltip.textContent = tooltipText;
                 dailyBar.appendChild(tooltip);
                 
-                if (isWeekView) {
-                    // Vista settimanale: aggiungi etichetta giorno sopra la barra
+                if (isColumnView) {
+                    // Vista settimanale/mensile: aggiungi etichetta giorno sopra la barra
                     const dayLabel = document.createElement('div');
                     dayLabel.className = 'day-label';
                     if (isToday) {
                         dayLabel.classList.add('current-day');
                     }
                     const dayNames = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
-                    dayLabel.textContent = dayNames[dayOfWeek] + ' ' + new Date(currentDate).getDate();
+                    if (isMonthView) {
+                        // Vista mese: mostra solo il numero del giorno
+                        dayLabel.textContent = new Date(currentDate).getDate().toString();
+                        dayLabel.style.fontSize = '9px';
+                    } else {
+                        // Vista settimana: mostra nome giorno + numero
+                        dayLabel.textContent = dayNames[dayOfWeek] + ' ' + new Date(currentDate).getDate();
+                    }
                     dayColumn.appendChild(dayLabel);
                     
                     dayColumn.appendChild(dailyBar);
@@ -8739,8 +8770,8 @@
                 return false;
             });
             
-            if (isWeekView) {
-                // Vista settimanale: incolonna le attività sotto i giorni
+            if (isColumnView) {
+                // Vista settimanale/mensile: incolonna le attività sotto i giorni
                 // Prima raccogliamo i task flessibili
                 const flexibleTasks = [];
                 projects.forEach(project => {
@@ -8780,6 +8811,7 @@
                         const dateStr = formatDateLocal(currentDate);
                         const dayColumn = document.createElement('div');
                         dayColumn.className = 'week-tasks-column';
+                        if (isMonthView) dayColumn.classList.add('month-view');
                         
                         // Calcola carico per questo giorno
                         const dailyLoad = overload.dailyLoad[dateStr] || 0;
@@ -8799,6 +8831,7 @@
                         dayAssignments.forEach(assignment => {
                             const taskCard = document.createElement('div');
                             taskCard.className = 'week-task-card';
+                            if (isMonthView) taskCard.classList.add('month-view');
                             taskCard.style.cursor = 'pointer';
                             
                             // Aggiungi classe per stato
@@ -8815,14 +8848,28 @@
                             const notesIndicator = assignment.task.notes && assignment.task.notes.trim() ? 
                                 `<span style="color: var(--warning-color); margin-left: 3px; cursor: help;" title="${assignment.task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
                             
-                            taskCard.innerHTML = `
-                                <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}</div>
-                                <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.client}">${assignment.project.client}</div>
-                                <div style="font-size: 10px; margin-top: 2px;">
-                                    <span>Carico: ${assignment.percentage}%</span>
-                                    <span style="margin-left: 8px;">Compl: ${assignment.task.completion}%</span>
-                                </div>
-                            `;
+                            // Vista mese: formato ultra compatto
+                            if (isMonthView) {
+                                taskCard.innerHTML = `
+                                    <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.client}">${assignment.project.client}</div>
+                                    <div style="font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.code}">${assignment.project.code}</div>
+                                    <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}</div>
+                                    <div style="font-size: 8px; margin-top: 1px;">
+                                        <span title="Completamento">C:${assignment.task.completion}%</span>
+                                        <span style="margin-left: 4px;" title="Carico">L:${assignment.percentage}%</span>
+                                    </div>
+                                `;
+                            } else {
+                                // Vista settimana: formato normale
+                                taskCard.innerHTML = `
+                                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}</div>
+                                    <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.client}">${assignment.project.client}</div>
+                                    <div style="font-size: 10px; margin-top: 2px;">
+                                        <span>Carico: ${assignment.percentage}%</span>
+                                        <span style="margin-left: 8px;">Compl: ${assignment.task.completion}%</span>
+                                    </div>
+                                `;
+                            }
                             
                             // Imposta click handler DOPO innerHTML
                             taskCard.onclick = () => {
@@ -8877,6 +8924,7 @@
                                 
                                 const suggestionCard = document.createElement('div');
                                 suggestionCard.className = 'week-task-card flexible-suggestion';
+                                if (isMonthView) suggestionCard.classList.add('month-view');
                                 if (wouldOverlap) {
                                     suggestionCard.classList.add('would-overlap');
                                 }
@@ -8894,20 +8942,36 @@
                                 const notesIndicator = suggestion.task.notes && suggestion.task.notes.trim() ? 
                                     `<span style="color: var(--warning-color); margin-left: 3px; cursor: help;" title="${suggestion.task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
                                 
-                                suggestionCard.innerHTML = `
-                                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.task.name}">${warningIcon}${suggestion.task.name}${notesIndicator}</div>
-                                    <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.client}">${suggestion.project.client}</div>
-                                    <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.code}">${suggestion.project.code}</div>
-                                    <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 3px;" title="${suggestion.project.description}">${suggestion.project.description}</div>
-                                    <div style="font-size: 10px; margin-top: 2px;">
-                                        <span>Durata: ${suggestion.task.duration}gg</span>
-                                    </div>
-                                    <div style="font-size: 10px;">
-                                        <span>Carico: ${suggestion.percentage}%</span>
-                                    </div>
-                                    ${wouldOverlap ? '<div style="font-size: 9px; color: var(--danger-color); font-weight: bold; margin-top: 2px;">' + warningText + '</div>' : ''}
-                                    ${unassignedText ? '<div style="font-size: 9px; color: var(--accent-color); font-weight: bold; margin-top: 2px;">' + unassignedText + '</div>' : ''}
-                                `;
+                                // Vista mese: formato ultra compatto
+                                if (isMonthView) {
+                                    suggestionCard.innerHTML = `
+                                        <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.client}">${warningIcon}${suggestion.project.client}</div>
+                                        <div style="font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.code}">${suggestion.project.code}</div>
+                                        <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.task.name}">${suggestion.task.name}${notesIndicator}</div>
+                                        <div style="font-size: 8px; margin-top: 1px;">
+                                            <span title="Durata">D:${suggestion.task.duration}gg</span>
+                                            <span style="margin-left: 4px;" title="Carico">L:${suggestion.percentage}%</span>
+                                        </div>
+                                        ${wouldOverlap ? '<div style="font-size: 7px; color: var(--danger-color); font-weight: bold;">⚠️</div>' : ''}
+                                        ${unassignedText ? '<div style="font-size: 7px; color: var(--accent-color); font-weight: bold;">👤</div>' : ''}
+                                    `;
+                                } else {
+                                    // Vista settimana: formato normale
+                                    suggestionCard.innerHTML = `
+                                        <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.task.name}">${warningIcon}${suggestion.task.name}${notesIndicator}</div>
+                                        <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.client}">${suggestion.project.client}</div>
+                                        <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${suggestion.project.code}">${suggestion.project.code}</div>
+                                        <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 3px;" title="${suggestion.project.description}">${suggestion.project.description}</div>
+                                        <div style="font-size: 10px; margin-top: 2px;">
+                                            <span>Durata: ${suggestion.task.duration}gg</span>
+                                        </div>
+                                        <div style="font-size: 10px;">
+                                            <span>Carico: ${suggestion.percentage}%</span>
+                                        </div>
+                                        ${wouldOverlap ? '<div style="font-size: 9px; color: var(--danger-color); font-weight: bold; margin-top: 2px;">' + warningText + '</div>' : ''}
+                                        ${unassignedText ? '<div style="font-size: 9px; color: var(--accent-color); font-weight: bold; margin-top: 2px;">' + unassignedText + '</div>' : ''}
+                                    `;
+                                }
                                 
                                 // Imposta click handler con data suggerita e risorsa
                                 const clickedDate = formatDateLocal(currentDate);
@@ -9045,8 +9109,8 @@
             }
             
             // Aggiungi suggerimenti per attività con data flessibile se carico < 100%
-            // Solo per viste NON settimanali (nella vista settimanale sono già mostrati nelle colonne)
-            if (!isWeekView && overload.maxLoad < 100) {
+            // Solo per viste NON a colonne (nelle viste settimana/mese sono già mostrati nelle colonne)
+            if (!isColumnView && overload.maxLoad < 100) {
                 const flexibleTasks = [];
                 projects.forEach(project => {
                     if (project.tasks) {
