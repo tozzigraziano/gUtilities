@@ -4393,7 +4393,7 @@
                 });
             }
 
-            const completion = taskCount > 0 ? Math.round(totalCompletion / taskCount) : 0;
+            const completion = taskCount > 0 ? Math.round(totalCompletion / taskCount) : 100;
 
             return { startDate, endDate, completion };
         }
