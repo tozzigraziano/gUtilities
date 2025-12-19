@@ -3196,6 +3196,68 @@
         </div>
     </div>
 
+    <!-- Modal Copia Attività -->
+    <div id="copyTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 Copia Attività su Altri Progetti</h3>
+                <button class="modal-close" onclick="closeCopyTaskModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label style="font-weight: bold;">Attività:</label>
+                    <span id="copyTaskName" style="color: var(--accent-color);"></span>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold;">Opzioni di copia:</label>
+                    <div style="margin-left: 160px;">
+                        <div class="inline-group">
+                            <input type="checkbox" id="copyTaskDates" checked>
+                            <label for="copyTaskDates">Copia date (inizio e durata)</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="copyTaskResources" checked>
+                            <label for="copyTaskResources">Copia assegnazione risorse</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold;">Progetti destinazione:</label>
+                    <div style="max-height: 400px; overflow-y: auto; overflow-x: hidden; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary);">
+                        <table id="copyTaskProjectsTable" style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-secondary); z-index: 1;">
+                                <tr style="background: var(--bg-primary);">
+                                    <th style="padding: 4px; width: 50px;"></th>
+                                    <th style="padding: 4px; width: 100px;"></th>
+                                    <th style="padding: 4px; width: 40%;">
+                                        <input type="text" id="copyTaskFilterClient" placeholder="Filtra cliente..." style="width: 100%; box-sizing: border-box; padding: 4px;" oninput="filterCopyProjects()">
+                                    </th>
+                                    <th style="padding: 4px; width: calc(60% - 150px);">
+                                        <input type="text" id="copyTaskFilterDesc" placeholder="Filtra descrizione..." style="width: 100%; box-sizing: border-box; padding: 4px;" oninput="filterCopyProjects()">
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th style="padding: 8px; text-align: center; border-bottom: 2px solid var(--border-color); width: 50px;">Sel.</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: 100px;">Codice</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: 40%;">Cliente</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: calc(60% - 150px);">Descrizione</th>
+                                </tr>
+                            </thead>
+                            <tbody id="copyTaskProjectsList">
+                                <!-- I progetti verranno inseriti qui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="copyTaskSelectedCount" style="margin-right: auto; color: var(--accent-color); font-weight: bold;">Nessun progetto selezionato</span>
+                <button onclick="closeCopyTaskModal()" class="secondary">Annulla</button>
+                <button onclick="executeCopyTask()">📋 Copia Attività</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // === INDEXEDDB SETUP ===
         const DB_NAME = 'ProjectPlannerDB';
@@ -3855,6 +3917,183 @@
         function closeTemplateTaskModal() {
             document.getElementById('templateTaskModal').classList.remove('active');
             clearTemplateTaskForm();
+        }
+
+        // === COPIA ATTIVITÀ ===
+        let taskToCopy = null;
+        let allCopyProjects = [];
+
+        function openCopyTaskModal(taskId, projectId) {
+            taskToCopy = { taskId, projectId };
+            
+            // Trova l'attività e il progetto
+            const project = projects.find(p => p.id === projectId);
+            if (!project || !project.tasks) return;
+            
+            const task = project.tasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            // Mostra il nome dell'attività
+            document.getElementById('copyTaskName').textContent = task.name;
+            
+            // Salva tutti i progetti (escluso il progetto corrente) e ordina per codice
+            allCopyProjects = projects.filter(p => p.id !== projectId)
+                .sort((a, b) => {
+                    const codeA = (a.code || '').toLowerCase();
+                    const codeB = (b.code || '').toLowerCase();
+                    return codeA.localeCompare(codeB);
+                });
+            
+            // Resetta i filtri
+            document.getElementById('copyTaskFilterClient').value = '';
+            document.getElementById('copyTaskFilterDesc').value = '';
+            
+            // Renderizza la tabella
+            renderCopyProjectsTable();
+            
+            // Mostra il modal
+            document.getElementById('copyTaskModal').classList.add('active');
+        }
+
+        function renderCopyProjectsTable(filteredProjects = null) {
+            const projectsList = document.getElementById('copyTaskProjectsList');
+            projectsList.innerHTML = '';
+            
+            const projectsToShow = filteredProjects || allCopyProjects;
+            
+            if (projectsToShow.length === 0) {
+                projectsList.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--text-secondary); font-style: italic;">Nessun progetto trovato</td></tr>';
+            } else {
+                projectsToShow.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'copy-project-row';
+                    tr.style.borderBottom = '1px solid var(--border-color)';
+                    tr.innerHTML = `
+                        <td style="padding: 8px; text-align: center;">
+                            <input type="checkbox" class="copy-project-checkbox" value="${p.id}" id="copy-project-${p.id}" onchange="updateCopyTaskCount()">
+                        </td>
+                        <td style="padding: 8px; word-wrap: break-word;"><strong>${p.code || '-'}</strong></td>
+                        <td style="padding: 8px; word-wrap: break-word;">${p.client || '-'}</td>
+                        <td style="padding: 8px; word-wrap: break-word;">${p.description || '-'}</td>
+                    `;
+                    projectsList.appendChild(tr);
+                });
+            }
+            
+            // Aggiorna il conteggio iniziale
+            updateCopyTaskCount();
+        }
+
+        function filterCopyProjects() {
+            const filterClient = document.getElementById('copyTaskFilterClient').value.toLowerCase();
+            const filterDesc = document.getElementById('copyTaskFilterDesc').value.toLowerCase();
+            
+            if (!filterClient && !filterDesc) {
+                renderCopyProjectsTable();
+                return;
+            }
+            
+            const filtered = allCopyProjects.filter(p => {
+                const client = (p.client || '').toLowerCase();
+                const description = (p.description || '').toLowerCase();
+                
+                const matchClient = !filterClient || client.includes(filterClient);
+                const matchDesc = !filterDesc || description.includes(filterDesc);
+                
+                return matchClient && matchDesc;
+            });
+            
+            renderCopyProjectsTable(filtered);
+        }
+
+        function updateCopyTaskCount() {
+            const count = document.querySelectorAll('.copy-project-checkbox:checked').length;
+            const countSpan = document.getElementById('copyTaskSelectedCount');
+            
+            if (count === 0) {
+                countSpan.textContent = 'Nessun progetto selezionato';
+                countSpan.style.color = 'var(--text-secondary)';
+            } else if (count === 1) {
+                countSpan.textContent = '1 progetto selezionato';
+                countSpan.style.color = 'var(--accent-color)';
+            } else {
+                countSpan.textContent = `${count} progetti selezionati`;
+                countSpan.style.color = 'var(--accent-color)';
+            }
+        }
+
+        function closeCopyTaskModal() {
+            document.getElementById('copyTaskModal').classList.remove('active');
+            taskToCopy = null;
+        }
+
+        async function executeCopyTask() {
+            if (!taskToCopy) return;
+            
+            // Trova l'attività originale
+            const sourceProject = projects.find(p => p.id === taskToCopy.projectId);
+            if (!sourceProject || !sourceProject.tasks) return;
+            
+            const sourceTask = sourceProject.tasks.find(t => t.id === taskToCopy.taskId);
+            if (!sourceTask) return;
+            
+            // Raccogli i progetti selezionati
+            const selectedProjects = [];
+            const checkboxes = document.querySelectorAll('.copy-project-checkbox:checked');
+            checkboxes.forEach(cb => {
+                selectedProjects.push(parseInt(cb.value));
+            });
+            
+            if (selectedProjects.length === 0) {
+                alert('Seleziona almeno un progetto di destinazione');
+                return;
+            }
+            
+            // Opzioni di copia
+            const copyDates = document.getElementById('copyTaskDates').checked;
+            const copyResources = document.getElementById('copyTaskResources').checked;
+            
+            // Copia l'attività su ogni progetto selezionato
+            selectedProjects.forEach(projectId => {
+                const targetProject = projects.find(p => p.id === projectId);
+                if (!targetProject) return;
+                
+                if (!targetProject.tasks) {
+                    targetProject.tasks = [];
+                }
+                
+                // Crea una copia dell'attività
+                const newTask = {
+                    id: Date.now() + Math.random(), // ID unico
+                    name: sourceTask.name,
+                    startDate: copyDates ? sourceTask.startDate : '',
+                    endDate: copyDates ? sourceTask.endDate : '',
+                    duration: copyDates ? sourceTask.duration : 1,
+                    completion: 0,
+                    saturdayWork: sourceTask.saturdayWork || false,
+                    sundayWork: sourceTask.sundayWork || false,
+                    holidayWork: sourceTask.holidayWork || false,
+                    flexibleDate: sourceTask.flexibleDate || false,
+                    notes: sourceTask.notes || '',
+                    resources: copyResources ? (sourceTask.resources ? [...sourceTask.resources] : []) : []
+                };
+                
+                targetProject.tasks.push(newTask);
+            });
+            
+            // Salva nel database
+            await saveToIndexedDBAll();
+            
+            // Aggiorna la vista corrente se siamo nel progetto da cui abbiamo copiato
+            const needsRefresh = currentProjectId === taskToCopy.projectId;
+            
+            // Chiudi il modal
+            closeCopyTaskModal();
+            
+            // Aggiorna la vista dopo aver chiuso il modal
+            if (needsRefresh) {
+                renderTasks();
+            }
         }
 
         // === GESTIONE RISORSE ===
@@ -6301,6 +6540,7 @@
                     <td>${statusLabels[task.status]}</td>
                     <td class="action-buttons">
                         <button onclick="openTaskModal(${task.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="openCopyTaskModal(${task.id}, ${currentProjectId})" class="secondary" title="Copia su altri progetti">📋 Copia</button>
                         <button onclick="deleteTask(${task.id})" class="delete">🗑️ Elimina</button>
                     </td>
                 `;
