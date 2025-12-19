@@ -4069,7 +4069,8 @@
                     startDate: copyDates ? sourceTask.startDate : '',
                     endDate: copyDates ? sourceTask.endDate : '',
                     duration: copyDates ? sourceTask.duration : 1,
-                    completion: 0,
+                    completion: sourceTask.completion || 0,
+                    status: sourceTask.status || '',
                     saturdayWork: sourceTask.saturdayWork || false,
                     sundayWork: sourceTask.sundayWork || false,
                     holidayWork: sourceTask.holidayWork || false,
@@ -4866,6 +4867,12 @@
             // Trova attività con ritardi da assenze
             const tasksWithDelays = findTasksWithAbsenceDelays();
             
+            // Calcola il massimo numero di attività rimanenti tra tutti i progetti per la scala della barra
+            const maxIncompleteTasks = Math.max(...sortedProjects.map(p => {
+                const tasks = p.tasks ? p.tasks.filter(t => t.completion < 100 && t.status !== 'completata').length : 0;
+                return tasks;
+            }), 1); // Minimo 1 per evitare divisione per 0
+            
             sortedProjects.forEach(project => {
                 const stats = calculateProjectStats(project);
                 
@@ -4877,6 +4884,7 @@
                 const taskCount = project.tasks ? project.tasks.length : 0;
                 const incompleteTasks = project.tasks ? project.tasks.filter(t => t.completion < 100 && t.status !== 'completata').length : 0;
                 const taskCountDisplay = `${incompleteTasks}/${taskCount}`;
+                const incompleteBarWidth = maxIncompleteTasks > 0 ? (incompleteTasks / maxIncompleteTasks) * 100 : 0;
                 
                 const tr = document.createElement('tr');
                 tr.className = 'project-item';
@@ -4893,7 +4901,12 @@
                     <td>${project.description}</td>
                     <td>${stats.startDate || '-'}</td>
                     <td>${stats.endDate || '-'}</td>
-                    <td>${taskCountDisplay}</td>
+                    <td>
+                        <div style="position: relative; padding: 4px 0;">
+                            <span style="position: relative; z-index: 1;">${taskCountDisplay}</span>
+                            <div style="position: absolute; bottom: 0; left: 0; height: 3px; width: ${incompleteBarWidth}%; background: #2196F3; border-radius: 2px;"></div>
+                        </div>
+                    </td>
                     <td>
                         <div class="project-progress-container">
                             <div class="project-progress-fill ${progressClass}" style="width: ${stats.completion}%"></div>
