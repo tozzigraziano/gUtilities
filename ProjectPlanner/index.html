@@ -2357,6 +2357,7 @@
             <table id="taskReviewTable">
                 <thead>
                     <tr class="filter-row">
+                        <th></th>
                         <th>
                             <div style="position: relative;">
                                 <input type="text" id="taskReviewFilterClient" placeholder="Filtra cliente" onkeyup="renderTaskReview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
@@ -2391,6 +2392,7 @@
                         <th></th>
                     </tr>
                     <tr>
+                        <th style="width: 40px;"><input type="checkbox" id="taskReviewSelectAll" onchange="toggleAllTaskReviewSelection()" title="Seleziona/Deseleziona tutto"></th>
                         <th>Cliente</th>
                         <th>Codice Lavoro</th>
                         <th>Descrizione Progetto</th>
@@ -8751,6 +8753,14 @@
         // === REVISIONE ATTIVITÀ ===
         function renderTaskReview() {
             const tbody = document.querySelector('#taskReviewTable tbody');
+            
+            // Salva le selezioni correnti prima di svuotare la tabella
+            const selectedTasks = new Set();
+            document.querySelectorAll('.task-review-checkbox:checked').forEach(cb => {
+                const taskKey = cb.getAttribute('data-task-key');
+                if (taskKey) selectedTasks.add(taskKey);
+            });
+            
             tbody.innerHTML = '';
 
             const filterClient = document.getElementById('taskReviewFilterClient')?.value.toLowerCase() || '';
@@ -8852,7 +8862,15 @@
                 const notesIndicator = task.notes && task.notes.trim() ? 
                     `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
 
+                // Calcola il tempo totale per questa attività (durata * carico%)
+                const taskTime = (task.duration || 0) * (totalLoad / 100);
+                
+                // Crea chiave univoca per questa attività
+                const taskKey = `${project.id}-${task.id}`;
+                const isSelected = selectedTasks.has(taskKey);
+
                 tr.innerHTML = `
+                    <td><input type="checkbox" class="task-review-checkbox" data-task-time="${taskTime}" data-task-key="${taskKey}" onchange="updateTaskReviewTotal()" ${isSelected ? 'checked' : ''}></td>
                     <td>${project.client}</td>
                     <td>${project.code}</td>
                     <td>${project.description || '-'}</td>
@@ -8886,11 +8904,213 @@
                 const table = document.getElementById('taskReviewTable');
                 table.parentNode.insertBefore(countDiv, table);
             }
+            
+            // Aggiungi o aggiorna il contatore tempo totale
+            const existingTotal = document.querySelector('#taskReview .task-total-time');
+            if (!existingTotal) {
+                const totalDiv = document.createElement('div');
+                totalDiv.className = 'task-total-time';
+                totalDiv.style.marginTop = '10px';
+                totalDiv.style.padding = '10px';
+                totalDiv.style.background = 'var(--bg-secondary)';
+                totalDiv.style.borderRadius = '4px';
+                totalDiv.style.display = 'flex';
+                totalDiv.style.alignItems = 'center';
+                totalDiv.style.gap = '20px';
+                totalDiv.innerHTML = `
+                    <span style="font-weight: bold; color: var(--accent-color);">Tempo totale selezionato: <span id="taskReviewTotalDays">0</span> giorni</span>
+                    <button onclick="sendTaskReviewEmail()" style="margin-left: auto;">&#x1F4CB; Copia negli appunti</button>
+                `;
+                const table = document.getElementById('taskReviewTable');
+                table.parentNode.appendChild(totalDiv);
+            }
+            
+            // Resetta il totale
+            updateTaskReviewTotal();
         }
 
         function openTaskFromReview(taskId, projectId) {
             currentProjectId = projectId;
             openTaskModal(taskId);
+        }
+
+        function toggleAllTaskReviewSelection() {
+            const selectAll = document.getElementById('taskReviewSelectAll');
+            const checkboxes = document.querySelectorAll('.task-review-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll.checked;
+            });
+            updateTaskReviewTotal();
+        }
+
+        function updateTaskReviewTotal() {
+            const checkboxes = document.querySelectorAll('.task-review-checkbox:checked');
+            let totalDays = 0;
+            checkboxes.forEach(cb => {
+                totalDays += parseFloat(cb.getAttribute('data-task-time')) || 0;
+            });
+            
+            const totalSpan = document.getElementById('taskReviewTotalDays');
+            if (totalSpan) {
+                totalSpan.textContent = totalDays.toFixed(2);
+            }
+            
+            // Aggiorna lo stato del checkbox select all
+            const allCheckboxes = document.querySelectorAll('.task-review-checkbox');
+            const selectAll = document.getElementById('taskReviewSelectAll');
+            if (selectAll && allCheckboxes.length > 0) {
+                selectAll.checked = allCheckboxes.length === checkboxes.length;
+                selectAll.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+            }
+        }
+
+        function sendTaskReviewEmail() {
+            const checkboxes = document.querySelectorAll('.task-review-checkbox:checked');
+            
+            if (checkboxes.length === 0) {
+                alert('Seleziona almeno un\'attività da includere nel riepilogo');
+                return;
+            }
+            
+            // Raccogli le attività selezionate
+            const selectedTasks = [];
+            checkboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                const cells = row.querySelectorAll('td');
+                const taskKey = cb.getAttribute('data-task-key');
+                const [projectId, taskId] = taskKey.split('-').map(Number);
+                
+                const project = projects.find(p => p.id === projectId);
+                const task = project?.tasks?.find(t => t.id === taskId);
+                
+                if (project && task) {
+                    // Calcola risorse e carico
+                    let resourcesStr = '-';
+                    let totalLoad = 0;
+                    if (task.resources && task.resources.length > 0) {
+                        const resourceNames = [];
+                        task.resources.forEach(r => {
+                            totalLoad += r.percentage || 0;
+                            if (r.resourceId) {
+                                const resource = resources.find(res => res.id == r.resourceId);
+                                if (resource) {
+                                    resourceNames.push(`${resource.firstName} ${resource.lastName} (${r.percentage}%)`);
+                                }
+                            }
+                        });
+                        resourcesStr = resourceNames.length > 0 ? resourceNames.join(', ') : '-';
+                    }
+                    
+                    selectedTasks.push({
+                        client: project.client,
+                        code: project.code,
+                        description: project.description || '-',
+                        taskName: task.name,
+                        resources: resourcesStr,
+                        load: (task.resources && task.resources.length > 0) ? `${totalLoad}%` : '-',
+                        duration: task.duration,
+                        notes: task.notes || ''
+                    });
+                }
+            });
+            
+            // Raggruppa per codice lavoro
+            const groupedByCode = {};
+            selectedTasks.forEach(task => {
+                if (!groupedByCode[task.code]) {
+                    groupedByCode[task.code] = {
+                        client: task.client,
+                        description: task.description,
+                        tasks: []
+                    };
+                }
+                groupedByCode[task.code].tasks.push({
+                    name: task.taskName,
+                    resources: task.resources,
+                    load: task.load,
+                    duration: task.duration,
+                    notes: task.notes
+                });
+            });
+            
+            // Calcola totale giorni
+            const totalDays = parseFloat(document.getElementById('taskReviewTotalDays').textContent) || 0;
+            const numProjects = Object.keys(groupedByCode).length;
+            const numTasks = selectedTasks.length;
+            
+            // Genera il corpo email in formato testo
+            let emailBody = 'DETTAGLI ATTIVITÀ ESPORTATE CON FILTRO\n';
+            emailBody += '='.repeat(80) + '\n\n';
+            
+            emailBody += `Numero di progetti interessati: ${numProjects}\n`;
+            emailBody += `Numero di attività: ${numTasks}\n`;
+            emailBody += `Stima del tempo totale di completamento: ${totalDays.toFixed(2)} giorni\n\n`;
+            
+            // Elenco compatto con checkbox
+            emailBody += 'ELENCO COMPATTO:\n';
+            emailBody += '-'.repeat(80) + '\n';
+            selectedTasks.forEach(task => {
+                emailBody += `☐ ${task.code} - ${task.description} - ${task.taskName}\n`;
+            });
+            emailBody += '\n' + '='.repeat(80) + '\n\n';
+            
+            // Sezione dettaglio per codice lavoro
+            emailBody += 'DETTAGLIO ATTIVITÀ PER CODICE LAVORO\n';
+            emailBody += '='.repeat(80) + '\n\n';
+            
+            for (const code in groupedByCode) {
+                const group = groupedByCode[code];
+                emailBody += `▶ ${code} - ${group.client}\n`;
+                emailBody += `  ${group.description}\n`;
+                emailBody += '-'.repeat(80) + '\n';
+                
+                group.tasks.forEach((task, index) => {
+                    const estimatedTime = (task.duration * (parseFloat(task.load) / 100)).toFixed(2);
+                    emailBody += `\n  ${index + 1}. ATTIVITÀ: ${task.name.toUpperCase()}\n`;
+                    emailBody += `     Risorse: ${task.resources}\n`;
+                    emailBody += `     Stima tempo completamento: ${estimatedTime} giorni\n`;
+                    
+                    if (task.notes && task.notes.trim()) {
+                        emailBody += `\n     Note:\n`;
+                        const noteLines = task.notes.split('\n');
+                        noteLines.forEach(line => {
+                            if (line.trim()) {
+                                emailBody += `     - ${line.trim()}\n`;
+                            }
+                        });
+                    }
+                    emailBody += '\n';
+                });
+                
+                emailBody += '\n' + '='.repeat(80) + '\n\n';
+            }
+            
+            emailBody += `\nTEMPO TOTALE: ${totalDays.toFixed(2)} giorni\n`;
+            
+            // Copia negli appunti
+            navigator.clipboard.writeText(emailBody).then(() => {
+                alert('✅ Riepilogo copiato negli appunti!\n\nApri il tuo client di posta e incolla (Ctrl+V) il contenuto nel corpo dell\'email.');
+            }).catch(err => {
+                // Fallback: mostra in una finestra di testo
+                const modal = document.createElement('div');
+                modal.style.position = 'fixed';
+                modal.style.top = '50%';
+                modal.style.left = '50%';
+                modal.style.transform = 'translate(-50%, -50%)';
+                modal.style.background = 'white';
+                modal.style.padding = '20px';
+                modal.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+                modal.style.zIndex = '10000';
+                modal.style.maxWidth = '80%';
+                modal.style.maxHeight = '80%';
+                modal.innerHTML = `
+                    <h3>Riepilogo Attività</h3>
+                    <p>Copia il testo qui sotto e incollalo nella tua email:</p>
+                    <textarea style="width: 100%; height: 400px; font-family: monospace; font-size: 12px;">${emailBody}</textarea>
+                    <button onclick="this.parentElement.remove()">Chiudi</button>
+                `;
+                document.body.appendChild(modal);
+            });
         }
 
         // === VISTA RISORSE ===
