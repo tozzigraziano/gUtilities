@@ -621,26 +621,37 @@
         }
 
         .resource-allocation {
-            margin-top: 10px;
-            padding: 10px;
+            margin-top: 5px;
+            padding: 8px;
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
         }
 
         .resource-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 5px;
+            gap: 8px;
+            margin-bottom: 4px;
         }
 
         .resource-item select {
-            width: 200px;
+            width: 180px;
+            font-size: 0.9em;
+            padding: 4px 8px;
         }
 
         .resource-item input[type="number"] {
-            width: 80px;
+            width: 70px;
+            font-size: 0.9em;
+            padding: 4px 8px;
+        }
+        
+        .resource-item button {
+            padding: 4px 8px;
+            font-size: 0.85em;
         }
 
         .absence-range {
@@ -1969,9 +1980,37 @@
             border: 1px solid var(--border-color);
             border-radius: 8px;
             width: 90%;
-            max-width: 800px;
+            max-width: 1600px;
             box-shadow: 0 4px 20px var(--shadow);
             animation: modalSlideDown 0.3s ease-out;
+        }
+        
+        .modal-body-two-columns {
+            display: grid;
+            grid-template-columns: 1fr 800px;
+            gap: 20px;
+        }
+        
+        .modal-main-column {
+            min-width: 0;
+        }
+        
+        .modal-side-column {
+            border-left: 1px solid var(--border-color);
+            padding-left: 20px;
+        }
+        
+        .checklist-panel {
+            background-color: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .checklist-panel h4 {
+            margin: 0 0 10px 0;
+            font-size: 0.95em;
+            color: var(--text-secondary);
         }
 
         @keyframes modalSlideDown {
@@ -2024,6 +2063,29 @@
             padding: 20px;
             max-height: 70vh;
             overflow-y: auto;
+        }
+        
+        /* Scrollbar personalizzata più sottile e discreta */
+        .modal-body::-webkit-scrollbar,
+        #taskChecklistContainer::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .modal-body::-webkit-scrollbar-track,
+        #taskChecklistContainer::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+        
+        .modal-body::-webkit-scrollbar-thumb,
+        #taskChecklistContainer::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .modal-body::-webkit-scrollbar-thumb:hover,
+        #taskChecklistContainer::-webkit-scrollbar-thumb:hover {
+            background: var(--text-tertiary);
         }
 
         .modal-footer {
@@ -3009,102 +3071,113 @@
                 <h3 id="taskModalTitle">Nuova Attività</h3>
                 <button class="modal-close" onclick="closeTaskModal()">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Nome Attività:</label>
-                    <input type="text" id="taskName" placeholder="Nome dell'attività">
-                </div>
-                <div class="form-group">
-                    <label>Metodo Calcolo:</label>
-                    <div class="inline-group">
-                        <input type="radio" id="calcFromStart" name="calcMethod" value="start" checked>
-                        <label for="calcFromStart">Inizio + Durata</label>
+            <div class="modal-body modal-body-two-columns">
+                <div class="modal-main-column">
+                    <div class="form-group">
+                        <label>Nome Attività:</label>
+                        <input type="text" id="taskName" placeholder="Nome dell'attività">
                     </div>
-                    <div class="inline-group">
-                        <input type="radio" id="calcFromEnd" name="calcMethod" value="end">
-                        <label for="calcFromEnd">Fine + Durata</label>
+                    <div class="form-group">
+                        <label>Metodo Calcolo:</label>
+                        <div class="inline-group">
+                            <input type="radio" id="calcFromStart" name="calcMethod" value="start" checked>
+                            <label for="calcFromStart">Inizio + Durata</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="radio" id="calcFromEnd" name="calcMethod" value="end">
+                            <label for="calcFromEnd">Fine + Durata</label>
+                        </div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Data Inizio:</label>
-                    <div class="inline-group">
-                        <input type="date" id="taskStartDate">
-                        <label style="margin-left: 10px;">oppure collegata a:</label>
-                        <select id="taskStartLinkedTo" style="margin-left: 5px;">
-                            <option value="">-- Nessun Collegamento --</option>
+                    <div class="form-group">
+                        <label>Data Inizio:</label>
+                        <div class="inline-group">
+                            <input type="date" id="taskStartDate">
+                            <label style="margin-left: 10px;">oppure collegata a:</label>
+                            <select id="taskStartLinkedTo" style="margin-left: 5px;">
+                                <option value="">-- Nessun Collegamento --</option>
+                            </select>
+                            <label style="margin-left: 5px;">+ offset giorni:</label>
+                            <input type="number" id="taskStartOffset" value="0" min="-365" max="365" style="width: 70px; margin-left: 5px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Fine:</label>
+                        <div class="inline-group">
+                            <input type="date" id="taskEndDate">
+                            <label style="margin-left: 10px;">oppure collegata a:</label>
+                            <select id="taskEndLinkedTo" style="margin-left: 5px;">
+                                <option value="">-- Nessun Collegamento --</option>
+                            </select>
+                            <label style="margin-left: 5px;">+ offset giorni:</label>
+                            <input type="number" id="taskEndOffset" value="0" min="-365" max="365" style="width: 70px; margin-left: 5px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Durata (giorni):</label>
+                        <input type="number" id="taskDuration" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label></label>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskFlexibleDate" onchange="toggleFlexibleDate()">
+                            <label for="taskFlexibleDate">Data Flessibile (proposta automatica quando risorsa libera)</label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="absenceWarningContainer" style="display: none;">
+                        <label></label>
+                        <div style="padding: 10px; background-color: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: 4px; color: var(--text-primary);">
+                            <strong>⚠️ Attenzione:</strong> <span id="absenceWarningText"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Completamento (%):</label>
+                        <input type="number" id="taskCompletion" min="0" max="100" step="10" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Stato:</label>
+                        <select id="taskStatus">
+                            <option value="">-- Nessuno --</option>
+                            <option value="in-corso">In Corso</option>
+                            <option value="in-ritardo">In Ritardo</option>
+                            <option value="pausa">In Pausa</option>
+                            <option value="completata">Completata</option>
+                            <option value="annullata">Annullata</option>
                         </select>
-                        <label style="margin-left: 5px;">+ offset giorni:</label>
-                        <input type="number" id="taskStartOffset" value="0" min="-365" max="365" style="width: 70px; margin-left: 5px;">
+                    </div>
+                    <div class="form-group">
+                        <label></label>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskSaturdayWork">
+                            <label for="taskSaturdayWork">Sabato Lavorativo</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskSundayWork">
+                            <label for="taskSundayWork">Domenica Lavorativa</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskHolidayWork">
+                            <label for="taskHolidayWork">Festivi Lavorativi</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Risorse Assegnate:</label>
+                        <div class="resource-allocation" id="taskResources">
+                            <!-- Le risorse verranno aggiunte dinamicamente -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Note:</label>
+                        <textarea id="taskNotes" rows="4" placeholder="Inserisci note aggiuntive sull'attività..."></textarea>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Data Fine:</label>
-                    <div class="inline-group">
-                        <input type="date" id="taskEndDate">
-                        <label style="margin-left: 10px;">oppure collegata a:</label>
-                        <select id="taskEndLinkedTo" style="margin-left: 5px;">
-                            <option value="">-- Nessun Collegamento --</option>
-                        </select>
-                        <label style="margin-left: 5px;">+ offset giorni:</label>
-                        <input type="number" id="taskEndOffset" value="0" min="-365" max="365" style="width: 70px; margin-left: 5px;">
+                <div class="modal-side-column">
+                    <div class="checklist-panel">
+                        <h4>📋 Checklist</h4>
+                        <div id="taskChecklistContainer" style="margin-bottom: 10px; max-height: 500px; overflow-y: auto;">
+                            <!-- Gli elementi della checklist verranno aggiunti qui -->
+                        </div>
+                        <button type="button" onclick="addChecklistItem()" class="secondary" style="font-size: 0.9em; width: 100%;">+ Aggiungi Elemento</button>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Durata (giorni):</label>
-                    <input type="number" id="taskDuration" min="1" value="1">
-                </div>
-                <div class="form-group">
-                    <label></label>
-                    <div class="inline-group">
-                        <input type="checkbox" id="taskFlexibleDate" onchange="toggleFlexibleDate()">
-                        <label for="taskFlexibleDate">Data Flessibile (proposta automatica quando risorsa libera)</label>
-                    </div>
-                </div>
-                <div class="form-group" id="absenceWarningContainer" style="display: none;">
-                    <label></label>
-                    <div style="padding: 10px; background-color: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: 4px; color: var(--text-primary);">
-                        <strong>⚠️ Attenzione:</strong> <span id="absenceWarningText"></span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Completamento (%):</label>
-                    <input type="number" id="taskCompletion" min="0" max="100" step="10" value="0">
-                </div>
-                <div class="form-group">
-                    <label>Stato:</label>
-                    <select id="taskStatus">
-                        <option value="">-- Nessuno --</option>
-                        <option value="in-corso">In Corso</option>
-                        <option value="in-ritardo">In Ritardo</option>
-                        <option value="pausa">In Pausa</option>
-                        <option value="completata">Completata</option>
-                        <option value="annullata">Annullata</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label></label>
-                    <div class="inline-group">
-                        <input type="checkbox" id="taskSaturdayWork">
-                        <label for="taskSaturdayWork">Sabato Lavorativo</label>
-                    </div>
-                    <div class="inline-group">
-                        <input type="checkbox" id="taskSundayWork">
-                        <label for="taskSundayWork">Domenica Lavorativa</label>
-                    </div>
-                    <div class="inline-group">
-                        <input type="checkbox" id="taskHolidayWork">
-                        <label for="taskHolidayWork">Festivi Lavorativi</label>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Risorse Assegnate:</label>
-                    <div class="resource-allocation" id="taskResources">
-                        <!-- Le risorse verranno aggiunte dinamicamente -->
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Note:</label>
-                    <textarea id="taskNotes" rows="4" placeholder="Inserisci note aggiuntive sull'attività..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -3489,6 +3562,60 @@
             }
         }
 
+        // === CHECKLIST MANAGEMENT ===
+        function addChecklistItem(text = '', completed = false) {
+            const container = document.getElementById('taskChecklistContainer');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'checklist-item';
+            itemDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding: 4px; background-color: var(--bg-tertiary); border-radius: 4px;';
+            
+            const checkboxId = 'checklist-' + Date.now() + '-' + Math.random();
+            
+            itemDiv.innerHTML = `
+                <input type="checkbox" id="${checkboxId}" ${completed ? 'checked' : ''} style="cursor: pointer;">
+                <input type="text" class="checklist-text" value="${text}" placeholder="Inserisci elemento..." style="flex: 1; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 3px; background-color: var(--input-bg); color: var(--text-primary);">
+                <button type="button" onclick="removeChecklistItem(this)" class="secondary" style="padding: 4px 8px; font-size: 0.85em; min-width: auto;">🗑️</button>
+            `;
+            
+            container.appendChild(itemDiv);
+        }
+        
+        function removeChecklistItem(button) {
+            button.closest('.checklist-item').remove();
+        }
+        
+        function getChecklistItems() {
+            const items = [];
+            const checklistItems = document.querySelectorAll('#taskChecklistContainer .checklist-item');
+            checklistItems.forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const textInput = item.querySelector('.checklist-text');
+                const text = textInput.value.trim();
+                if (text) { // Salva solo se ha del testo
+                    items.push({
+                        text: text,
+                        completed: checkbox.checked
+                    });
+                }
+            });
+            return items;
+        }
+        
+        function loadChecklistItems(items) {
+            const container = document.getElementById('taskChecklistContainer');
+            container.innerHTML = '';
+            if (items && items.length > 0) {
+                items.forEach(item => {
+                    addChecklistItem(item.text, item.completed);
+                });
+            }
+        }
+        
+        function clearChecklistItems() {
+            const container = document.getElementById('taskChecklistContainer');
+            container.innerHTML = '';
+        }
+
         // === MODAL MANAGEMENT ===
         function openResourceModal(id = null) {
             editingResourceId = id;
@@ -3754,6 +3881,13 @@
                         if (task.startDate && task.endDate && task.resources) {
                             showAbsenceWarning(task.startDate, task.endDate, task.resources);
                         }
+                        
+                        // Carica checklist
+                        if (task.checklist && task.checklist.length > 0) {
+                            loadChecklistItems(task.checklist);
+                        } else {
+                            clearChecklistItems();
+                        }
                     }
                 }
             } else {
@@ -3805,6 +3939,17 @@
                 resourcesText = '  Nessuna risorsa assegnata\n';
             }
             
+            // Ottieni checklist
+            const checklistItems = getChecklistItems();
+            let checklistText = '';
+            if (checklistItems.length > 0) {
+                checklistText = '\nChecklist:\n';
+                checklistItems.forEach((item, index) => {
+                    const checkbox = item.completed ? '[✓]' : '[ ]';
+                    checklistText += `  ${checkbox} ${item.text}\n`;
+                });
+            }
+            
             // Ottieni testo stato
             const statusText = {
                 '': 'Da Fare',
@@ -3829,6 +3974,7 @@
                         `Stato: ${statusText}\n` +
                         `Completamento: ${completion}%\n\n` +
                         `Risorse Assegnate:\n${resourcesText}\n` +
+                        checklistText +
                         `Note:\n${notes || 'Nessuna nota'}\n`;
             
             // Crea il link mailto
@@ -4078,7 +4224,8 @@
                     holidayWork: sourceTask.holidayWork || false,
                     flexibleDate: sourceTask.flexibleDate || false,
                     notes: sourceTask.notes || '',
-                    resources: copyResources ? (sourceTask.resources ? [...sourceTask.resources] : []) : []
+                    resources: copyResources ? (sourceTask.resources ? [...sourceTask.resources] : []) : [],
+                    checklist: sourceTask.checklist ? JSON.parse(JSON.stringify(sourceTask.checklist)) : []
                 };
                 
                 targetProject.tasks.push(newTask);
@@ -5645,6 +5792,9 @@
                     assignedResources.push({ resourceId: resourceId || null, percentage });
                 }
             });
+            
+            // Raccogli checklist
+            const checklistItems = getChecklistItems();
 
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
@@ -5668,7 +5818,8 @@
                 endOffset,
                 notes,
                 resources: assignedResources,
-                flexibleDate: flexibleDate || false
+                flexibleDate: flexibleDate || false,
+                checklist: checklistItems
             };
 
             if (editingTaskId) {
@@ -6204,6 +6355,9 @@
             container.innerHTML = '';
             addTaskResourceRow();
             updateResourceSelects();
+            
+            // Pulisci checklist
+            clearChecklistItems();
         }
 
         // === GESTIONE BACHECA ===
