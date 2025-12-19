@@ -9280,33 +9280,65 @@
             // Aggiungi suggerimenti per attività con data flessibile se carico < 100%
             // Solo per viste NON a colonne (nelle viste settimana/mese sono già mostrati nelle colonne)
             if (!isColumnView && overload.maxLoad < 100) {
+                // Verifica se il giorno selezionato è valido (non weekend, non festivo, non assenza)
+                // Per vista day usa il giorno selezionato, altrimenti usa oggi
+                let checkDate;
+                if (period === 'day') {
+                    const dayValue = document.getElementById('resourceViewSpecificDay')?.value;
+                    checkDate = dayValue ? new Date(dayValue) : new Date();
+                } else {
+                    checkDate = new Date();
+                }
+                checkDate.setHours(0, 0, 0, 0);
+                const dateStr = formatDateLocal(checkDate);
+                
+                // Verifica se la risorsa è in assenza nel giorno selezionato
+                const isAbsentOnDate = resource.absences && resource.absences.some(absence => {
+                    const absStart = new Date(absence.start);
+                    const absEnd = new Date(absence.end);
+                    absStart.setHours(0, 0, 0, 0);
+                    absEnd.setHours(23, 59, 59, 999);
+                    return checkDate >= absStart && checkDate <= absEnd;
+                });
+                
+                // Verifica se è weekend o festivo
+                const dayOfWeek = checkDate.getDay();
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isHoliday = holidays.some(h => h.date === dateStr);
+                
+                // Mostra suggerimenti solo se il giorno è lavorativo valido
+                const shouldShowSuggestions = !isAbsentOnDate && !isSaturday && !isSunday && !isHoliday;
+                
                 const flexibleTasks = [];
-                projects.forEach(project => {
-                    if (project.tasks) {
-                        project.tasks.forEach(task => {
-                            if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa') {
-                                // Se ha risorse assegnate, mostra solo per quelle risorse
-                                if (hasAssignedResources(task)) {
-                                    const res = task.resources.find(r => r.resourceId == resource.id);
-                                    if (res) {
+                if (shouldShowSuggestions) {
+                    projects.forEach(project => {
+                        if (project.tasks) {
+                            project.tasks.forEach(task => {
+                                if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa') {
+                                    // Se ha risorse assegnate, mostra solo per quelle risorse
+                                    if (hasAssignedResources(task)) {
+                                        const res = task.resources.find(r => r.resourceId == resource.id);
+                                        if (res) {
+                                            flexibleTasks.push({
+                                                project,
+                                                task,
+                                                percentage: res.percentage
+                                            });
+                                        }
+                                    } else {
+                                        // Nessuna risorsa assegnata: mostra per tutti con carico 100%
                                         flexibleTasks.push({
                                             project,
                                             task,
-                                            percentage: res.percentage
+                                            percentage: 100
                                         });
                                     }
-                                } else {
-                                    // Nessuna risorsa assegnata: mostra per tutti con carico 100%
-                                    flexibleTasks.push({
-                                        project,
-                                        task,
-                                        percentage: 100
-                                    });
                                 }
-                            }
-                        });
-                    }
-                });
+                            });
+                        }
+                    });
+                }
                 
                 if (flexibleTasks.length > 0) {
                     const suggestionsDiv = document.createElement('div');
