@@ -220,21 +220,94 @@
             height: 20px;
             background: var(--bg-tertiary);
             border-radius: 10px;
-            overflow: hidden;
+            overflow: visible;
             position: relative;
             margin-top: 8px;
         }
 
         .bacheca-progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4caf50, #66bb6a);
-            transition: width 0.3s ease;
+            border-radius: 10px;
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 0.75em;
             font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .bacheca-progress-actual {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: #2196F3;
+            border-radius: 10px 0 0 10px;
+            z-index: 2;
+        }
+        
+        .bacheca-progress-delay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: #ff9800;
+            border-radius: 10px;
+            z-index: 1;
+        }
+        
+        .bacheca-progress-advance {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #2196F3, #4caf50);
+            border-radius: 10px;
+            z-index: 1;
+        }
+        
+        .bacheca-progress-today {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(255, 193, 7, 0.3),
+                rgba(255, 193, 7, 0.3) 3px,
+                rgba(255, 235, 59, 0.3) 3px,
+                rgba(255, 235, 59, 0.3) 6px
+            );
+            border-left: 2px solid #ffc107;
+            border-right: 2px solid #ffc107;
+            z-index: 2;
+        }
+        
+        .bacheca-progress-expected {
+            position: absolute;
+            top: -2px;
+            bottom: -2px;
+            width: 3px;
+            background: #f44336;
+            z-index: 3;
+            box-shadow: 0 0 4px rgba(244, 67, 54, 0.6);
+        }
+        
+        .bacheca-progress-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 4;
+            color: white;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
 
         /* Progress bar per tabella progetti */
@@ -576,6 +649,10 @@
             align-items: center;
             margin-bottom: 5px;
             position: relative;
+        }
+        
+        .absence-range select {
+            width: 120px;
         }
         
         .absence-range .delete-absence {
@@ -966,12 +1043,49 @@
             background: var(--warning-bg) !important;
         }
 
-        .gantt-day.absence {
-            background: #ffcdd2 !important;
+        .gantt-day.absence,
+        .gantt-day.absence-sick {
+            background: repeating-linear-gradient(
+                45deg,
+                #d32f2f,
+                #d32f2f 4px,
+                #e57373 4px,
+                #e57373 8px
+            ) !important;
+            position: relative;
         }
 
-        [data-theme="dark"] .gantt-day.absence {
-            background: #7d2626 !important;
+        [data-theme="dark"] .gantt-day.absence,
+        [data-theme="dark"] .gantt-day.absence-sick {
+            background: repeating-linear-gradient(
+                45deg,
+                #b71c1c,
+                #b71c1c 4px,
+                #c62828 4px,
+                #c62828 8px
+            ) !important;
+        }
+        
+        .gantt-day.absence::after {
+            content: '🏖️';
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            z-index: 5;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+        }
+        
+        .gantt-day.absence-sick::after {
+            content: '🤒';
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            z-index: 5;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
         }
 
         .gantt-day.today::before {
@@ -1038,24 +1152,51 @@
             min-width: 8px;
         }
         
-        .resource-daily-bar.on-absence {
+        .resource-daily-bar.on-absence,
+        .resource-daily-bar.on-absence-sick {
             background: repeating-linear-gradient(
                 45deg,
-                #ffcdd2,
-                #ffcdd2 4px,
-                #ef9a9a 4px,
-                #ef9a9a 8px
+                #d32f2f,
+                #d32f2f 4px,
+                #e57373 4px,
+                #e57373 8px
+            ) !important;
+            position: relative;
+        }
+        
+        [data-theme="dark"] .resource-daily-bar.on-absence,
+        [data-theme="dark"] .resource-daily-bar.on-absence-sick {
+            background: repeating-linear-gradient(
+                45deg,
+                #b71c1c,
+                #b71c1c 4px,
+                #c62828 4px,
+                #c62828 8px
             ) !important;
         }
         
-        [data-theme="dark"] .resource-daily-bar.on-absence {
-            background: repeating-linear-gradient(
-                45deg,
-                #7d2626,
-                #7d2626 4px,
-                #5d1d1d 4px,
-                #5d1d1d 8px
-            ) !important;
+        .resource-daily-bar.on-absence::after {
+            content: '🏖️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
+        }
+        
+        .resource-daily-bar.on-absence-sick::after {
+            content: '🤒';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
         }
         
         .resource-daily-bar.on-holiday {
@@ -1125,6 +1266,31 @@
             position: relative;
         }
         
+        /* Le assenze hanno priorità sul giorno corrente */
+        .resource-daily-bar.current-day.on-absence,
+        .resource-daily-bar.current-day.on-absence-sick {
+            background: repeating-linear-gradient(
+                45deg,
+                #d32f2f,
+                #d32f2f 4px,
+                #e57373 4px,
+                #e57373 8px
+            ) !important;
+            border: 2px solid #ff5722;
+            box-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
+        }
+        
+        [data-theme="dark"] .resource-daily-bar.current-day.on-absence,
+        [data-theme="dark"] .resource-daily-bar.current-day.on-absence-sick {
+            background: repeating-linear-gradient(
+                45deg,
+                #b71c1c,
+                #b71c1c 4px,
+                #c62828 4px,
+                #c62828 8px
+            ) !important;
+        }
+        
         .resource-daily-bar.current-day::after {
             content: '▼';
             position: absolute;
@@ -1134,6 +1300,37 @@
             font-size: 10px;
             color: #ff5722;
             z-index: 11;
+        }
+        
+        /* Nascondi la freccia "oggi" quando c'è un'assenza (per non sovrapporre l'icona) */
+        .resource-daily-bar.current-day.on-absence::after,
+        .resource-daily-bar.current-day.on-absence-sick::after {
+            content: '';
+        }
+        
+        /* Mostra esplicitamente le icone di assenza anche quando è il giorno corrente */
+        .resource-daily-bar.current-day.on-absence::before {
+            content: '🏖️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
+        }
+        
+        .resource-daily-bar.current-day.on-absence-sick::before {
+            content: '🤒';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
         }
         
         .day-label.current-day {
@@ -1882,6 +2079,7 @@
                         <th>Nome</th>
                         <th>Cognome</th>
                         <th>Tipo Risorsa</th>
+                        <th>Assenze</th>
                         <th>Azioni</th>
                     </tr>
                 </thead>
@@ -2220,7 +2418,13 @@
                         <p>Le risorse sono le persone del tuo team che lavoreranno sui progetti.</p>
                         <ul>
                             <li><strong>Creare una risorsa:</strong> Click su "+ Nuova Risorsa" per aggiungere un membro del team</li>
-                            <li><strong>Assenze:</strong> Puoi definire periodi di assenza (ferie, malattia, ecc.) per ogni risorsa. Le assenze vengono visualizzate in grigio nella Vista Risorse e nelle proposte di pianificazione</li>
+                            <li><strong>Assenze:</strong> Puoi definire periodi di assenza per ogni risorsa, specificando il tipo:
+                                <ul>
+                                    <li>🏖️ <strong>Ferie</strong>: Assenze pianificate per riposo</li>
+                                    <li>🤒 <strong>Malattia</strong>: Assenze per motivi di salute</li>
+                                </ul>
+                                Le assenze vengono mostrate in rosso nel Gantt e nella Vista Risorse. Le malattie sono identificate dall'icona 🤒 per distinguerle dalle ferie 🏖️.
+                            </li>
                             <li><strong>Modifica/Elimina:</strong> Usa i pulsanti ✏️ ed 🗑️ per gestire le risorse esistenti</li>
                         </ul>
                     </div>
@@ -2461,37 +2665,62 @@
             </div>
 
             <div class="gantt-legend">
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #bdbdbd;"></div>
-                    <span>Nessuno stato</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #6b9c7b;"></div>
-                    <span>Completata</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #5b8db8;"></div>
-                    <span>In corso</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #ff6b6b;"></div>
-                    <span>In ritardo</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #d4b95f;"></div>
-                    <span>In pausa</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #c9885f;"></div>
-                    <span>Non assegnata</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #333333;"></div>
-                    <span>Annullata</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: var(--info-color); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
-                    <span>Milestone</span>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <strong style="font-size: 11px; color: var(--text-tertiary);">STATO:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #bdbdbd;"></div>
+                        <span>Nessuno</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #6b9c7b;"></div>
+                        <span>Completata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #5b8db8;"></div>
+                        <span>In corso</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>In ritardo</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #d4b95f;"></div>
+                        <span>In pausa</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #c9885f;"></div>
+                        <span>Non assegnata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #333333;"></div>
+                        <span>Annullata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--info-color); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
+                        <span>Milestone</span>
+                    </div>
+                    <span style="border-left: 2px solid var(--border-color); height: 20px; margin: 0 5px;"></span>
+                    <strong style="font-size: 11px; color: var(--text-tertiary);">GIORNI:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #ff5722, #ff9800);"></div>
+                        <span>🔴 Oggi</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, var(--bg-secondary), var(--bg-secondary) 4px, rgba(0,0,0,0.08) 4px, rgba(0,0,0,0.08) 8px);"></div>
+                        <span>Weekend</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--warning-bg);"></div>
+                        <span>🎉 Festività</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🏖️ Ferie</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🤒 Malattia</span>
+                    </div>
                 </div>
             </div>
 
@@ -2556,9 +2785,63 @@
                     <label>A:</label>
                     <input type="date" id="resourceViewEndDate" onchange="renderResourceView()">
                 </div>
-                <button onclick="renderResourceView()" class="secondary" style="margin-left: auto;">🔄 Aggiorna</button>
-                <button onclick="expandAllResources()" class="secondary" title="Espandi tutte le risorse">▼ Espandi</button>
-                <button onclick="collapseAllResources()" class="secondary" title="Collassa tutte le risorse">▶ Collassa</button>
+                <button onclick="renderResourceView()" class="secondary">🔄 Aggiorna</button>
+            </div>
+            
+            <div class="gantt-legend" style="margin-top: 10px;">
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <strong style="font-size: 11px; color: var(--text-tertiary);">STATO:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #bdbdbd;"></div>
+                        <span>Nessuno</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #6b9c7b;"></div>
+                        <span>Completata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #5b8db8;"></div>
+                        <span>In corso</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>In ritardo</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #d4b95f;"></div>
+                        <span>In pausa</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #c9885f;"></div>
+                        <span>Non assegnata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #333333;"></div>
+                        <span>Annullata</span>
+                    </div>
+                    <span style="border-left: 2px solid var(--border-color); height: 20px; margin: 0 5px;"></span>
+                    <strong style="font-size: 11px; color: var(--text-tertiary);">GIORNI:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #ff5722, #ff9800);"></div>
+                        <span>🔴 Oggi</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, var(--bg-secondary), var(--bg-secondary) 4px, rgba(0,0,0,0.08) 4px, rgba(0,0,0,0.08) 8px);"></div>
+                        <span>Weekend</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--warning-bg);"></div>
+                        <span>🎉 Festività</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🏖️ Ferie</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🤒 Malattia</span>
+                    </div>
+                </div>
             </div>
 
             <div class="holidays-info">
@@ -3588,6 +3871,10 @@
             newRange.className = 'absence-range';
             newRange.innerHTML = `
                 <button type="button" onclick="removeAbsenceRange(this)" class="delete-absence" title="Rimuovi periodo">🗑️</button>
+                <select class="absence-type">
+                    <option value="vacation">Ferie</option>
+                    <option value="sick">Malattia</option>
+                </select>
                 <input type="date" class="absence-start">
                 <span>-</span>
                 <input type="date" class="absence-end">
@@ -3718,8 +4005,9 @@
             document.querySelectorAll('.absence-range').forEach(range => {
                 const start = range.querySelector('.absence-start').value;
                 const end = range.querySelector('.absence-end').value || start;
+                const type = range.querySelector('.absence-type')?.value || 'vacation';
                 if (start) {
-                    absences.push({ start, end });
+                    absences.push({ start, end, type });
                 }
             });
 
@@ -3804,8 +4092,13 @@
                 resource.absences.forEach((absence, index) => {
                     const newRange = document.createElement('div');
                     newRange.className = 'absence-range';
+                    const absenceType = absence.type || 'vacation';
                     newRange.innerHTML = `
                         <button type="button" onclick="removeAbsenceRange(this)" class="delete-absence" title="Rimuovi periodo">🗑️</button>
+                        <select class="absence-type">
+                            <option value="vacation" ${absenceType === 'vacation' ? 'selected' : ''}>Ferie</option>
+                            <option value="sick" ${absenceType === 'sick' ? 'selected' : ''}>Malattia</option>
+                        </select>
                         <input type="date" class="absence-start" value="${absence.start}">
                         <span>-</span>
                         <input type="date" class="absence-end" value="${absence.end}">
@@ -3826,6 +4119,10 @@
                 newRange.className = 'absence-range';
                 newRange.innerHTML = `
                     <button type="button" onclick="removeAbsenceRange(this)" class="delete-absence" title="Rimuovi periodo">🗑️</button>
+                    <select class="absence-type">
+                        <option value="vacation">Ferie</option>
+                        <option value="sick">Malattia</option>
+                    </select>
                     <input type="date" class="absence-start">
                     <span>-</span>
                     <input type="date" class="absence-end">
@@ -3858,11 +4155,16 @@
             const container = document.getElementById('absenceDays');
             container.innerHTML = `
                 <div class="absence-range">
+                    <button type="button" onclick="removeAbsenceRange(this)" class="delete-absence" title="Rimuovi periodo">🗑️</button>
+                    <select class="absence-type">
+                        <option value="vacation">Ferie</option>
+                        <option value="sick">Malattia</option>
+                    </select>
                     <input type="date" class="absence-start">
                     <span>-</span>
                     <input type="date" class="absence-end">
-                    <button type="button" onclick="addAbsenceRange()">+ Aggiungi Periodo</button>
                 </div>
+                <button type="button" class="add-absence-btn" onclick="addAbsenceRange()">+ Aggiungi Periodo</button>
             `;
         }
 
@@ -3873,8 +4175,9 @@
             resources.forEach(resource => {
                 const tr = document.createElement('tr');
                 const absencesStr = resource.absences.map(a => {
-                    if (a.start === a.end) return a.start;
-                    return `${a.start} - ${a.end}`;
+                    const typeLabel = a.type === 'sick' ? '🤒 Malattia' : '🏖️ Ferie';
+                    const dateStr = a.start === a.end ? a.start : `${a.start} - ${a.end}`;
+                    return `${typeLabel}: ${dateStr}`;
                 }).join(', ') || 'Nessuna';
 
                 const typeLabels = {
@@ -3892,6 +4195,7 @@
                     <td>${resource.firstName}</td>
                     <td>${resource.lastName}</td>
                     <td>${typeLabel}</td>
+                    <td style="font-size: 11px;">${absencesStr}</td>
                     <td class="action-buttons">
                         <button onclick="openResourceModal(${resource.id})" class="secondary">✏️ Modifica</button>
                         <button onclick="deleteResource(${resource.id})" class="delete">🗑️ Elimina</button>
@@ -5746,6 +6050,69 @@
             const notesIndicator = task.notes && task.notes.trim() ? 
                 `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
             
+            // Calcola percentuale prevista in base alle date (solo per attività in corso)
+            let progressBarHTML = '';
+            const actualCompletion = task.completion || 0;
+            
+            if (task.status === 'in-corso' && task.startDate && task.endDate) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const startDate = new Date(task.startDate);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(task.endDate);
+                endDate.setHours(0, 0, 0, 0);
+                
+                // Calcola la percentuale prevista in base al tempo trascorso
+                // Se oggi è l'ultimo giorno, la barra rossa va all'inizio della giornata
+                const totalDays = Math.max(1, (endDate - startDate) / (1000 * 60 * 60 * 24)) + 1; // +1 per includere il giorno finale
+                const daysPassed = Math.max(0, (today - startDate) / (1000 * 60 * 60 * 24));
+                const expectedCompletion = Math.min(100, Math.max(0, (daysPassed / totalDays) * 100));
+                
+                // Calcola la percentuale per la fine di oggi (inizio del giorno dopo)
+                const daysPassedEndOfToday = daysPassed + 1;
+                const expectedEndOfToday = Math.min(100, Math.max(0, (daysPassedEndOfToday / totalDays) * 100));
+                
+                // Determina lo stato (in ritardo, in anticipo, o normale)
+                const diff = actualCompletion - expectedCompletion;
+                
+                // Crea l'evidenziazione per il lavoro da completare oggi
+                const todayWorkHTML = (today <= endDate && daysPassed >= 0) ? 
+                    `<div class="bacheca-progress-today" style="left: ${expectedCompletion}%; width: ${expectedEndOfToday - expectedCompletion}%;"></div>` : '';
+                
+                if (diff < -5) {
+                    // In ritardo: mostra blu fino alla percentuale effettiva, poi arancione fino alla prevista
+                    progressBarHTML = `
+                        <div class="bacheca-progress-delay" style="width: ${expectedCompletion}%;"></div>
+                        <div class="bacheca-progress-actual" style="width: ${actualCompletion}%; border-radius: 10px;"></div>
+                        ${todayWorkHTML}
+                        <div class="bacheca-progress-expected" style="left: ${expectedCompletion}%;"></div>
+                        <div class="bacheca-progress-text">${actualCompletion}%</div>
+                    `;
+                } else if (diff > 5) {
+                    // In anticipo: mostra blu fino alla prevista, poi verde fino alla percentuale effettiva
+                    progressBarHTML = `
+                        <div class="bacheca-progress-advance" style="width: ${actualCompletion}%;"></div>
+                        ${todayWorkHTML}
+                        <div class="bacheca-progress-expected" style="left: ${expectedCompletion}%;"></div>
+                        <div class="bacheca-progress-text">${actualCompletion}%</div>
+                    `;
+                } else {
+                    // Normale: solo blu
+                    progressBarHTML = `
+                        <div class="bacheca-progress-actual" style="width: ${actualCompletion}%; border-radius: 10px;"></div>
+                        ${todayWorkHTML}
+                        <div class="bacheca-progress-expected" style="left: ${expectedCompletion}%;"></div>
+                        <div class="bacheca-progress-text">${actualCompletion}%</div>
+                    `;
+                }
+            } else {
+                // Per attività non in corso o senza date, usa la barra semplice
+                progressBarHTML = `
+                    <div class="bacheca-progress-actual" style="width: ${actualCompletion}%; border-radius: 10px;"></div>
+                    <div class="bacheca-progress-text">${actualCompletion}%</div>
+                `;
+            }
+            
             card.innerHTML = `
                 <div class="bacheca-card-title">${task.name}${delayIndicator}${notesIndicator}</div>
                 <div class="bacheca-card-project">📁 ${project.client} - ${project.code}</div>
@@ -5756,7 +6123,7 @@
                     </div>
                     <div class="bacheca-card-resources">👤 ${resourcesStr}</div>
                     <div class="bacheca-progress-bar">
-                        <div class="bacheca-progress-fill" style="width: ${task.completion}%">${task.completion}%</div>
+                        ${progressBarHTML}
                     </div>
                 </div>
             `;
@@ -7435,7 +7802,11 @@
                         absenceEnd.setHours(0, 0, 0, 0);
                         
                         if (dayDate.getTime() >= absenceStart.getTime() && dayDate.getTime() <= absenceEnd.getTime()) {
-                            dayDiv.classList.add('absence');
+                            if (absence.type === 'sick') {
+                                dayDiv.classList.add('absence-sick');
+                            } else {
+                                dayDiv.classList.add('absence');
+                            }
                         }
                     });
                 }
@@ -8802,6 +9173,7 @@
                 const isHoliday = holidays.some(h => h.date === dateStr);
                 
                 // Verifica se la risorsa è in assenza in questo giorno
+                let absenceType = null;
                 const isAbsent = resource.absences && resource.absences.some(absence => {
                     const absStart = new Date(absence.start);
                     const absEnd = new Date(absence.end);
@@ -8809,7 +9181,11 @@
                     absEnd.setHours(23, 59, 59, 999);
                     const checkDate = new Date(currentDate);
                     checkDate.setHours(12, 0, 0, 0);
-                    return checkDate >= absStart && checkDate <= absEnd;
+                    const inRange = checkDate >= absStart && checkDate <= absEnd;
+                    if (inRange) {
+                        absenceType = absence.type || 'vacation';
+                    }
+                    return inRange;
                 });
                 
                 // Per vista settimanale, crea contenitore colonna
@@ -8833,7 +9209,11 @@
                 
                 // Aggiungi classi per tipo di giorno
                 if (isAbsent) {
-                    dailyBar.classList.add('on-absence');
+                    if (absenceType === 'sick') {
+                        dailyBar.classList.add('on-absence-sick');
+                    } else {
+                        dailyBar.classList.add('on-absence');
+                    }
                 } else if (isHoliday) {
                     dailyBar.classList.add('on-holiday');
                 } else if (isSunday) {
@@ -8846,7 +9226,10 @@
                 let heightPercent;
                 if (load > 0) {
                     heightPercent = Math.max(2, (load / maxDailyLoad) * 100);
-                    dailyBar.style.backgroundColor = getColorForLoad(load);
+                    // Non sovrascrivere il background se è un giorno di assenza (mantieni il pattern rosso e l'icona)
+                    if (!isAbsent) {
+                        dailyBar.style.backgroundColor = getColorForLoad(load);
+                    }
                 } else {
                     // Nessun carico: mostra barra minima solo se è giorno speciale
                     if (isAbsent || isHoliday || isSaturday || isSunday) {
@@ -8863,7 +9246,8 @@
                 tooltip.className = 'resource-daily-bar-tooltip';
                 let tooltipText = `${dateStr}: ${load.toFixed(0)}%`;
                 if (isAbsent) {
-                    tooltipText += ' ⚠️ ASSENZA';
+                    const absenceLabel = absenceType === 'sick' ? 'MALATTIA' : 'FERIE';
+                    tooltipText += ` ⚠️ ${absenceLabel}`;
                 } else if (isHoliday) {
                     tooltipText += ' 🎉 FESTIVO';
                 } else if (isSunday) {
