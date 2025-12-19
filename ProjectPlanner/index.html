@@ -9049,8 +9049,11 @@
             // Elenco compatto con checkbox
             emailBody += 'ELENCO COMPATTO:\n';
             emailBody += '-'.repeat(80) + '\n';
-            selectedTasks.forEach(task => {
-                emailBody += `☐ ${task.code} - ${task.description} - ${task.taskName}\n`;
+            
+            // Ordina per codice progetto
+            const sortedTasks = [...selectedTasks].sort((a, b) => a.code.localeCompare(b.code));
+            sortedTasks.forEach(task => {
+                emailBody += `☐  [${task.code}] ${task.description} → ${task.taskName}\n`;
             });
             emailBody += '\n' + '='.repeat(80) + '\n\n';
             
@@ -9058,7 +9061,9 @@
             emailBody += 'DETTAGLIO ATTIVITÀ PER CODICE LAVORO\n';
             emailBody += '='.repeat(80) + '\n\n';
             
-            for (const code in groupedByCode) {
+            // Ordina i codici alfabeticamente
+            const sortedCodes = Object.keys(groupedByCode).sort();
+            for (const code of sortedCodes) {
                 const group = groupedByCode[code];
                 emailBody += `▶ ${code} - ${group.client}\n`;
                 emailBody += `  ${group.description}\n`;
