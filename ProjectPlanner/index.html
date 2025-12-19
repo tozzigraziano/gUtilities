@@ -10010,15 +10010,30 @@
                         // Calcola carico per questo giorno
                         const dailyLoad = overload.dailyLoad[dateStr] || 0;
                         
-                        // Filtra attività per questo giorno
-                        const dayAssignments = assignmentsInPeriod.filter(assignment => {
+                        // Verifica se è un giorno lavorativo (non weekend, non festivo, non in assenza)
+                        const checkDate = new Date(currentDate);
+                        checkDate.setHours(0, 0, 0, 0);
+                        const dayOfWeek = currentDate.getDay();
+                        const isSaturday = dayOfWeek === 6;
+                        const isSunday = dayOfWeek === 0;
+                        const isHoliday = holidays.some(h => h.date === dateStr);
+                        const isAbsent = resource.absences && resource.absences.some(absence => {
+                            const absStart = new Date(absence.start);
+                            const absEnd = new Date(absence.end);
+                            absStart.setHours(0, 0, 0, 0);
+                            absEnd.setHours(23, 59, 59, 999);
+                            return checkDate >= absStart && checkDate <= absEnd;
+                        });
+                        
+                        // Filtra attività per questo giorno SOLO SE è un giorno lavorativo
+                        const dayAssignments = (isSaturday || isSunday || isHoliday || isAbsent) ? [] : assignmentsInPeriod.filter(assignment => {
                             const taskStart = new Date(assignment.startDate);
                             const taskEnd = new Date(assignment.endDate);
-                            const checkDate = new Date(currentDate);
+                            const checkDateInner = new Date(currentDate);
                             taskStart.setHours(0, 0, 0, 0);
                             taskEnd.setHours(23, 59, 59, 999);
-                            checkDate.setHours(12, 0, 0, 0);
-                            return checkDate >= taskStart && checkDate <= taskEnd;
+                            checkDateInner.setHours(12, 0, 0, 0);
+                            return checkDateInner >= taskStart && checkDateInner <= taskEnd;
                         });
                         
                         // Aggiungi ogni attività come card compatta
@@ -10078,23 +10093,6 @@
                         // Solo per giorni da oggi in avanti, non in assenza, non weekend e non festivi
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
-                        const checkDate = new Date(currentDate);
-                        checkDate.setHours(0, 0, 0, 0);
-                        
-                        // Verifica se la risorsa è in assenza in questo giorno
-                        const isAbsent = resource.absences && resource.absences.some(absence => {
-                            const absStart = new Date(absence.start);
-                            const absEnd = new Date(absence.end);
-                            absStart.setHours(0, 0, 0, 0);
-                            absEnd.setHours(23, 59, 59, 999);
-                            return checkDate >= absStart && checkDate <= absEnd;
-                        });
-                        
-                        // Verifica se è weekend o festivo
-                        const dayOfWeek = currentDate.getDay();
-                        const isSaturday = dayOfWeek === 6;
-                        const isSunday = dayOfWeek === 0;
-                        const isHoliday = holidays.some(h => h.date === dateStr);
                         
                         if (checkDate >= today && !isAbsent && !isSaturday && !isSunday && !isHoliday && dailyLoad < 100 && flexibleTasks.length > 0) {
                             // Aggiungi separatore visivo
