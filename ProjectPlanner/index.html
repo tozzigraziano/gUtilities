@@ -487,15 +487,15 @@
             table-layout: fixed;
         }
         
-        #taskReviewTable th:nth-child(1) { width: 12%; }
+        #taskReviewTable th:nth-child(1) { width: 10%; }
         #taskReviewTable th:nth-child(2) { width: 10%; }
-        #taskReviewTable th:nth-child(3) { width: 17%; }
-        #taskReviewTable th:nth-child(4) { width: 17%; }
-        #taskReviewTable th:nth-child(5) { width: 17%; }
-        #taskReviewTable th:nth-child(6) { width: 6%; }
+        #taskReviewTable th:nth-child(3) { width: 10%; }
+        #taskReviewTable th:nth-child(4) { width: 16%; }
+        #taskReviewTable th:nth-child(5) { width: 18%; }
+        #taskReviewTable th:nth-child(6) { width: 10%; }
         #taskReviewTable th:nth-child(7) { width: 6%; }
         #taskReviewTable th:nth-child(8) { width: 9%; }
-        #taskReviewTable th:nth-child(9) { width: 6%; }
+        #taskReviewTable th:nth-child(9) { width: 11%; }
 
         th, td {
             border: 1px solid var(--border-color);
@@ -2448,7 +2448,11 @@
                                 <button onclick="document.getElementById('taskReviewFilterTaskName').value=''; renderTaskReview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
                             </div>
                         </th>
-                        <th></th>
+                        <th>
+                            <select id="taskReviewFilterResource" onchange="renderTaskReview()" style="width: 100%; box-sizing: border-box;">
+                                <option value="">Tutte le risorse</option>
+                            </select>
+                        </th>
                         <th></th>
                         <th></th>
                         <th></th>
@@ -8937,6 +8941,7 @@
             const filterCode = document.getElementById('taskReviewFilterCode')?.value.toLowerCase() || '';
             const filterDescription = document.getElementById('taskReviewFilterDescription')?.value.toLowerCase() || '';
             const filterTaskName = document.getElementById('taskReviewFilterTaskName')?.value.toLowerCase() || '';
+            const filterResource = document.getElementById('taskReviewFilterResource')?.value || '';
             const hidePaused = document.getElementById('taskReviewHidePaused')?.checked || false;
 
             // Raccogli tutte le attività con data flessibile o in pausa
@@ -8977,6 +8982,22 @@
                 filteredTasks = filteredTasks.filter(item => 
                     (item.task.name || '').toLowerCase().includes(filterTaskName)
                 );
+            }
+            if (filterResource) {
+                if (filterResource === 'unassigned') {
+                    // Mostra solo attività non assegnate o senza risorse valide
+                    filteredTasks = filteredTasks.filter(item => 
+                        !item.task.resources || 
+                        item.task.resources.length === 0 || 
+                        !item.task.resources.some(r => r.resourceId)
+                    );
+                } else {
+                    // Filtra per risorsa specifica
+                    filteredTasks = filteredTasks.filter(item => 
+                        item.task.resources && 
+                        item.task.resources.some(r => r.resourceId == filterResource)
+                    );
+                }
             }
 
             // Ordina per cliente, poi per attività
@@ -9099,6 +9120,53 @@
             
             // Resetta il totale
             updateTaskReviewTotal();
+            
+            // Popola la combobox risorse con conteggio
+            const resourceSelect = document.getElementById('taskReviewFilterResource');
+            if (resourceSelect) {
+                const currentValue = resourceSelect.value;
+                
+                // Conta attività per risorsa
+                const resourceCounts = {};
+                let unassignedCount = 0;
+                
+                reviewTasks.forEach(item => {
+                    if (!item.task.resources || item.task.resources.length === 0 || !item.task.resources.some(r => r.resourceId)) {
+                        unassignedCount++;
+                    } else {
+                        item.task.resources.forEach(r => {
+                            if (r.resourceId) {
+                                resourceCounts[r.resourceId] = (resourceCounts[r.resourceId] || 0) + 1;
+                            }
+                        });
+                    }
+                });
+                
+                // Ricostruisci le opzioni
+                resourceSelect.innerHTML = '<option value="">Tutte le risorse</option>';
+                
+                // Aggiungi opzione "Non assegnate"
+                if (unassignedCount > 0) {
+                    const unassignedOption = document.createElement('option');
+                    unassignedOption.value = 'unassigned';
+                    unassignedOption.textContent = `Non assegnate (${unassignedCount})`;
+                    resourceSelect.appendChild(unassignedOption);
+                }
+                
+                // Aggiungi risorse con conteggio
+                resources.forEach(resource => {
+                    const count = resourceCounts[resource.id] || 0;
+                    if (count > 0) {
+                        const option = document.createElement('option');
+                        option.value = resource.id;
+                        option.textContent = `${resource.firstName} ${resource.lastName} (${count})`;
+                        resourceSelect.appendChild(option);
+                    }
+                });
+                
+                // Ripristina il valore selezionato
+                resourceSelect.value = currentValue;
+            }
         }
 
         function openTaskFromReview(taskId, projectId) {
