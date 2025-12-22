@@ -8878,27 +8878,6 @@
                 }
             });
             
-            // 6. Attività con data flessibile da molto tempo
-            projects.forEach(project => {
-                if (project.tasks) {
-                    project.tasks.forEach(task => {
-                        if (task.flexibleDate && task.completion === 0) {
-                            warnings.push({
-                                severity: 'info',
-                                icon: '💡',
-                                title: `Attività da pianificare: ${task.name}`,
-                                description: `Progetto: ${project.client} - Attività flessibile in attesa di pianificazione (${task.duration} giorni)`,
-                                action: 'Pianificare nella Vista Risorse o rimuovere data flessibile',
-                                onClick: () => {
-                                    currentProjectId = project.id;
-                                    switchTab('resourceView');
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-            
             // 7. Attività in pausa
             projects.forEach(project => {
                 if (project.tasks) {
