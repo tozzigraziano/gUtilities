@@ -2414,6 +2414,10 @@
             
             <div class="action-bar">
                 <button onclick="renderTaskReview()">🔄 Aggiorna</button>
+                <label style="margin-left: 20px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="checkbox" id="taskReviewHidePaused" onchange="renderTaskReview()" style="cursor: pointer;">
+                    <span>Nascondi attività in pausa</span>
+                </label>
             </div>
 
             <table id="taskReviewTable">
@@ -8921,14 +8925,16 @@
             const filterCode = document.getElementById('taskReviewFilterCode')?.value.toLowerCase() || '';
             const filterDescription = document.getElementById('taskReviewFilterDescription')?.value.toLowerCase() || '';
             const filterTaskName = document.getElementById('taskReviewFilterTaskName')?.value.toLowerCase() || '';
+            const hidePaused = document.getElementById('taskReviewHidePaused')?.checked || false;
 
             // Raccogli tutte le attività con data flessibile o in pausa
             const reviewTasks = [];
             projects.forEach(project => {
                 if (!project.tasks) return;
                 project.tasks.forEach(task => {
-                    // Include attività con data flessibile o in pausa
-                    if (task.flexibleDate || task.status === 'pausa') {
+                    // Include attività con data flessibile o in pausa (a meno che non sia richiesto di nascondere quelle in pausa)
+                    const isPaused = task.status === 'pausa';
+                    if ((task.flexibleDate || isPaused) && !(hidePaused && isPaused)) {
                         reviewTasks.push({
                             project,
                             task
