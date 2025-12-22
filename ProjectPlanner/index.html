@@ -4359,6 +4359,8 @@
         // Controlla se le nuove assenze sovrapporranno progetti attivi
         function checkAbsenceProjectOverlap(resourceId, newAbsences) {
             const overlaps = [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
             
             projects.forEach(project => {
                 if (!project.tasks) return;
@@ -4369,6 +4371,12 @@
                     // Controlla se questa task ha la risorsa specificata
                     const hasResource = task.resources.some(tr => tr.resourceId == resourceId);
                     if (!hasResource) return;
+                    
+                    // Escludi attività completate, scadute o annullate
+                    if (task.completion === 100 || task.status === 'completata' || task.status === 'annullata') return;
+                    const taskEndDate = new Date(task.endDate);
+                    taskEndDate.setHours(0, 0, 0, 0);
+                    if (taskEndDate < today) return; // Escludi attività scadute
                     
                     // Controlla sovrapposizione con le nuove assenze
                     newAbsences.forEach(absence => {
