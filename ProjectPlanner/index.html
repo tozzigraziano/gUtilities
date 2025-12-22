@@ -2853,6 +2853,10 @@
                     <label>A:</label>
                     <input type="date" id="resourceViewEndDate" onchange="renderResourceView()">
                 </div>
+                <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 15px;">
+                    <input type="checkbox" id="resourceViewHideSuggestions" onchange="renderResourceView()" style="cursor: pointer;">
+                    <span>Nascondi suggerimenti</span>
+                </label>
                 <button onclick="renderResourceView()" class="secondary">🔄 Aggiorna</button>
             </div>
             
@@ -9971,34 +9975,37 @@
             
             if (isColumnView) {
                 // Vista settimanale/mensile: incolonna le attività sotto i giorni
-                // Prima raccogliamo i task flessibili
+                // Prima raccogliamo i task flessibili (se non nascosti)
+                const hideSuggestions = document.getElementById('resourceViewHideSuggestions')?.checked || false;
                 const flexibleTasks = [];
-                projects.forEach(project => {
-                    if (project.tasks) {
-                        project.tasks.forEach(task => {
-                            if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa') {
-                                // Se ha risorse assegnate, mostra solo per quelle risorse
-                                if (hasAssignedResources(task)) {
-                                    const res = task.resources.find(r => r.resourceId == resource.id);
-                                    if (res) {
+                if (!hideSuggestions) {
+                    projects.forEach(project => {
+                        if (project.tasks) {
+                            project.tasks.forEach(task => {
+                                if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa') {
+                                    // Se ha risorse assegnate, mostra solo per quelle risorse
+                                    if (hasAssignedResources(task)) {
+                                        const res = task.resources.find(r => r.resourceId == resource.id);
+                                        if (res) {
+                                            flexibleTasks.push({
+                                                project,
+                                                task,
+                                                percentage: res.percentage
+                                            });
+                                        }
+                                    } else {
+                                        // Nessuna risorsa assegnata: mostra per tutti con carico 100%
                                         flexibleTasks.push({
                                             project,
                                             task,
-                                            percentage: res.percentage
+                                            percentage: 100
                                         });
                                     }
-                                } else {
-                                    // Nessuna risorsa assegnata: mostra per tutti con carico 100%
-                                    flexibleTasks.push({
-                                        project,
-                                        task,
-                                        percentage: 100
-                                    });
                                 }
-                            }
-                        });
-                    }
-                });
+                            });
+                        }
+                    });
+                }
                 
                 if (assignmentsInPeriod.length > 0 || flexibleTasks.length > 0) {
                     const weekTimeline = document.createElement('div');
@@ -10336,8 +10343,9 @@
                 const isSunday = dayOfWeek === 0;
                 const isHoliday = holidays.some(h => h.date === dateStr);
                 
-                // Mostra suggerimenti solo se il giorno è lavorativo valido
-                const shouldShowSuggestions = !isAbsentOnDate && !isSaturday && !isSunday && !isHoliday;
+                // Mostra suggerimenti solo se il giorno è lavorativo valido e non nascosti
+                const hideSuggestions = document.getElementById('resourceViewHideSuggestions')?.checked || false;
+                const shouldShowSuggestions = !hideSuggestions && !isAbsentOnDate && !isSaturday && !isSunday && !isHoliday;
                 
                 const flexibleTasks = [];
                 if (shouldShowSuggestions) {
