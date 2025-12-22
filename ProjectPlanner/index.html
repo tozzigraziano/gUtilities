@@ -2731,6 +2731,18 @@
                         <option value="resources">Per Risorsa</option>
                     </select>
                 </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="checkbox" id="ganttHideCompleted" onchange="renderGantt()">
+                        Nascondi completati
+                    </label>
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="checkbox" id="ganttHideOutOfPeriod" onchange="renderGantt()">
+                        Nascondi attività fuori dal periodo selezionato
+                    </label>
+                </div>
                 <button onclick="renderGantt()" class="secondary">🔄 Aggiorna</button>
                 <button onclick="collapseAllGanttProjects()" class="secondary">▶ Collapse All</button>
                 <button onclick="expandAllGanttProjects()" class="secondary">▼ Expand All</button>
@@ -7922,7 +7934,34 @@
         }
 
         function renderGanttByProjects(container, filteredProjects, days, minDate, maxDate) {
+            const hideCompleted = document.getElementById('ganttHideCompleted')?.checked || false;
+            const hideOutOfPeriod = document.getElementById('ganttHideOutOfPeriod')?.checked || false;
+            
             filteredProjects.forEach(project => {
+                // Verifica se ci sono attività da mostrare
+                let hasVisibleTasks = false;
+                if (project.tasks && project.tasks.length > 0) {
+                    hasVisibleTasks = project.tasks.some(task => {
+                        if (!task.startDate || !task.endDate) return false;
+                        if (hideCompleted && task.completion === 100) return false;
+                        
+                        // Filtra attività fuori dal periodo
+                        if (hideOutOfPeriod) {
+                            const taskStart = new Date(task.startDate);
+                            const taskEnd = new Date(task.endDate);
+                            // L'attività è visibile se ha almeno un giorno nel periodo
+                            if (taskEnd < minDate || taskStart > maxDate) return false;
+                        }
+                        
+                        return true;
+                    });
+                }
+                
+                // Se non ci sono attività visibili, salta il progetto
+                if (!hasVisibleTasks) {
+                    return;
+                }
+                
                 // Verifica se ci sono attività con sabato/domenica/festivo lavorativo
                 let workFlags = [];
                 if (project.tasks) {
@@ -7964,6 +8003,20 @@
                 if (project.tasks && project.tasks.length > 0) {
                     project.tasks.forEach(task => {
                         if (task.startDate && task.endDate) {
+                            // Salta le attività completate se il filtro è attivo
+                            if (hideCompleted && task.completion === 100) {
+                                return;
+                            }
+                            
+                            // Salta le attività fuori dal periodo se il filtro è attivo
+                            if (hideOutOfPeriod) {
+                                const taskStart = new Date(task.startDate);
+                                const taskEnd = new Date(task.endDate);
+                                if (taskEnd < minDate || taskStart > maxDate) {
+                                    return;
+                                }
+                            }
+                            
                             const taskRow = createGanttRow(`  ▪ ${task.name}`, days, 'task', project.id);
                             container.appendChild(taskRow);
                             
@@ -7987,11 +8040,27 @@
 
         function renderGanttByResources(container, filteredProjects, days, minDate, maxDate) {
             const resourceTasks = {};
+            const hideCompleted = document.getElementById('ganttHideCompleted')?.checked || false;
+            const hideOutOfPeriod = document.getElementById('ganttHideOutOfPeriod')?.checked || false;
 
             // Raggruppa task per risorsa e poi per progetto
             filteredProjects.forEach(project => {
                 if (project.tasks) {
                     project.tasks.forEach(task => {
+                        // Salta le attività completate se il filtro è attivo
+                        if (hideCompleted && task.completion === 100) {
+                            return;
+                        }
+                        
+                        // Salta le attività fuori dal periodo se il filtro è attivo
+                        if (hideOutOfPeriod && task.startDate && task.endDate) {
+                            const taskStart = new Date(task.startDate);
+                            const taskEnd = new Date(task.endDate);
+                            if (taskEnd < minDate || taskStart > maxDate) {
+                                return;
+                            }
+                        }
+                        
                         if (task.resources && task.startDate && task.endDate) {
                             task.resources.forEach(res => {
                                 const resource = resources.find(r => r.id == res.resourceId);
