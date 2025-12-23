@@ -10162,15 +10162,22 @@
                             return checkDate >= absStart && checkDate <= absEnd;
                         });
                         
-                        // Filtra attività per questo giorno SOLO SE è un giorno lavorativo
-                        const dayAssignments = (isSaturday || isSunday || isHoliday || isAbsent) ? [] : assignmentsInPeriod.filter(assignment => {
+                        // Filtra attività per questo giorno considerando se l'attività specifica lavora nel weekend/festivo
+                        const dayAssignments = assignmentsInPeriod.filter(assignment => {
                             const taskStart = new Date(assignment.startDate);
                             const taskEnd = new Date(assignment.endDate);
                             const checkDateInner = new Date(currentDate);
                             taskStart.setHours(0, 0, 0, 0);
                             taskEnd.setHours(23, 59, 59, 999);
                             checkDateInner.setHours(12, 0, 0, 0);
-                            return checkDateInner >= taskStart && checkDateInner <= taskEnd;
+                            
+                            // Verifica se la data è nel range dell'attività
+                            if (!(checkDateInner >= taskStart && checkDateInner <= taskEnd)) {
+                                return false;
+                            }
+                            
+                            // Verifica se l'attività può lavorare in questo giorno specifico
+                            return isWorkingDay(currentDate, assignment.task);
                         });
                         
                         // Aggiungi ogni attività come card compatta
