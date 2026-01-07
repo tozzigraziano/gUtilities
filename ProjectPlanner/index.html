@@ -6648,7 +6648,7 @@
                     // Calcola la data di fine: applica l'offset alla data collegata
                     // Se collegato a milestone o fine di un task, sottrai -1 per finire il giorno prima
                     // Se collegato all'inizio di un task, usa l'offset direttamente (già include -1)
-                    const adjustedOffset = (type === 'milestone' || type === 'end') ? endOffset - 1 : endOffset;
+                    const adjustedOffset = (type === 'milestone' || type === 'start') ? endOffset - 1 : endOffset;
                     const calculatedEnd = calculateDateWithOffset(linkedDate, adjustedOffset, saturdayWork, sundayWork, holidayWork, assignedResources);
                     endDateField.value = calculatedEnd;
                     
