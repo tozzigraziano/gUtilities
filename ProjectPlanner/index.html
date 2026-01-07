@@ -3842,6 +3842,10 @@
             if (tabName === 'taskReview') {
                 renderTaskReview();
             }
+            // Mostra la vista iniziale con l'elenco progetti quando si apre la tab Progetti
+            if (tabName === 'projects') {
+                closeProjectDetails();
+            }
         }
 
         // === CHECKLIST MANAGEMENT ===
