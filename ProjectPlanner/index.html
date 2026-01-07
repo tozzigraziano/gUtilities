@@ -2341,6 +2341,7 @@
             
             <div class="action-bar">
                 <button onclick="openProjectModal()">➕ Nuovo Progetto</button>
+                <button onclick="showProjectsStatistics()" class="secondary">📊 Statistiche Generali</button>
                 <div style="display: flex; gap: 15px; align-items: center; margin-left: auto; flex-wrap: nowrap;">
                     <label style="white-space: nowrap;">
                         Ordina per:
@@ -2392,7 +2393,7 @@
                         <th>Descrizione</th>
                         <th>Data Inizio</th>
                         <th>Data Fine</th>
-                        <th>Attività</th>
+                        <th>Attività Rimaste</th>
                         <th style="width: 40px;">Bug</th>
                         <th>Completamento</th>
                         <th>Azioni</th>
@@ -6346,7 +6347,7 @@
                 
                 const taskCount = project.tasks ? project.tasks.length : 0;
                 const incompleteTasks = project.tasks ? project.tasks.filter(t => t.completion < 100 && t.status !== 'completata').length : 0;
-                const taskCountDisplay = `${incompleteTasks}/${taskCount}`;
+                const taskCountDisplay = `${incompleteTasks}`;
                 const incompleteBarWidth = maxIncompleteTasks > 0 ? (incompleteTasks / maxIncompleteTasks) * 100 : 0;
                 
                 // Calcola bug aperti e in lavorazione separatamente (tutti i bug, non solo critici)
@@ -6394,7 +6395,7 @@
                     <td>
                         <div class="project-progress-container">
                             <div class="project-progress-fill ${progressClass}" style="width: ${stats.completion}%"></div>
-                            <span class="project-progress-text">${stats.completion}%</span>
+                            <span class="project-progress-text">${stats.completion}% (${stats.remainingDays}gg)</span>
                         </div>
                     </td>
                     <td class="action-buttons">
@@ -6412,6 +6413,31 @@
                 
                 tbody.appendChild(tr);
             });
+        }
+
+        function showProjectsStatistics() {
+            const totalProjects = projects.length;
+            let completedProjects = 0;
+            let openProjects = 0;
+            let totalRemainingDays = 0;
+
+            projects.forEach(project => {
+                const stats = calculateProjectStats(project);
+                if (stats.completion >= 100) {
+                    completedProjects++;
+                } else {
+                    openProjects++;
+                }
+                totalRemainingDays += stats.remainingDays;
+            });
+
+            const message = `📊 STATISTICHE GENERALI PROGETTI\n\n` +
+                `📁 Progetti Totali: ${totalProjects}\n` +
+                `✅ Progetti Completati: ${completedProjects}\n` +
+                `🔄 Progetti Aperti: ${openProjects}\n\n` +
+                `📅 Giorni Totali Rimasti: ${totalRemainingDays}`;
+
+            alert(message);
         }
 
         function calculateProjectStats(project) {
@@ -6451,8 +6477,9 @@
             }
 
             const completion = totalDuration > 0 ? Math.round((totalWeightedCompletion / totalDuration) * 100) : 100;
+            const remainingDays = totalDuration > 0 ? Math.round(totalDuration - totalWeightedCompletion) : 0;
 
-            return { startDate, endDate, completion };
+            return { startDate, endDate, completion, remainingDays, totalDuration };
         }
 
         // === GESTIONE MILESTONE ===
