@@ -489,6 +489,84 @@
             min-height: 100px;
         }
 
+        /* Rich Text Editor Styles */
+        .rich-text-toolbar {
+            display: flex;
+            gap: 5px;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            flex-wrap: wrap;
+        }
+
+        .rich-text-toolbar button {
+            padding: 6px 10px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            min-width: 32px;
+            margin: 0;
+        }
+
+        .rich-text-toolbar button:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .rich-text-toolbar button.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .rich-text-editor {
+            min-height: 100px;
+            max-width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 4px 4px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            outline: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
+        }
+
+        .rich-text-editor:focus {
+            border-color: var(--accent-color);
+        }
+
+        .rich-text-editor p {
+            margin: 0 0 8px 0;
+        }
+
+        .rich-text-editor p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Highlight style for better visibility in dark mode */
+        mark {
+            background-color: #FFFF00;
+            color: #000000;
+            padding: 1px 2px;
+        }
+
+        [data-theme="dark"] mark {
+            background-color: #009688;
+            color: #ffffff;
+        }
+
         button {
             padding: 6px 12px;
             background-color: var(--accent-color);
@@ -2373,7 +2451,15 @@
                 <!-- Info Generali -->
                 <h3>📝 Info Generali</h3>
                 <div style="margin-bottom: 20px;">
-                    <textarea id="projectGeneralInfo" placeholder="Note, informazioni generali sul progetto..." style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary); font-family: inherit; resize: vertical;" oninput="saveProjectGeneralInfo()"></textarea>
+                    <div class="rich-text-toolbar">
+                        <button type="button" onclick="formatText('projectGeneralInfo', 'bold')" title="Grassetto"><b>B</b></button>
+                        <button type="button" onclick="formatText('projectGeneralInfo', 'italic')" title="Corsivo"><i>I</i></button>
+                        <button type="button" onclick="formatText('projectGeneralInfo', 'underline')" title="Sottolineato"><u>U</u></button>
+                        <button type="button" onclick="formatText('projectGeneralInfo', 'strikeThrough')" title="Barrato"><s>S</s></button>
+                        <button type="button" onclick="highlightText('projectGeneralInfo')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
+                        <button type="button" onclick="formatText('projectGeneralInfo', 'removeFormat')" title="Rimuovi formattazione">✕</button>
+                    </div>
+                    <div id="projectGeneralInfo" class="rich-text-editor" contenteditable="true" data-placeholder="Note, informazioni generali sul progetto..." oninput="saveProjectGeneralInfo()"></div>
                 </div>
 
                 <!-- Aggiornamenti -->
@@ -3573,7 +3659,17 @@
                 </div>
                 <div class="form-group">
                     <label for="offerNotes">Note</label>
-                    <textarea id="offerNotes" rows="4"></textarea>
+                    <div style="flex: 1;">
+                        <div class="rich-text-toolbar">
+                            <button type="button" onclick="formatText('offerNotes', 'bold')" title="Grassetto"><b>B</b></button>
+                            <button type="button" onclick="formatText('offerNotes', 'italic')" title="Corsivo"><i>I</i></button>
+                            <button type="button" onclick="formatText('offerNotes', 'underline')" title="Sottolineato"><u>U</u></button>
+                            <button type="button" onclick="formatText('offerNotes', 'strikeThrough')" title="Barrato"><s>S</s></button>
+                            <button type="button" onclick="highlightText('offerNotes')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
+                            <button type="button" onclick="formatText('offerNotes', 'removeFormat')" title="Rimuovi formattazione">✕</button>
+                        </div>
+                        <div id="offerNotes" class="rich-text-editor" contenteditable="true" data-placeholder="Note aggiuntive sull'offerta..."></div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -3653,15 +3749,45 @@
                 </div>
                 <div class="form-group">
                     <label for="meetingTopics">Argomenti Discussi</label>
-                    <textarea id="meetingTopics" rows="4" placeholder="Cosa si è discusso durante la riunione..."></textarea>
+                    <div style="flex: 1;">
+                        <div class="rich-text-toolbar">
+                            <button type="button" onclick="formatText('meetingTopics', 'bold')" title="Grassetto"><b>B</b></button>
+                            <button type="button" onclick="formatText('meetingTopics', 'italic')" title="Corsivo"><i>I</i></button>
+                            <button type="button" onclick="formatText('meetingTopics', 'underline')" title="Sottolineato"><u>U</u></button>
+                            <button type="button" onclick="formatText('meetingTopics', 'strikeThrough')" title="Barrato"><s>S</s></button>
+                            <button type="button" onclick="highlightText('meetingTopics')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
+                            <button type="button" onclick="formatText('meetingTopics', 'removeFormat')" title="Rimuovi formattazione">✕</button>
+                        </div>
+                        <div id="meetingTopics" class="rich-text-editor" contenteditable="true" data-placeholder="Cosa si è discusso durante la riunione..."></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="meetingDecisions">Decisioni Prese</label>
-                    <textarea id="meetingDecisions" rows="3" placeholder="Quali decisioni sono state prese..."></textarea>
+                    <div style="flex: 1;">
+                        <div class="rich-text-toolbar">
+                            <button type="button" onclick="formatText('meetingDecisions', 'bold')" title="Grassetto"><b>B</b></button>
+                            <button type="button" onclick="formatText('meetingDecisions', 'italic')" title="Corsivo"><i>I</i></button>
+                            <button type="button" onclick="formatText('meetingDecisions', 'underline')" title="Sottolineato"><u>U</u></button>
+                            <button type="button" onclick="formatText('meetingDecisions', 'strikeThrough')" title="Barrato"><s>S</s></button>
+                            <button type="button" onclick="highlightText('meetingDecisions')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
+                            <button type="button" onclick="formatText('meetingDecisions', 'removeFormat')" title="Rimuovi formattazione">✕</button>
+                        </div>
+                        <div id="meetingDecisions" class="rich-text-editor" contenteditable="true" data-placeholder="Quali decisioni sono state prese..."></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="meetingActions">Action Items</label>
-                    <textarea id="meetingActions" rows="3" placeholder="Azioni da intraprendere (una per riga)..."></textarea>
+                    <div style="flex: 1;">
+                        <div class="rich-text-toolbar">
+                            <button type="button" onclick="formatText('meetingActions', 'bold')" title="Grassetto"><b>B</b></button>
+                            <button type="button" onclick="formatText('meetingActions', 'italic')" title="Corsivo"><i>I</i></button>
+                            <button type="button" onclick="formatText('meetingActions', 'underline')" title="Sottolineato"><u>U</u></button>
+                            <button type="button" onclick="formatText('meetingActions', 'strikeThrough')" title="Barrato"><s>S</s></button>
+                            <button type="button" onclick="highlightText('meetingActions')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
+                            <button type="button" onclick="formatText('meetingActions', 'removeFormat')" title="Rimuovi formattazione">✕</button>
+                        </div>
+                        <div id="meetingActions" class="rich-text-editor" contenteditable="true" data-placeholder="Azioni da intraprendere (una per riga)..."></div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -5335,16 +5461,118 @@
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
             
-            document.getElementById('projectGeneralInfo').value = project.generalInfo || '';
+            document.getElementById('projectGeneralInfo').innerHTML = project.generalInfo || '';
         }
         
         function saveProjectGeneralInfo() {
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
             
-            project.generalInfo = document.getElementById('projectGeneralInfo').value;
+            project.generalInfo = document.getElementById('projectGeneralInfo').innerHTML;
             saveToIndexedDB('projects', projects);
         }
+        
+        // ========================================
+        // RICH TEXT EDITOR FUNCTIONS
+        // ========================================
+        
+        function formatText(editorId, command, value = null) {
+            const editor = document.getElementById(editorId);
+            editor.focus();
+            
+            if (value) {
+                document.execCommand(command, false, value);
+            } else {
+                document.execCommand(command, false, null);
+            }
+        }
+        
+        function highlightText(editorId) {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const highlightColor = currentTheme === 'dark' ? '#009688' : '#FFFF00';
+            formatText(editorId, 'hiliteColor', highlightColor);
+        }
+        
+        // Gestione placeholder per rich text editor
+        document.addEventListener('DOMContentLoaded', function() {
+            const richTextEditors = document.querySelectorAll('.rich-text-editor[contenteditable="true"]');
+            
+            richTextEditors.forEach(editor => {
+                // Mostra placeholder se vuoto
+                const updatePlaceholder = () => {
+                    if (editor.textContent.trim() === '') {
+                        editor.classList.add('empty');
+                    } else {
+                        editor.classList.remove('empty');
+                    }
+                };
+                
+                // Stile placeholder
+                const placeholder = editor.getAttribute('data-placeholder');
+                if (placeholder) {
+                    const style = document.createElement('style');
+                    style.textContent = `.rich-text-editor[contenteditable="true"].empty:before { content: "${placeholder}"; color: var(--text-tertiary); opacity: 0.6; pointer-events: none; position: absolute; }`;
+                    document.head.appendChild(style);
+                    editor.style.position = 'relative';
+                }
+                
+                // Gestione paste per pulire formattazione esterna
+                editor.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    
+                    // Ottieni l'HTML dal clipboard
+                    let html = e.clipboardData.getData('text/html');
+                    
+                    // Se non c'è HTML, usa il plain text
+                    if (!html) {
+                        const text = e.clipboardData.getData('text/plain');
+                        document.execCommand('insertText', false, text);
+                        return;
+                    }
+                    
+                    // Crea un elemento temporaneo per pulire l'HTML
+                    const temp = document.createElement('div');
+                    temp.innerHTML = html;
+                    
+                    // Rimuovi script e style
+                    temp.querySelectorAll('script, style').forEach(el => el.remove());
+                    
+                    // Rimuovi attributi pericolosi ma mantieni i tag di formattazione
+                    temp.querySelectorAll('*').forEach(el => {
+                        // Mantieni solo i tag di formattazione base
+                        const allowedTags = ['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'MARK', 'SPAN', 'P', 'BR', 'DIV'];
+                        
+                        if (!allowedTags.includes(el.tagName)) {
+                            // Sostituisci tag non permessi con il loro contenuto
+                            el.replaceWith(...el.childNodes);
+                        } else {
+                            // Rimuovi tutti gli attributi tranne style per color (colore testo)
+                            const attrs = Array.from(el.attributes);
+                            attrs.forEach(attr => {
+                                if (attr.name === 'style') {
+                                    // Mantieni solo color
+                                    const textColor = el.style.color;
+                                    el.removeAttribute('style');
+                                    if (textColor) {
+                                        el.style.color = textColor;
+                                    }
+                                } else {
+                                    el.removeAttribute(attr.name);
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Inserisci l'HTML pulito
+                    document.execCommand('insertHTML', false, temp.innerHTML);
+                });
+                
+                editor.addEventListener('input', updatePlaceholder);
+                editor.addEventListener('focus', updatePlaceholder);
+                editor.addEventListener('blur', updatePlaceholder);
+                updatePlaceholder();
+            });
+        });
 
         // ========================================
         // FUNZIONI PER AGGIORNAMENTI
@@ -5590,7 +5818,13 @@
             document.getElementById('offerEstimate').disabled = isViewOnly;
             document.getElementById('offerValue').disabled = isViewOnly;
             document.getElementById('offerStatus').disabled = isViewOnly;
-            document.getElementById('offerNotes').disabled = isViewOnly;
+            document.getElementById('offerNotes').contentEditable = !isViewOnly;
+            
+            // Nascondi toolbar se viewOnly
+            const toolbars = document.querySelectorAll('#offerModal .rich-text-toolbar');
+            toolbars.forEach(toolbar => {
+                toolbar.style.display = isViewOnly ? 'none' : 'flex';
+            });
             
             // Nascondi pulsante salva se viewOnly
             const saveBtn = document.querySelector('#offerModal .modal-footer button:last-child');
@@ -5608,7 +5842,7 @@
                 document.getElementById('offerEstimate').value = offer.estimate;
                 document.getElementById('offerValue').value = offer.value || '';
                 document.getElementById('offerStatus').value = offer.status;
-                document.getElementById('offerNotes').value = offer.notes || '';
+                document.getElementById('offerNotes').innerHTML = offer.notes || '';
             } else {
                 document.getElementById('offerModalTitle').textContent = '💼 Nuova Offerta';
                 document.getElementById('offerTitle').value = '';
@@ -5616,7 +5850,7 @@
                 document.getElementById('offerEstimate').value = '';
                 document.getElementById('offerValue').value = '';
                 document.getElementById('offerStatus').value = 'in-preparazione';
-                document.getElementById('offerNotes').value = '';
+                document.getElementById('offerNotes').innerHTML = '';
             }
         }
         
@@ -5634,7 +5868,7 @@
             const estimate = document.getElementById('offerEstimate').value.trim();
             const value = document.getElementById('offerValue').value;
             const status = document.getElementById('offerStatus').value;
-            const notes = document.getElementById('offerNotes').value.trim();
+            const notes = document.getElementById('offerNotes').innerHTML;
             
             if (!title || !date || !estimate || !status) {
                 alert('⚠️ Compila tutti i campi obbligatori');
@@ -5918,9 +6152,15 @@
             document.getElementById('meetingDate').disabled = isViewOnly;
             document.getElementById('meetingSubject').disabled = isViewOnly;
             document.getElementById('meetingParticipants').disabled = isViewOnly;
-            document.getElementById('meetingTopics').disabled = isViewOnly;
-            document.getElementById('meetingDecisions').disabled = isViewOnly;
-            document.getElementById('meetingActions').disabled = isViewOnly;
+            document.getElementById('meetingTopics').contentEditable = !isViewOnly;
+            document.getElementById('meetingDecisions').contentEditable = !isViewOnly;
+            document.getElementById('meetingActions').contentEditable = !isViewOnly;
+            
+            // Nascondi toolbar se viewOnly
+            const toolbars = document.querySelectorAll('#meetingModal .rich-text-toolbar');
+            toolbars.forEach(toolbar => {
+                toolbar.style.display = isViewOnly ? 'none' : 'flex';
+            });
             
             // Nascondi pulsante salva se viewOnly
             const saveBtn = document.querySelector('#meetingModal .modal-footer button:last-child');
@@ -5937,17 +6177,17 @@
                 document.getElementById('meetingDate').value = meeting.date;
                 document.getElementById('meetingSubject').value = meeting.subject;
                 document.getElementById('meetingParticipants').value = meeting.participants;
-                document.getElementById('meetingTopics').value = meeting.topics || '';
-                document.getElementById('meetingDecisions').value = meeting.decisions || '';
-                document.getElementById('meetingActions').value = meeting.actions || '';
+                document.getElementById('meetingTopics').innerHTML = meeting.topics || '';
+                document.getElementById('meetingDecisions').innerHTML = meeting.decisions || '';
+                document.getElementById('meetingActions').innerHTML = meeting.actions || '';
             } else {
                 document.getElementById('meetingModalTitle').textContent = '👥 Nuova Riunione';
                 document.getElementById('meetingDate').value = formatDateLocal(new Date());
                 document.getElementById('meetingSubject').value = '';
                 document.getElementById('meetingParticipants').value = '';
-                document.getElementById('meetingTopics').value = '';
-                document.getElementById('meetingDecisions').value = '';
-                document.getElementById('meetingActions').value = '';
+                document.getElementById('meetingTopics').innerHTML = '';
+                document.getElementById('meetingDecisions').innerHTML = '';
+                document.getElementById('meetingActions').innerHTML = '';
             }
         }
         
@@ -5963,9 +6203,9 @@
             const date = document.getElementById('meetingDate').value;
             const subject = document.getElementById('meetingSubject').value.trim();
             const participants = document.getElementById('meetingParticipants').value.trim();
-            const topics = document.getElementById('meetingTopics').value.trim();
-            const decisions = document.getElementById('meetingDecisions').value.trim();
-            const actions = document.getElementById('meetingActions').value.trim();
+            const topics = document.getElementById('meetingTopics').innerHTML;
+            const decisions = document.getElementById('meetingDecisions').innerHTML;
+            const actions = document.getElementById('meetingActions').innerHTML;
             
             if (!date || !subject || !participants) {
                 alert('⚠️ Compila tutti i campi obbligatori');
