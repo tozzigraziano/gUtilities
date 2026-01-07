@@ -6417,8 +6417,8 @@
         function calculateProjectStats(project) {
             let startDate = null;
             let endDate = null;
-            let totalCompletion = 0;
-            let taskCount = 0;
+            let totalWeightedCompletion = 0;
+            let totalDuration = 0;
 
             // Calculate from milestones
             if (project.milestones && project.milestones.length > 0) {
@@ -6437,12 +6437,20 @@
                     if (task.endDate) {
                         if (!endDate || task.endDate > endDate) endDate = task.endDate;
                     }
-                    totalCompletion += parseInt(task.completion || 0);
-                    taskCount++;
+                    
+                    // Calcola la durata dell'attività in giorni (default 1 se non specificata)
+                    const duration = parseInt(task.duration || 1);
+                    const completion = parseInt(task.completion || 0);
+                    
+                    // Calcola i giorni completati per questa attività
+                    const completedDays = (duration * completion) / 100;
+                    
+                    totalWeightedCompletion += completedDays;
+                    totalDuration += duration;
                 });
             }
 
-            const completion = taskCount > 0 ? Math.round(totalCompletion / taskCount) : 100;
+            const completion = totalDuration > 0 ? Math.round((totalWeightedCompletion / totalDuration) * 100) : 100;
 
             return { startDate, endDate, completion };
         }
