@@ -394,23 +394,51 @@
         }
 
         .form-group {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        
+        /* Form-group con layout flex solo per i modal semplici (non per taskModal) */
+        #offerModal .form-group,
+        #issueModal .form-group,
+        #meetingModal .form-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
         }
 
         label {
             display: inline-block;
             width: 150px;
+            min-width: 10px;
             font-weight: 600;
             color: var(--text-tertiary);
-            font-size: 12px;
+            font-size: 13px;
+        }
+        
+        /* Label più spaziata per i modal con flex layout */
+        #offerModal .form-group label,
+        #issueModal .form-group label,
+        #meetingModal .form-group label {
+            padding-top: 8px;
         }
 
         input[type="text"],
+        select,
+        textarea {
+            padding: 2px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            font-size: 12px;
+            width: 100%;
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+        }
+
         input[type="date"],
         input[type="number"],
         select,
         textarea {
-            padding: 5px;
+            padding: 2px;
             border: 1px solid var(--border-color);
             border-radius: 3px;
             font-size: 12px;
@@ -418,15 +446,47 @@
             background-color: var(--input-bg);
             color: var(--text-primary);
         }
+        
+        /* Input più larghi solo per i modal semplici */
+        #offerModal input[type="text"],
+        #offerModal input[type="date"],
+        #offerModal input[type="number"],
+        #offerModal select,
+        #offerModal textarea,
+        #issueModal input[type="text"],
+        #issueModal input[type="date"],
+        #issueModal input[type="number"],
+        #issueModal select,
+        #issueModal textarea,
+        #meetingModal input[type="text"],
+        #meetingModal input[type="date"],
+        #meetingModal input[type="number"],
+        #meetingModal select,
+        #meetingModal textarea {
+            padding: 2px;
+            width: 100%;
+            max-width: 100%;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
 
         input[type="checkbox"] {
             margin-left: 8px;
         }
 
         textarea {
-            width: 500px;
-            min-height: 60px;
+            width: 100%;
+            min-height: 120px;
             resize: vertical;
+        }
+        
+        /* Textarea più larghe solo per i modal semplici */
+        #offerModal textarea,
+        #issueModal textarea,
+        #meetingModal textarea {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100px;
         }
 
         button {
@@ -545,13 +605,13 @@
 
         .inline-group label {
             width: auto;
-            margin-right: 10px;
+            margin-right: 0px;
         }
 
         .inline-group input[type="text"],
         .inline-group input[type="date"],
         .inline-group input[type="number"] {
-            width: 150px;
+            width: 100px;
         }
 
         .status-not-assigned {
@@ -1989,16 +2049,16 @@
             padding: 0;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            width: 90%;
-            max-width: 1600px;
+            width: 95%;
+            max-width: 1800px;
             box-shadow: 0 4px 20px var(--shadow);
             animation: modalSlideDown 0.3s ease-out;
         }
         
         .modal-body-two-columns {
             display: grid;
-            grid-template-columns: 1fr 800px;
-            gap: 20px;
+            grid-template-columns: 60% 39%;
+            gap: 10px;
         }
         
         .modal-main-column {
@@ -2070,8 +2130,8 @@
         }
 
         .modal-body {
-            padding: 20px;
-            max-height: 70vh;
+            padding: 10px 10px;
+            max-height: 75vh;
             overflow-y: auto;
         }
         
@@ -3238,12 +3298,22 @@
                     <div class="form-group">
                         <label>Durata (giorni):</label>
                         <input type="number" id="taskDuration" min="1" value="1">
+                        <input type="checkbox" id="taskFlexibleDate" onchange="toggleFlexibleDate()">
+                        <label style="width: auto;" for="taskFlexibleDate">Data Flessibile (proposta automatica quando risorsa libera)</label>
                     </div>
                     <div class="form-group">
                         <label></label>
                         <div class="inline-group">
-                            <input type="checkbox" id="taskFlexibleDate" onchange="toggleFlexibleDate()">
-                            <label for="taskFlexibleDate">Data Flessibile (proposta automatica quando risorsa libera)</label>
+                            <input type="checkbox" id="taskSaturdayWork">
+                            <label for="taskSaturdayWork">Sabato Lavorativo</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskSundayWork">
+                            <label for="taskSundayWork">Domenica Lavorativa</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskHolidayWork">
+                            <label for="taskHolidayWork">Festivi Lavorativi</label>
                         </div>
                     </div>
                     <div class="form-group" id="absenceWarningContainer" style="display: none;">
@@ -3266,21 +3336,6 @@
                             <option value="completata">Completata</option>
                             <option value="annullata">Annullata</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label></label>
-                        <div class="inline-group">
-                            <input type="checkbox" id="taskSaturdayWork">
-                            <label for="taskSaturdayWork">Sabato Lavorativo</label>
-                        </div>
-                        <div class="inline-group">
-                            <input type="checkbox" id="taskSundayWork">
-                            <label for="taskSundayWork">Domenica Lavorativa</label>
-                        </div>
-                        <div class="inline-group">
-                            <input type="checkbox" id="taskHolidayWork">
-                            <label for="taskHolidayWork">Festivi Lavorativi</label>
-                        </div>
                     </div>
                     <div class="form-group">
                         <label>Risorse Assegnate:</label>
@@ -3578,7 +3633,7 @@
 
     <!-- Modal Riunione -->
     <div id="meetingModal" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-content">
             <div class="modal-header">
                 <h3 id="meetingModalTitle">👥 Nuova Riunione</h3>
                 <button class="modal-close" onclick="closeMeetingModal()">&times;</button>
