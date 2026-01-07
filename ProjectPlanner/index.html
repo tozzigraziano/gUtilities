@@ -1649,6 +1649,15 @@
             }
         }
 
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
         /* Stili per pagina avvisi */
         .warnings-category {
             margin-bottom: 20px;
@@ -2236,6 +2245,7 @@
                         <th></th>
                         <th></th>
                         <th></th>
+                        <th></th>
                     </tr>
                     <tr>
                         <th>Cliente</th>
@@ -2244,6 +2254,7 @@
                         <th>Data Inizio</th>
                         <th>Data Fine</th>
                         <th>Attività</th>
+                        <th style="width: 40px;">Bug</th>
                         <th>Completamento</th>
                         <th>Azioni</th>
                     </tr>
@@ -2255,6 +2266,7 @@
 
             <!-- Sezione Punti di Controllo e Attività -->
             <div id="projectDetails" style="display: none;">
+                <button onclick="closeProjectDetails()" class="secondary" style="margin-bottom: 15px;">← Torna ai Progetti</button>
                 <h2>Dettagli Progetto: <span id="currentProjectName"></span></h2>
                 
                 <!-- Punti di Controllo -->
@@ -2297,7 +2309,93 @@
                     <button onclick="openTaskModal()">➕ Nuova Attività</button>
                 </div>
 
-                <button onclick="closeProjectDetails()" class="secondary">← Torna ai Progetti</button>
+                <!-- Info Generali -->
+                <h3>📝 Info Generali</h3>
+                <div style="margin-bottom: 20px;">
+                    <textarea id="projectGeneralInfo" placeholder="Note, informazioni generali sul progetto..." style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary); font-family: inherit; resize: vertical;" oninput="saveProjectGeneralInfo()"></textarea>
+                </div>
+
+                <!-- Aggiornamenti -->
+                <h3>📋 Aggiornamenti</h3>
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <input type="text" id="updateText" placeholder="Descrizione aggiornamento..." style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary);">
+                        <input type="text" id="updateTags" placeholder="Tag (separati da virgola, es: #cliente, #bug)" style="flex: 1; min-width: 150px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary);">
+                        <button onclick="addProjectUpdate()">➕ Aggiungi</button>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <select id="updateSearchTags" onchange="renderProjectUpdates()" style="width: 250px; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary);">
+                            <option value="">-- Tutto --</option>
+                        </select>
+                    </div>
+                    <table id="projectUpdatesTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 150px;">Data/Ora</th>
+                                <th>Aggiornamento</th>
+                                <th style="width: 200px;">Tag</th>
+                                <th style="width: 80px;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Offerte -->
+                <h3>💼 Offerte</h3>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="openOfferModal()" style="margin-bottom: 10px;">➕ Nuova Offerta</button>
+                    <table id="projectOffersTable">
+                        <thead>
+                            <tr>
+                                <th>Titolo</th>
+                                <th>Data</th>
+                                <th>Stima Tempi</th>
+                                <th>Valore</th>
+                                <th>Stato</th>
+                                <th style="width: 120px;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Issue Tracker -->
+                <h3>🐛 Problemi / Issue</h3>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="openIssueModal()" style="margin-bottom: 10px;">➕ Nuovo Issue</button>
+                    <table id="projectIssuesTable">
+                        <thead>
+                            <tr>
+                                <th>Titolo</th>
+                                <th>Priorità</th>
+                                <th>Assegnatario</th>
+                                <th>Stato</th>
+                                <th>Data Creazione</th>
+                                <th style="width: 120px;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Riunioni/Verbali -->
+                <h3>👥 Riunioni e Verbali</h3>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="openMeetingModal()" style="margin-bottom: 10px;">➕ Nuova Riunione</button>
+                    <table id="projectMeetingsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">Data</th>
+                                <th>Argomento</th>
+                                <th>Partecipanti</th>
+                                <th style="width: 120px;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
             </div>
         </div>
 
@@ -3353,6 +3451,166 @@
                 <span id="copyTaskSelectedCount" style="margin-right: auto; color: var(--accent-color); font-weight: bold;">Nessun progetto selezionato</span>
                 <button onclick="closeCopyTaskModal()" class="secondary">Annulla</button>
                 <button onclick="executeCopyTask()">📋 Copia Attività</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Aggiornamento -->
+    <div id="updateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="updateModalTitle">📋 Visualizza Aggiornamento</h3>
+                <button class="modal-close" onclick="closeUpdateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="updateViewDate">Data/Ora</label>
+                    <input type="text" id="updateViewDate" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="updateViewText">Descrizione</label>
+                    <textarea id="updateViewText" rows="4" disabled></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="updateViewTags">Tag</label>
+                    <input type="text" id="updateViewTags" disabled>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeUpdateModal()" class="secondary">Chiudi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Offerta -->
+    <div id="offerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="offerModalTitle">💼 Nuova Offerta</h3>
+                <button class="modal-close" onclick="closeOfferModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="offerTitle">Titolo Offerta *</label>
+                    <input type="text" id="offerTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="offerDate">Data *</label>
+                    <input type="date" id="offerDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="offerEstimate">Stima Tempi *</label>
+                    <input type="text" id="offerEstimate" placeholder="es: 40 ore, 2 settimane, 3 mesi" required>
+                </div>
+                <div class="form-group">
+                    <label for="offerValue">Valore €</label>
+                    <input type="number" id="offerValue" step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="offerStatus">Stato *</label>
+                    <select id="offerStatus" required>
+                        <option value="in-preparazione">In Preparazione</option>
+                        <option value="inviata">Inviata</option>
+                        <option value="accettata">Accettata</option>
+                        <option value="rifiutata">Rifiutata</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="offerNotes">Note</label>
+                    <textarea id="offerNotes" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeOfferModal()" class="secondary">Annulla</button>
+                <button onclick="saveOffer()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Issue -->
+    <div id="issueModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="issueModalTitle">🐛 Nuovo Issue</h3>
+                <button class="modal-close" onclick="closeIssueModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="issueTitle">Titolo *</label>
+                    <input type="text" id="issueTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="issuePriority">Priorità *</label>
+                    <select id="issuePriority" required>
+                        <option value="bassa">🟢 Bassa</option>
+                        <option value="media" selected>🟡 Media</option>
+                        <option value="alta">🟠 Alta</option>
+                        <option value="critica">🔴 Critica</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issueAssignee">Assegnatario</label>
+                    <select id="issueAssignee">
+                        <option value="">Non assegnato</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issueStatus">Stato *</label>
+                    <select id="issueStatus" required>
+                        <option value="aperto" selected>Aperto</option>
+                        <option value="in-lavorazione">In Lavorazione</option>
+                        <option value="risolto">Risolto</option>
+                        <option value="chiuso">Chiuso</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issueDescription">Descrizione</label>
+                    <textarea id="issueDescription" rows="5"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeIssueModal()" class="secondary">Annulla</button>
+                <button onclick="saveIssue()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Riunione -->
+    <div id="meetingModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 id="meetingModalTitle">👥 Nuova Riunione</h3>
+                <button class="modal-close" onclick="closeMeetingModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="meetingDate">Data *</label>
+                    <input type="date" id="meetingDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="meetingSubject">Argomento *</label>
+                    <input type="text" id="meetingSubject" required>
+                </div>
+                <div class="form-group">
+                    <label for="meetingParticipants">Partecipanti *</label>
+                    <input type="text" id="meetingParticipants" placeholder="es: Mario Rossi, Luigi Verdi" required>
+                </div>
+                <div class="form-group">
+                    <label for="meetingTopics">Argomenti Discussi</label>
+                    <textarea id="meetingTopics" rows="4" placeholder="Cosa si è discusso durante la riunione..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="meetingDecisions">Decisioni Prese</label>
+                    <textarea id="meetingDecisions" rows="3" placeholder="Quali decisioni sono state prese..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="meetingActions">Action Items</label>
+                    <textarea id="meetingActions" rows="3" placeholder="Azioni da intraprendere (una per riga)..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeMeetingModal()" class="secondary">Annulla</button>
+                <button onclick="saveMeeting()">💾 Salva</button>
             </div>
         </div>
     </div>
@@ -4860,7 +5118,13 @@
                 code,
                 description,
                 milestones: currentProjectId ? projects.find(p => p.id === currentProjectId).milestones : [],
-                tasks: currentProjectId ? projects.find(p => p.id === currentProjectId).tasks : []
+                tasks: currentProjectId ? projects.find(p => p.id === currentProjectId).tasks : [],
+                // Nuove funzionalità
+                generalInfo: currentProjectId ? projects.find(p => p.id === currentProjectId).generalInfo : '',
+                updates: currentProjectId ? projects.find(p => p.id === currentProjectId).updates : [],
+                offers: currentProjectId ? projects.find(p => p.id === currentProjectId).offers : [],
+                issues: currentProjectId ? projects.find(p => p.id === currentProjectId).issues : [],
+                meetings: currentProjectId ? projects.find(p => p.id === currentProjectId).meetings : []
             };
 
             if (currentProjectId) {
@@ -4985,6 +5249,13 @@
             
             renderTasks();
             updateResourceSelects();
+            
+            // Renderizza le nuove sezioni
+            renderProjectGeneralInfo();
+            renderProjectUpdates();
+            renderProjectOffers();
+            renderProjectIssues();
+            renderProjectMeetings();
         }
 
         function closeProjectDetails() {
@@ -4994,6 +5265,717 @@
             document.querySelector('#projectsTable').style.display = 'table';
             currentProjectId = null;
             renderProjects();
+        }
+
+        // ========================================
+        // FUNZIONI PER INFO GENERALI
+        // ========================================
+        
+        function renderProjectGeneralInfo() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            document.getElementById('projectGeneralInfo').value = project.generalInfo || '';
+        }
+        
+        function saveProjectGeneralInfo() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            project.generalInfo = document.getElementById('projectGeneralInfo').value;
+            saveToIndexedDB('projects', projects);
+        }
+
+        // ========================================
+        // FUNZIONI PER AGGIORNAMENTI
+        // ========================================
+        
+        function renderProjectUpdates() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            // Popola il select con i tag unici
+            const select = document.getElementById('updateSearchTags');
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Tutto --</option>';
+            const allTags = new Set();
+            if (project.updates) {
+                project.updates.forEach(update => {
+                    if (update.tags) {
+                        update.tags.forEach(tag => allTags.add(tag));
+                    }
+                });
+            }
+            // Ordina i tag alfabeticamente
+            const sortedTags = Array.from(allTags).sort();
+            sortedTags.forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag;
+                option.textContent = tag;
+                select.appendChild(option);
+            });
+            // Ripristina la selezione precedente se ancora valida
+            if (currentValue && sortedTags.includes(currentValue)) {
+                select.value = currentValue;
+            }
+            
+            const tbody = document.querySelector('#projectUpdatesTable tbody');
+            tbody.innerHTML = '';
+            
+            const searchTags = select.value.toLowerCase().trim();
+            
+            let updates = project.updates || [];
+            
+            // Filtra per tag se presente un termine di ricerca
+            if (searchTags) {
+                updates = updates.filter(u => {
+                    const tags = (u.tags || []).join(' ').toLowerCase();
+                    return tags.includes(searchTags);
+                });
+            }
+            
+            // Ordina per data decrescente (più recenti prima)
+            updates = [...updates].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            updates.forEach((update, index) => {
+                const row = tbody.insertRow();
+                const date = new Date(update.timestamp);
+                
+                row.style.cursor = 'pointer';
+                row.onclick = function(e) {
+                    if (e.target.tagName !== 'BUTTON') {
+                        viewUpdate(index);
+                    }
+                };
+                
+                row.innerHTML = `
+                    <td>${date.toLocaleString('it-IT')}</td>
+                    <td>${escapeHtml(update.text)}</td>
+                    <td>${(update.tags || []).map(tag => `<span style="display: inline-block; background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin: 2px;">${escapeHtml(tag)}</span>`).join(' ')}</td>
+                    <td>
+                        <button onclick="event.stopPropagation(); deleteProjectUpdate(${index})" title="Elimina" style="padding: 4px 8px; font-size: 12px;">🗑️</button>
+                    </td>
+                `;
+            });
+            
+            if (updates.length === 0) {
+                const row = tbody.insertRow();
+                row.innerHTML = '<td colspan="4" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessun aggiornamento presente</td>';
+            }
+        }
+        
+        function addProjectUpdate() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            const text = document.getElementById('updateText').value.trim();
+            const tagsInput = document.getElementById('updateTags').value.trim();
+            
+            if (!text) {
+                alert('⚠️ Inserisci una descrizione per l\'aggiornamento');
+                return;
+            }
+            
+            // Parse tags
+            const tags = tagsInput.split(',')
+                .map(t => t.trim())
+                .filter(t => t.length > 0)
+                .map(t => t.startsWith('#') ? t : '#' + t);
+            
+            if (!project.updates) project.updates = [];
+            
+            project.updates.push({
+                timestamp: new Date().toISOString(),
+                text: text,
+                tags: tags
+            });
+            
+            // Pulisci i campi
+            document.getElementById('updateText').value = '';
+            document.getElementById('updateTags').value = '';
+            
+            saveToIndexedDB('projects', projects);
+            renderProjectUpdates();
+        }
+        
+        function deleteProjectUpdate(index) {
+            if (!confirm('Eliminare questo aggiornamento?')) return;
+            
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project || !project.updates) return;
+            
+            // Rimuovi dall'array ordinato quello visualizzato
+            const searchTags = document.getElementById('updateSearchTags').value.toLowerCase().trim();
+            let updates = project.updates || [];
+            
+            if (searchTags) {
+                updates = updates.filter(u => {
+                    const tags = (u.tags || []).join(' ').toLowerCase();
+                    return tags.includes(searchTags);
+                });
+            }
+            
+            updates = [...updates].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            const updateToDelete = updates[index];
+            const originalIndex = project.updates.indexOf(updateToDelete);
+            
+            if (originalIndex > -1) {
+                project.updates.splice(originalIndex, 1);
+            }
+            
+            saveToIndexedDB('projects', projects);
+            renderProjectUpdates();
+        }
+        
+        function viewUpdate(index) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project || !project.updates) return;
+            
+            const searchTags = document.getElementById('updateSearchTags').value.toLowerCase().trim();
+            let updates = project.updates || [];
+            
+            if (searchTags) {
+                updates = updates.filter(u => {
+                    const tags = (u.tags || []).join(' ').toLowerCase();
+                    return tags.includes(searchTags);
+                });
+            }
+            
+            updates = [...updates].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const update = updates[index];
+            
+            const modal = document.getElementById('updateModal');
+            modal.style.display = 'block';
+            
+            const date = new Date(update.timestamp);
+            document.getElementById('updateViewDate').value = date.toLocaleString('it-IT');
+            document.getElementById('updateViewText').value = update.text;
+            document.getElementById('updateViewTags').value = (update.tags || []).join(', ');
+        }
+        
+        function closeUpdateModal() {
+            document.getElementById('updateModal').style.display = 'none';
+        }
+
+        // ========================================
+        // FUNZIONI PER OFFERTE
+        // ========================================
+        
+        let editingOfferId = null;
+        
+        function renderProjectOffers() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            const tbody = document.querySelector('#projectOffersTable tbody');
+            tbody.innerHTML = '';
+            
+            const offers = project.offers || [];
+            
+            offers.forEach((offer, index) => {
+                const row = tbody.insertRow();
+                
+                const statusColors = {
+                    'in-preparazione': '#999',
+                    'inviata': '#2196F3',
+                    'accettata': '#4CAF50',
+                    'rifiutata': '#f44336'
+                };
+                
+                const statusLabels = {
+                    'in-preparazione': '📝 In Preparazione',
+                    'inviata': '📤 Inviata',
+                    'accettata': '✅ Accettata',
+                    'rifiutata': '❌ Rifiutata'
+                };
+                
+                const value = offer.value ? `€ ${parseFloat(offer.value).toFixed(2)}` : '-';
+                
+                row.style.cursor = 'pointer';
+                row.onclick = function(e) {
+                    if (e.target.tagName !== 'BUTTON') {
+                        viewOffer(index);
+                    }
+                };
+                
+                row.innerHTML = `
+                    <td>${escapeHtml(offer.title)}</td>
+                    <td>${formatDateLocal(new Date(offer.date))}</td>
+                    <td>${escapeHtml(offer.estimate)}</td>
+                    <td>${value}</td>
+                    <td><span style="color: ${statusColors[offer.status]}">${statusLabels[offer.status]}</span></td>
+                    <td>
+                        <button onclick="event.stopPropagation(); editOffer(${index})" title="Modifica" style="padding: 4px 8px; font-size: 12px;">✏️</button>
+                        <button onclick="event.stopPropagation(); deleteOffer(${index})" title="Elimina" style="padding: 4px 8px; font-size: 12px;">🗑️</button>
+                    </td>
+                `;
+            });
+            
+            if (offers.length === 0) {
+                const row = tbody.insertRow();
+                row.innerHTML = '<td colspan="6" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessuna offerta presente</td>';
+            }
+        }
+        
+        function openOfferModal(id = null, viewOnly = false) {
+            editingOfferId = id;
+            const modal = document.getElementById('offerModal');
+            modal.style.display = 'block';
+            
+            // Se viewOnly, disabilita tutti i campi
+            const isViewOnly = viewOnly === true;
+            document.getElementById('offerTitle').disabled = isViewOnly;
+            document.getElementById('offerDate').disabled = isViewOnly;
+            document.getElementById('offerEstimate').disabled = isViewOnly;
+            document.getElementById('offerValue').disabled = isViewOnly;
+            document.getElementById('offerStatus').disabled = isViewOnly;
+            document.getElementById('offerNotes').disabled = isViewOnly;
+            
+            // Nascondi pulsante salva se viewOnly
+            const saveBtn = document.querySelector('#offerModal .modal-footer button:last-child');
+            if (saveBtn) {
+                saveBtn.style.display = isViewOnly ? 'none' : 'inline-block';
+            }
+            
+            if (id !== null) {
+                const project = projects.find(p => p.id === currentProjectId);
+                const offer = project.offers[id];
+                
+                document.getElementById('offerModalTitle').textContent = isViewOnly ? '💼 Visualizza Offerta' : '💼 Modifica Offerta';
+                document.getElementById('offerTitle').value = offer.title;
+                document.getElementById('offerDate').value = offer.date;
+                document.getElementById('offerEstimate').value = offer.estimate;
+                document.getElementById('offerValue').value = offer.value || '';
+                document.getElementById('offerStatus').value = offer.status;
+                document.getElementById('offerNotes').value = offer.notes || '';
+            } else {
+                document.getElementById('offerModalTitle').textContent = '💼 Nuova Offerta';
+                document.getElementById('offerTitle').value = '';
+                document.getElementById('offerDate').value = formatDateLocal(new Date());
+                document.getElementById('offerEstimate').value = '';
+                document.getElementById('offerValue').value = '';
+                document.getElementById('offerStatus').value = 'in-preparazione';
+                document.getElementById('offerNotes').value = '';
+            }
+        }
+        
+        function closeOfferModal() {
+            document.getElementById('offerModal').style.display = 'none';
+            editingOfferId = null;
+        }
+        
+        function saveOffer() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            const title = document.getElementById('offerTitle').value.trim();
+            const date = document.getElementById('offerDate').value;
+            const estimate = document.getElementById('offerEstimate').value.trim();
+            const value = document.getElementById('offerValue').value;
+            const status = document.getElementById('offerStatus').value;
+            const notes = document.getElementById('offerNotes').value.trim();
+            
+            if (!title || !date || !estimate || !status) {
+                alert('⚠️ Compila tutti i campi obbligatori');
+                return;
+            }
+            
+            const offer = {
+                title,
+                date,
+                estimate,
+                value: value ? parseFloat(value) : null,
+                status,
+                notes
+            };
+            
+            if (!project.offers) project.offers = [];
+            
+            if (editingOfferId !== null) {
+                project.offers[editingOfferId] = offer;
+            } else {
+                project.offers.push(offer);
+            }
+            
+            saveToIndexedDB('projects', projects);
+            closeOfferModal();
+            renderProjectOffers();
+        }
+        
+        function editOffer(index) {
+            openOfferModal(index);
+        }
+        
+        function viewOffer(index) {
+            openOfferModal(index, true);
+        }
+        
+        function deleteOffer(index) {
+            if (!confirm('Eliminare questa offerta?')) return;
+            
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project || !project.offers) return;
+            
+            project.offers.splice(index, 1);
+            
+            saveToIndexedDB('projects', projects);
+            renderProjectOffers();
+        }
+
+        // ========================================
+        // FUNZIONI PER ISSUE TRACKER
+        // ========================================
+        
+        let editingIssueId = null;
+        
+        function renderProjectIssues() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            const tbody = document.querySelector('#projectIssuesTable tbody');
+            tbody.innerHTML = '';
+            
+            const issues = project.issues || [];
+            
+            issues.forEach((issue, index) => {
+                const row = tbody.insertRow();
+                
+                const priorityColors = {
+                    'bassa': '#4CAF50',
+                    'media': '#FFC107',
+                    'alta': '#FF9800',
+                    'critica': '#f44336'
+                };
+                
+                const priorityIcons = {
+                    'bassa': '🟢',
+                    'media': '🟡',
+                    'alta': '🟠',
+                    'critica': '🔴'
+                };
+                
+                const statusColors = {
+                    'aperto': '#2196F3',
+                    'in-lavorazione': '#FF9800',
+                    'risolto': '#4CAF50',
+                    'chiuso': '#999'
+                };
+                
+                const date = new Date(issue.createdAt);
+                const assignee = issue.assignee ? getResourceName(issue.assignee) : 'Non assegnato';
+                
+                row.style.cursor = 'pointer';
+                row.onclick = function(e) {
+                    if (e.target.tagName !== 'BUTTON') {
+                        viewIssue(index);
+                    }
+                };
+                
+                row.innerHTML = `
+                    <td>${escapeHtml(issue.title)}</td>
+                    <td style="color: ${priorityColors[issue.priority]}">${priorityIcons[issue.priority]} ${issue.priority.charAt(0).toUpperCase() + issue.priority.slice(1)}</td>
+                    <td>${escapeHtml(assignee)}</td>
+                    <td><span style="color: ${statusColors[issue.status]}">${issue.status.charAt(0).toUpperCase() + issue.status.slice(1).replace('-', ' ')}</span></td>
+                    <td>${date.toLocaleDateString('it-IT')}</td>
+                    <td>
+                        <button onclick="event.stopPropagation(); editIssue(${index})" title="Modifica" style="padding: 4px 8px; font-size: 12px;">✏️</button>
+                        <button onclick="event.stopPropagation(); deleteIssue(${index})" title="Elimina" style="padding: 4px 8px; font-size: 12px;">🗑️</button>
+                    </td>
+                `;
+            });
+            
+            if (issues.length === 0) {
+                const row = tbody.insertRow();
+                row.innerHTML = '<td colspan="6" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessun issue presente</td>';
+            }
+        }
+        
+        function openIssueModal(id = null, viewOnly = false) {
+            editingIssueId = id;
+            const modal = document.getElementById('issueModal');
+            modal.style.display = 'block';
+            
+            // Popola select assegnatario con le risorse
+            const select = document.getElementById('issueAssignee');
+            select.innerHTML = '<option value="">Non assegnato</option>';
+            resources.forEach(r => {
+                const fullName = `${r.firstName || ''} ${r.lastName || ''}`.trim();
+                if (fullName) {
+                    select.innerHTML += `<option value="${r.id}">${escapeHtml(fullName)}</option>`;
+                }
+            });
+            
+            // Se viewOnly, disabilita tutti i campi
+            const isViewOnly = viewOnly === true;
+            document.getElementById('issueTitle').disabled = isViewOnly;
+            document.getElementById('issuePriority').disabled = isViewOnly;
+            document.getElementById('issueAssignee').disabled = isViewOnly;
+            document.getElementById('issueStatus').disabled = isViewOnly;
+            document.getElementById('issueDescription').disabled = isViewOnly;
+            
+            // Nascondi pulsante salva se viewOnly
+            const saveBtn = document.querySelector('#issueModal .modal-footer button:last-child');
+            if (saveBtn) {
+                saveBtn.style.display = isViewOnly ? 'none' : 'inline-block';
+            }
+            
+            if (id !== null) {
+                const project = projects.find(p => p.id === currentProjectId);
+                const issue = project.issues[id];
+                
+                document.getElementById('issueModalTitle').textContent = isViewOnly ? '🐛 Visualizza Issue' : '🐛 Modifica Issue';
+                document.getElementById('issueTitle').value = issue.title;
+                document.getElementById('issuePriority').value = issue.priority;
+                document.getElementById('issueAssignee').value = issue.assignee || '';
+                document.getElementById('issueStatus').value = issue.status;
+                document.getElementById('issueDescription').value = issue.description || '';
+            } else {
+                document.getElementById('issueModalTitle').textContent = '🐛 Nuovo Issue';
+                document.getElementById('issueTitle').value = '';
+                document.getElementById('issuePriority').value = 'media';
+                document.getElementById('issueAssignee').value = '';
+                document.getElementById('issueStatus').value = 'aperto';
+                document.getElementById('issueDescription').value = '';
+            }
+        }
+        
+        function closeIssueModal() {
+            document.getElementById('issueModal').style.display = 'none';
+            editingIssueId = null;
+        }
+        
+        function saveIssue() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            const title = document.getElementById('issueTitle').value.trim();
+            const priority = document.getElementById('issuePriority').value;
+            const assignee = document.getElementById('issueAssignee').value;
+            const status = document.getElementById('issueStatus').value;
+            const description = document.getElementById('issueDescription').value.trim();
+            
+            if (!title || !priority || !status) {
+                alert('⚠️ Compila tutti i campi obbligatori');
+                return;
+            }
+            
+            const issue = {
+                title,
+                priority,
+                assignee: assignee || null,
+                status,
+                description,
+                createdAt: editingIssueId !== null ? project.issues[editingIssueId].createdAt : new Date().toISOString()
+            };
+            
+            if (!project.issues) project.issues = [];
+            
+            if (editingIssueId !== null) {
+                project.issues[editingIssueId] = issue;
+            } else {
+                project.issues.push(issue);
+            }
+            
+            saveToIndexedDB('projects', projects);
+            closeIssueModal();
+            renderProjectIssues();
+        }
+        
+        function editIssue(index) {
+            openIssueModal(index);
+        }
+        
+        function viewIssue(index) {
+            openIssueModal(index, true);
+        }
+        
+        function deleteIssue(index) {
+            if (!confirm('Eliminare questo issue?')) return;
+            
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project || !project.issues) return;
+            
+            project.issues.splice(index, 1);
+            
+            saveToIndexedDB('projects', projects);
+            renderProjectIssues();
+        }
+
+        // ========================================
+        // FUNZIONI PER RIUNIONI
+        // ========================================
+        
+        let editingMeetingId = null;
+        
+        function renderProjectMeetings() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            const tbody = document.querySelector('#projectMeetingsTable tbody');
+            tbody.innerHTML = '';
+            
+            let meetings = project.meetings || [];
+            
+            // Ordina per data decrescente
+            meetings = [...meetings].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            meetings.forEach((meeting, index) => {
+                const row = tbody.insertRow();
+                const date = new Date(meeting.date);
+                
+                row.style.cursor = 'pointer';
+                row.onclick = function(e) {
+                    if (e.target.tagName !== 'BUTTON') {
+                        viewMeeting(index);
+                    }
+                };
+                
+                row.innerHTML = `
+                    <td>${date.toLocaleDateString('it-IT')}</td>
+                    <td>${escapeHtml(meeting.subject)}</td>
+                    <td>${escapeHtml(meeting.participants)}</td>
+                    <td>
+                        <button onclick="event.stopPropagation(); editMeeting(${index})" title="Modifica" style="padding: 4px 8px; font-size: 12px;">✏️</button>
+                        <button onclick="event.stopPropagation(); deleteMeeting(${index})" title="Elimina" style="padding: 4px 8px; font-size: 12px;">🗑️</button>
+                    </td>
+                `;
+            });
+            
+            if (meetings.length === 0) {
+                const row = tbody.insertRow();
+                row.innerHTML = '<td colspan="4" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessuna riunione presente</td>';
+            }
+        }
+        
+        function openMeetingModal(id = null, viewOnly = false) {
+            editingMeetingId = id;
+            const modal = document.getElementById('meetingModal');
+            modal.style.display = 'block';
+            
+            // Se viewOnly, disabilita tutti i campi
+            const isViewOnly = viewOnly === true;
+            document.getElementById('meetingDate').disabled = isViewOnly;
+            document.getElementById('meetingSubject').disabled = isViewOnly;
+            document.getElementById('meetingParticipants').disabled = isViewOnly;
+            document.getElementById('meetingTopics').disabled = isViewOnly;
+            document.getElementById('meetingDecisions').disabled = isViewOnly;
+            document.getElementById('meetingActions').disabled = isViewOnly;
+            
+            // Nascondi pulsante salva se viewOnly
+            const saveBtn = document.querySelector('#meetingModal .modal-footer button:last-child');
+            if (saveBtn) {
+                saveBtn.style.display = isViewOnly ? 'none' : 'inline-block';
+            }
+            
+            if (id !== null) {
+                const project = projects.find(p => p.id === currentProjectId);
+                const meetings = [...(project.meetings || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const meeting = meetings[id];
+                
+                document.getElementById('meetingModalTitle').textContent = isViewOnly ? '👥 Visualizza Riunione' : '👥 Modifica Riunione';
+                document.getElementById('meetingDate').value = meeting.date;
+                document.getElementById('meetingSubject').value = meeting.subject;
+                document.getElementById('meetingParticipants').value = meeting.participants;
+                document.getElementById('meetingTopics').value = meeting.topics || '';
+                document.getElementById('meetingDecisions').value = meeting.decisions || '';
+                document.getElementById('meetingActions').value = meeting.actions || '';
+            } else {
+                document.getElementById('meetingModalTitle').textContent = '👥 Nuova Riunione';
+                document.getElementById('meetingDate').value = formatDateLocal(new Date());
+                document.getElementById('meetingSubject').value = '';
+                document.getElementById('meetingParticipants').value = '';
+                document.getElementById('meetingTopics').value = '';
+                document.getElementById('meetingDecisions').value = '';
+                document.getElementById('meetingActions').value = '';
+            }
+        }
+        
+        function closeMeetingModal() {
+            document.getElementById('meetingModal').style.display = 'none';
+            editingMeetingId = null;
+        }
+        
+        function saveMeeting() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            
+            const date = document.getElementById('meetingDate').value;
+            const subject = document.getElementById('meetingSubject').value.trim();
+            const participants = document.getElementById('meetingParticipants').value.trim();
+            const topics = document.getElementById('meetingTopics').value.trim();
+            const decisions = document.getElementById('meetingDecisions').value.trim();
+            const actions = document.getElementById('meetingActions').value.trim();
+            
+            if (!date || !subject || !participants) {
+                alert('⚠️ Compila tutti i campi obbligatori');
+                return;
+            }
+            
+            const meeting = {
+                date,
+                subject,
+                participants,
+                topics,
+                decisions,
+                actions
+            };
+            
+            if (!project.meetings) project.meetings = [];
+            
+            if (editingMeetingId !== null) {
+                const meetings = [...project.meetings].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const meetingToUpdate = meetings[editingMeetingId];
+                const originalIndex = project.meetings.indexOf(meetingToUpdate);
+                project.meetings[originalIndex] = meeting;
+            } else {
+                project.meetings.push(meeting);
+            }
+            
+            saveToIndexedDB('projects', projects);
+            closeMeetingModal();
+            renderProjectMeetings();
+        }
+        
+        function editMeeting(index) {
+            openMeetingModal(index);
+        }
+        
+        function viewMeeting(index) {
+            openMeetingModal(index, true);
+        }
+        
+        function deleteMeeting(index) {
+            if (!confirm('Eliminare questa riunione?')) return;
+            
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project || !project.meetings) return;
+            
+            const meetings = [...project.meetings].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const meetingToDelete = meetings[index];
+            const originalIndex = project.meetings.indexOf(meetingToDelete);
+            
+            if (originalIndex > -1) {
+                project.meetings.splice(originalIndex, 1);
+            }
+            
+            saveToIndexedDB('projects', projects);
+            renderProjectMeetings();
+        }
+        
+        // Helper function per ottenere il nome di una risorsa
+        function getResourceName(resourceId) {
+            const resource = resources.find(r => r.id == resourceId);
+            if (!resource) return 'Sconosciuto';
+            const fullName = `${resource.firstName || ''} ${resource.lastName || ''}`.trim();
+            return fullName || 'Sconosciuto';
+        }
+        
+        // Helper function per escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function renderProjects() {
@@ -5067,6 +6049,26 @@
                 const taskCountDisplay = `${incompleteTasks}/${taskCount}`;
                 const incompleteBarWidth = maxIncompleteTasks > 0 ? (incompleteTasks / maxIncompleteTasks) * 100 : 0;
                 
+                // Calcola bug aperti e in lavorazione separatamente (tutti i bug, non solo critici)
+                const openBugs = project.issues ? project.issues.filter(i => 
+                    i.status === 'aperto'
+                ).length : 0;
+                const inProgressBugs = project.issues ? project.issues.filter(i => 
+                    i.status === 'in-lavorazione'
+                ).length : 0;
+                
+                // Costruisci la visualizzazione dei bug
+                let bugDisplay = '';
+                if (openBugs > 0 && inProgressBugs > 0) {
+                    bugDisplay = `<span style="color: #d32f2f; font-weight: bold;">${openBugs}</span>/<span style="color: #f57c00; font-weight: bold;">${inProgressBugs}</span>`;
+                } else if (openBugs > 0) {
+                    bugDisplay = `<span style="color: #d32f2f; font-weight: bold;">${openBugs}</span>`;
+                } else if (inProgressBugs > 0) {
+                    bugDisplay = `<span style="color: #f57c00; font-weight: bold;">${inProgressBugs}</span>`;
+                } else {
+                    bugDisplay = '<span style="color: var(--text-tertiary);">-</span>';
+                }
+                
                 const tr = document.createElement('tr');
                 tr.className = 'project-item';
                 tr.style.cursor = 'pointer';
@@ -5088,6 +6090,7 @@
                             <div style="position: absolute; bottom: 0; left: 0; height: 3px; width: ${incompleteBarWidth}%; background: #2196F3; border-radius: 2px;"></div>
                         </div>
                     </td>
+                    <td style="text-align: center; padding: 8px;" title="Bug critici: rosso=aperti, arancione=in lavorazione">${bugDisplay}</td>
                     <td>
                         <div class="project-progress-container">
                             <div class="project-progress-fill ${progressClass}" style="width: ${stats.completion}%"></div>
