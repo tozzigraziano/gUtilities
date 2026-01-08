@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pianificazione Risorse e Progetti</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='20' width='30' height='8' rx='2' fill='white'/><rect x='45' y='20' width='45' height='8' rx='2' fill='white'/><rect x='10' y='38' width='50' height='8' rx='2' fill='white'/><rect x='10' y='56' width='35' height='8' rx='2' fill='white'/><rect x='50' y='56' width='30' height='8' rx='2' fill='white'/><rect x='10' y='74' width='40' height='8' rx='2' fill='white'/><line x1='5' y1='15' x2='5' y2='90' stroke='white' stroke-width='2'/><line x1='5' y1='90' x2='95' y2='90' stroke='white' stroke-width='2'/></svg>">
     <style>
         :root {
             --bg-primary: #f5f5f5;
@@ -39,12 +38,12 @@
             --text-secondary: #d0d0d0;
             --text-tertiary: #b0b0b0;
             --border-color: #404040;
-            --accent-color: #575757;
-            --accent-hover: #000000;
-            --danger-color: #4d2221;
-            --danger-hover: #30100f;
-            --info-color: #1d4363;
-            --info-hover: #072035;
+            --accent-color: #66bb6a;
+            --accent-hover: #4caf50;
+            --danger-color: #ef5350;
+            --danger-hover: #e53935;
+            --info-color: #42a5f5;
+            --info-hover: #2196f3;
             --warning-bg: #4a4a2a;
             --warning-border: #ffa000;
             --input-bg: #3a3a3a;
@@ -395,51 +394,23 @@
         }
 
         .form-group {
-            margin-bottom: 12px;
-        }
-        
-        /* Form-group con layout flex solo per i modal semplici (non per taskModal) */
-        #offerModal .form-group,
-        #issueModal .form-group,
-        #meetingModal .form-group {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
+            margin-bottom: 8px;
         }
 
         label {
             display: inline-block;
             width: 150px;
-            min-width: 10px;
             font-weight: 600;
             color: var(--text-tertiary);
-            font-size: 13px;
-        }
-        
-        /* Label più spaziata per i modal con flex layout */
-        #offerModal .form-group label,
-        #issueModal .form-group label,
-        #meetingModal .form-group label {
-            padding-top: 8px;
+            font-size: 12px;
         }
 
         input[type="text"],
-        select,
-        textarea {
-            padding: 2px;
-            border: 1px solid var(--border-color);
-            border-radius: 3px;
-            font-size: 12px;
-            width: 100%;
-            background-color: var(--input-bg);
-            color: var(--text-primary);
-        }
-
         input[type="date"],
         input[type="number"],
         select,
         textarea {
-            padding: 2px;
+            padding: 5px;
             border: 1px solid var(--border-color);
             border-radius: 3px;
             font-size: 12px;
@@ -447,125 +418,15 @@
             background-color: var(--input-bg);
             color: var(--text-primary);
         }
-        
-        /* Input più larghi solo per i modal semplici */
-        #offerModal input[type="text"],
-        #offerModal input[type="date"],
-        #offerModal input[type="number"],
-        #offerModal select,
-        #offerModal textarea,
-        #issueModal input[type="text"],
-        #issueModal input[type="date"],
-        #issueModal input[type="number"],
-        #issueModal select,
-        #issueModal textarea,
-        #meetingModal input[type="text"],
-        #meetingModal input[type="date"],
-        #meetingModal input[type="number"],
-        #meetingModal select,
-        #meetingModal textarea {
-            padding: 2px;
-            width: 100%;
-            max-width: 100%;
-            font-size: 13px;
-            box-sizing: border-box;
-        }
 
         input[type="checkbox"] {
             margin-left: 8px;
         }
 
         textarea {
-            width: 100%;
-            min-height: 120px;
+            width: 500px;
+            min-height: 60px;
             resize: vertical;
-        }
-        
-        /* Textarea più larghe solo per i modal semplici */
-        #offerModal textarea,
-        #issueModal textarea,
-        #meetingModal textarea {
-            width: 100%;
-            max-width: 100%;
-            min-height: 100px;
-        }
-
-        /* Rich Text Editor Styles */
-        .rich-text-toolbar {
-            display: flex;
-            gap: 5px;
-            padding: 8px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-bottom: none;
-            border-radius: 4px 4px 0 0;
-            flex-wrap: wrap;
-        }
-
-        .rich-text-toolbar button {
-            padding: 6px 10px;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            min-width: 32px;
-            margin: 0;
-        }
-
-        .rich-text-toolbar button:hover {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .rich-text-toolbar button.active {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .rich-text-editor {
-            min-height: 100px;
-            max-width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 0 0 4px 4px;
-            background: var(--input-bg);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 13px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            outline: none;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            box-sizing: border-box;
-        }
-
-        .rich-text-editor:focus {
-            border-color: var(--accent-color);
-        }
-
-        .rich-text-editor p {
-            margin: 0 0 8px 0;
-        }
-
-        .rich-text-editor p:last-child {
-            margin-bottom: 0;
-        }
-
-        /* Highlight style for better visibility in dark mode */
-        mark {
-            background-color: #FFFF00;
-            color: #000000;
-            padding: 1px 2px;
-        }
-
-        [data-theme="dark"] mark {
-            background-color: #009688;
-            color: #ffffff;
         }
 
         button {
@@ -684,13 +545,13 @@
 
         .inline-group label {
             width: auto;
-            margin-right: 0px;
+            margin-right: 10px;
         }
 
         .inline-group input[type="text"],
         .inline-group input[type="date"],
         .inline-group input[type="number"] {
-            width: 100px;
+            width: 150px;
         }
 
         .status-not-assigned {
@@ -2128,16 +1989,16 @@
             padding: 0;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            width: 95%;
-            max-width: 1800px;
+            width: 90%;
+            max-width: 1600px;
             box-shadow: 0 4px 20px var(--shadow);
             animation: modalSlideDown 0.3s ease-out;
         }
         
         .modal-body-two-columns {
             display: grid;
-            grid-template-columns: 60% 39%;
-            gap: 10px;
+            grid-template-columns: 1fr 800px;
+            gap: 20px;
         }
         
         .modal-main-column {
@@ -2209,8 +2070,8 @@
         }
 
         .modal-body {
-            padding: 10px 10px;
-            max-height: 75vh;
+            padding: 20px;
+            max-height: 70vh;
             overflow-y: auto;
         }
         
@@ -2257,8 +2118,7 @@
 <body>
     <div class="container">
         <h1>
-            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' style='width: 1.2em; height: 1.2em; vertical-align: middle; margin-right: 0.3em;'><rect x='10' y='20' width='30' height='8' rx='2' fill='currentColor'/><rect x='45' y='20' width='45' height='8' rx='2' fill='currentColor'/><rect x='10' y='38' width='50' height='8' rx='2' fill='currentColor'/><rect x='10' y='56' width='35' height='8' rx='2' fill='currentColor'/><rect x='50' y='56' width='30' height='8' rx='2' fill='currentColor'/><rect x='10' y='74' width='40' height='8' rx='2' fill='currentColor'/><line x1='5' y1='15' x2='5' y2='90' stroke='currentColor' stroke-width='2'/><line x1='5' y1='90' x2='95' y2='90' stroke='currentColor' stroke-width='2'/></svg>
-            Pianificazione Risorse e Progetti
+            📊 Pianificazione Risorse e Progetti
             <button class="theme-toggle" onclick="toggleTheme()" title="Cambia tema">🌓</button>
         </h1>
 
@@ -2343,7 +2203,6 @@
             
             <div class="action-bar">
                 <button onclick="openProjectModal()">➕ Nuovo Progetto</button>
-                <button onclick="showProjectsStatistics()" class="secondary">📊 Statistiche Generali</button>
                 <div style="display: flex; gap: 15px; align-items: center; margin-left: auto; flex-wrap: nowrap;">
                     <label style="white-space: nowrap;">
                         Ordina per:
@@ -2395,7 +2254,7 @@
                         <th>Descrizione</th>
                         <th>Data Inizio</th>
                         <th>Data Fine</th>
-                        <th>Attività Rimaste</th>
+                        <th>Attività</th>
                         <th style="width: 40px;">Bug</th>
                         <th>Completamento</th>
                         <th>Azioni</th>
@@ -2454,15 +2313,7 @@
                 <!-- Info Generali -->
                 <h3>📝 Info Generali</h3>
                 <div style="margin-bottom: 20px;">
-                    <div class="rich-text-toolbar">
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'bold')" title="Grassetto"><b>B</b></button>
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'italic')" title="Corsivo"><i>I</i></button>
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'underline')" title="Sottolineato"><u>U</u></button>
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                        <button type="button" onclick="highlightText('projectGeneralInfo')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'removeFormat')" title="Rimuovi formattazione">✕</button>
-                    </div>
-                    <div id="projectGeneralInfo" class="rich-text-editor" contenteditable="true" data-placeholder="Note, informazioni generali sul progetto..." oninput="saveProjectGeneralInfo()"></div>
+                    <textarea id="projectGeneralInfo" placeholder="Note, informazioni generali sul progetto..." style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary); font-family: inherit; resize: vertical;" oninput="saveProjectGeneralInfo()"></textarea>
                 </div>
 
                 <!-- Aggiornamenti -->
@@ -3086,7 +2937,8 @@
                 </div>
                 <div class="filter-group" id="specificDayRange" style="display: none;">
                     <button onclick="navigateResourceView(-1)" title="Giorno precedente">◀</button>
-                    <input type="date" id="resourceViewSpecificDay" onchange="renderResourceView()" style="width: 150px;">
+                    <input type="date" id="resourceViewSpecificDay" onchange="updateDayOfWeekLabel(); renderResourceView()" style="width: 150px;">
+                    <span id="dayOfWeekLabel" style="font-weight: bold; margin-left: 8px; width: 100px; color: var(--text-secondary);"></span>
                     <button onclick="navigateResourceView(1)" title="Giorno successivo">▶</button>
                     <button onclick="goToCurrentPeriod()" title="Vai a oggi">📅 Oggi</button>
                 </div>
@@ -3387,22 +3239,12 @@
                     <div class="form-group">
                         <label>Durata (giorni):</label>
                         <input type="number" id="taskDuration" min="1" value="1">
-                        <input type="checkbox" id="taskFlexibleDate" onchange="toggleFlexibleDate()">
-                        <label style="width: auto;" for="taskFlexibleDate">Data Flessibile (proposta automatica quando risorsa libera)</label>
                     </div>
                     <div class="form-group">
                         <label></label>
                         <div class="inline-group">
-                            <input type="checkbox" id="taskSaturdayWork">
-                            <label for="taskSaturdayWork">Sabato Lavorativo</label>
-                        </div>
-                        <div class="inline-group">
-                            <input type="checkbox" id="taskSundayWork">
-                            <label for="taskSundayWork">Domenica Lavorativa</label>
-                        </div>
-                        <div class="inline-group">
-                            <input type="checkbox" id="taskHolidayWork">
-                            <label for="taskHolidayWork">Festivi Lavorativi</label>
+                            <input type="checkbox" id="taskFlexibleDate" onchange="toggleFlexibleDate()">
+                            <label for="taskFlexibleDate">Data Flessibile (proposta automatica quando risorsa libera)</label>
                         </div>
                     </div>
                     <div class="form-group" id="absenceWarningContainer" style="display: none;">
@@ -3425,6 +3267,21 @@
                             <option value="completata">Completata</option>
                             <option value="annullata">Annullata</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label></label>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskSaturdayWork">
+                            <label for="taskSaturdayWork">Sabato Lavorativo</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskSundayWork">
+                            <label for="taskSundayWork">Domenica Lavorativa</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskHolidayWork">
+                            <label for="taskHolidayWork">Festivi Lavorativi</label>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Risorse Assegnate:</label>
@@ -3662,17 +3519,7 @@
                 </div>
                 <div class="form-group">
                     <label for="offerNotes">Note</label>
-                    <div style="flex: 1;">
-                        <div class="rich-text-toolbar">
-                            <button type="button" onclick="formatText('offerNotes', 'bold')" title="Grassetto"><b>B</b></button>
-                            <button type="button" onclick="formatText('offerNotes', 'italic')" title="Corsivo"><i>I</i></button>
-                            <button type="button" onclick="formatText('offerNotes', 'underline')" title="Sottolineato"><u>U</u></button>
-                            <button type="button" onclick="formatText('offerNotes', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                            <button type="button" onclick="highlightText('offerNotes')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                            <button type="button" onclick="formatText('offerNotes', 'removeFormat')" title="Rimuovi formattazione">✕</button>
-                        </div>
-                        <div id="offerNotes" class="rich-text-editor" contenteditable="true" data-placeholder="Note aggiuntive sull'offerta..."></div>
-                    </div>
+                    <textarea id="offerNotes" rows="4"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -3732,7 +3579,7 @@
 
     <!-- Modal Riunione -->
     <div id="meetingModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
                 <h3 id="meetingModalTitle">👥 Nuova Riunione</h3>
                 <button class="modal-close" onclick="closeMeetingModal()">&times;</button>
@@ -3752,45 +3599,15 @@
                 </div>
                 <div class="form-group">
                     <label for="meetingTopics">Argomenti Discussi</label>
-                    <div style="flex: 1;">
-                        <div class="rich-text-toolbar">
-                            <button type="button" onclick="formatText('meetingTopics', 'bold')" title="Grassetto"><b>B</b></button>
-                            <button type="button" onclick="formatText('meetingTopics', 'italic')" title="Corsivo"><i>I</i></button>
-                            <button type="button" onclick="formatText('meetingTopics', 'underline')" title="Sottolineato"><u>U</u></button>
-                            <button type="button" onclick="formatText('meetingTopics', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                            <button type="button" onclick="highlightText('meetingTopics')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                            <button type="button" onclick="formatText('meetingTopics', 'removeFormat')" title="Rimuovi formattazione">✕</button>
-                        </div>
-                        <div id="meetingTopics" class="rich-text-editor" contenteditable="true" data-placeholder="Cosa si è discusso durante la riunione..."></div>
-                    </div>
+                    <textarea id="meetingTopics" rows="4" placeholder="Cosa si è discusso durante la riunione..."></textarea>
                 </div>
                 <div class="form-group">
                     <label for="meetingDecisions">Decisioni Prese</label>
-                    <div style="flex: 1;">
-                        <div class="rich-text-toolbar">
-                            <button type="button" onclick="formatText('meetingDecisions', 'bold')" title="Grassetto"><b>B</b></button>
-                            <button type="button" onclick="formatText('meetingDecisions', 'italic')" title="Corsivo"><i>I</i></button>
-                            <button type="button" onclick="formatText('meetingDecisions', 'underline')" title="Sottolineato"><u>U</u></button>
-                            <button type="button" onclick="formatText('meetingDecisions', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                            <button type="button" onclick="highlightText('meetingDecisions')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                            <button type="button" onclick="formatText('meetingDecisions', 'removeFormat')" title="Rimuovi formattazione">✕</button>
-                        </div>
-                        <div id="meetingDecisions" class="rich-text-editor" contenteditable="true" data-placeholder="Quali decisioni sono state prese..."></div>
-                    </div>
+                    <textarea id="meetingDecisions" rows="3" placeholder="Quali decisioni sono state prese..."></textarea>
                 </div>
                 <div class="form-group">
                     <label for="meetingActions">Action Items</label>
-                    <div style="flex: 1;">
-                        <div class="rich-text-toolbar">
-                            <button type="button" onclick="formatText('meetingActions', 'bold')" title="Grassetto"><b>B</b></button>
-                            <button type="button" onclick="formatText('meetingActions', 'italic')" title="Corsivo"><i>I</i></button>
-                            <button type="button" onclick="formatText('meetingActions', 'underline')" title="Sottolineato"><u>U</u></button>
-                            <button type="button" onclick="formatText('meetingActions', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                            <button type="button" onclick="highlightText('meetingActions')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                            <button type="button" onclick="formatText('meetingActions', 'removeFormat')" title="Rimuovi formattazione">✕</button>
-                        </div>
-                        <div id="meetingActions" class="rich-text-editor" contenteditable="true" data-placeholder="Azioni da intraprendere (una per riga)..."></div>
-                    </div>
+                    <textarea id="meetingActions" rows="3" placeholder="Azioni da intraprendere (una per riga)..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -5464,118 +5281,16 @@
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
             
-            document.getElementById('projectGeneralInfo').innerHTML = project.generalInfo || '';
+            document.getElementById('projectGeneralInfo').value = project.generalInfo || '';
         }
         
         function saveProjectGeneralInfo() {
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
             
-            project.generalInfo = document.getElementById('projectGeneralInfo').innerHTML;
+            project.generalInfo = document.getElementById('projectGeneralInfo').value;
             saveToIndexedDB('projects', projects);
         }
-        
-        // ========================================
-        // RICH TEXT EDITOR FUNCTIONS
-        // ========================================
-        
-        function formatText(editorId, command, value = null) {
-            const editor = document.getElementById(editorId);
-            editor.focus();
-            
-            if (value) {
-                document.execCommand(command, false, value);
-            } else {
-                document.execCommand(command, false, null);
-            }
-        }
-        
-        function highlightText(editorId) {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const highlightColor = currentTheme === 'dark' ? '#009688' : '#FFFF00';
-            formatText(editorId, 'hiliteColor', highlightColor);
-        }
-        
-        // Gestione placeholder per rich text editor
-        document.addEventListener('DOMContentLoaded', function() {
-            const richTextEditors = document.querySelectorAll('.rich-text-editor[contenteditable="true"]');
-            
-            richTextEditors.forEach(editor => {
-                // Mostra placeholder se vuoto
-                const updatePlaceholder = () => {
-                    if (editor.textContent.trim() === '') {
-                        editor.classList.add('empty');
-                    } else {
-                        editor.classList.remove('empty');
-                    }
-                };
-                
-                // Stile placeholder
-                const placeholder = editor.getAttribute('data-placeholder');
-                if (placeholder) {
-                    const style = document.createElement('style');
-                    style.textContent = `.rich-text-editor[contenteditable="true"].empty:before { content: "${placeholder}"; color: var(--text-tertiary); opacity: 0.6; pointer-events: none; position: absolute; }`;
-                    document.head.appendChild(style);
-                    editor.style.position = 'relative';
-                }
-                
-                // Gestione paste per pulire formattazione esterna
-                editor.addEventListener('paste', function(e) {
-                    e.preventDefault();
-                    
-                    // Ottieni l'HTML dal clipboard
-                    let html = e.clipboardData.getData('text/html');
-                    
-                    // Se non c'è HTML, usa il plain text
-                    if (!html) {
-                        const text = e.clipboardData.getData('text/plain');
-                        document.execCommand('insertText', false, text);
-                        return;
-                    }
-                    
-                    // Crea un elemento temporaneo per pulire l'HTML
-                    const temp = document.createElement('div');
-                    temp.innerHTML = html;
-                    
-                    // Rimuovi script e style
-                    temp.querySelectorAll('script, style').forEach(el => el.remove());
-                    
-                    // Rimuovi attributi pericolosi ma mantieni i tag di formattazione
-                    temp.querySelectorAll('*').forEach(el => {
-                        // Mantieni solo i tag di formattazione base
-                        const allowedTags = ['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'MARK', 'SPAN', 'P', 'BR', 'DIV'];
-                        
-                        if (!allowedTags.includes(el.tagName)) {
-                            // Sostituisci tag non permessi con il loro contenuto
-                            el.replaceWith(...el.childNodes);
-                        } else {
-                            // Rimuovi tutti gli attributi tranne style per color (colore testo)
-                            const attrs = Array.from(el.attributes);
-                            attrs.forEach(attr => {
-                                if (attr.name === 'style') {
-                                    // Mantieni solo color
-                                    const textColor = el.style.color;
-                                    el.removeAttribute('style');
-                                    if (textColor) {
-                                        el.style.color = textColor;
-                                    }
-                                } else {
-                                    el.removeAttribute(attr.name);
-                                }
-                            });
-                        }
-                    });
-                    
-                    // Inserisci l'HTML pulito
-                    document.execCommand('insertHTML', false, temp.innerHTML);
-                });
-                
-                editor.addEventListener('input', updatePlaceholder);
-                editor.addEventListener('focus', updatePlaceholder);
-                editor.addEventListener('blur', updatePlaceholder);
-                updatePlaceholder();
-            });
-        });
 
         // ========================================
         // FUNZIONI PER AGGIORNAMENTI
@@ -5821,13 +5536,7 @@
             document.getElementById('offerEstimate').disabled = isViewOnly;
             document.getElementById('offerValue').disabled = isViewOnly;
             document.getElementById('offerStatus').disabled = isViewOnly;
-            document.getElementById('offerNotes').contentEditable = !isViewOnly;
-            
-            // Nascondi toolbar se viewOnly
-            const toolbars = document.querySelectorAll('#offerModal .rich-text-toolbar');
-            toolbars.forEach(toolbar => {
-                toolbar.style.display = isViewOnly ? 'none' : 'flex';
-            });
+            document.getElementById('offerNotes').disabled = isViewOnly;
             
             // Nascondi pulsante salva se viewOnly
             const saveBtn = document.querySelector('#offerModal .modal-footer button:last-child');
@@ -5845,7 +5554,7 @@
                 document.getElementById('offerEstimate').value = offer.estimate;
                 document.getElementById('offerValue').value = offer.value || '';
                 document.getElementById('offerStatus').value = offer.status;
-                document.getElementById('offerNotes').innerHTML = offer.notes || '';
+                document.getElementById('offerNotes').value = offer.notes || '';
             } else {
                 document.getElementById('offerModalTitle').textContent = '💼 Nuova Offerta';
                 document.getElementById('offerTitle').value = '';
@@ -5853,7 +5562,7 @@
                 document.getElementById('offerEstimate').value = '';
                 document.getElementById('offerValue').value = '';
                 document.getElementById('offerStatus').value = 'in-preparazione';
-                document.getElementById('offerNotes').innerHTML = '';
+                document.getElementById('offerNotes').value = '';
             }
         }
         
@@ -5871,7 +5580,7 @@
             const estimate = document.getElementById('offerEstimate').value.trim();
             const value = document.getElementById('offerValue').value;
             const status = document.getElementById('offerStatus').value;
-            const notes = document.getElementById('offerNotes').innerHTML;
+            const notes = document.getElementById('offerNotes').value.trim();
             
             if (!title || !date || !estimate || !status) {
                 alert('⚠️ Compila tutti i campi obbligatori');
@@ -6155,15 +5864,9 @@
             document.getElementById('meetingDate').disabled = isViewOnly;
             document.getElementById('meetingSubject').disabled = isViewOnly;
             document.getElementById('meetingParticipants').disabled = isViewOnly;
-            document.getElementById('meetingTopics').contentEditable = !isViewOnly;
-            document.getElementById('meetingDecisions').contentEditable = !isViewOnly;
-            document.getElementById('meetingActions').contentEditable = !isViewOnly;
-            
-            // Nascondi toolbar se viewOnly
-            const toolbars = document.querySelectorAll('#meetingModal .rich-text-toolbar');
-            toolbars.forEach(toolbar => {
-                toolbar.style.display = isViewOnly ? 'none' : 'flex';
-            });
+            document.getElementById('meetingTopics').disabled = isViewOnly;
+            document.getElementById('meetingDecisions').disabled = isViewOnly;
+            document.getElementById('meetingActions').disabled = isViewOnly;
             
             // Nascondi pulsante salva se viewOnly
             const saveBtn = document.querySelector('#meetingModal .modal-footer button:last-child');
@@ -6180,17 +5883,17 @@
                 document.getElementById('meetingDate').value = meeting.date;
                 document.getElementById('meetingSubject').value = meeting.subject;
                 document.getElementById('meetingParticipants').value = meeting.participants;
-                document.getElementById('meetingTopics').innerHTML = meeting.topics || '';
-                document.getElementById('meetingDecisions').innerHTML = meeting.decisions || '';
-                document.getElementById('meetingActions').innerHTML = meeting.actions || '';
+                document.getElementById('meetingTopics').value = meeting.topics || '';
+                document.getElementById('meetingDecisions').value = meeting.decisions || '';
+                document.getElementById('meetingActions').value = meeting.actions || '';
             } else {
                 document.getElementById('meetingModalTitle').textContent = '👥 Nuova Riunione';
                 document.getElementById('meetingDate').value = formatDateLocal(new Date());
                 document.getElementById('meetingSubject').value = '';
                 document.getElementById('meetingParticipants').value = '';
-                document.getElementById('meetingTopics').innerHTML = '';
-                document.getElementById('meetingDecisions').innerHTML = '';
-                document.getElementById('meetingActions').innerHTML = '';
+                document.getElementById('meetingTopics').value = '';
+                document.getElementById('meetingDecisions').value = '';
+                document.getElementById('meetingActions').value = '';
             }
         }
         
@@ -6206,9 +5909,9 @@
             const date = document.getElementById('meetingDate').value;
             const subject = document.getElementById('meetingSubject').value.trim();
             const participants = document.getElementById('meetingParticipants').value.trim();
-            const topics = document.getElementById('meetingTopics').innerHTML;
-            const decisions = document.getElementById('meetingDecisions').innerHTML;
-            const actions = document.getElementById('meetingActions').innerHTML;
+            const topics = document.getElementById('meetingTopics').value.trim();
+            const decisions = document.getElementById('meetingDecisions').value.trim();
+            const actions = document.getElementById('meetingActions').value.trim();
             
             if (!date || !subject || !participants) {
                 alert('⚠️ Compila tutti i campi obbligatori');
@@ -6349,7 +6052,7 @@
                 
                 const taskCount = project.tasks ? project.tasks.length : 0;
                 const incompleteTasks = project.tasks ? project.tasks.filter(t => t.completion < 100 && t.status !== 'completata').length : 0;
-                const taskCountDisplay = `${incompleteTasks}`;
+                const taskCountDisplay = `${incompleteTasks}/${taskCount}`;
                 const incompleteBarWidth = maxIncompleteTasks > 0 ? (incompleteTasks / maxIncompleteTasks) * 100 : 0;
                 
                 // Calcola bug aperti e in lavorazione separatamente (tutti i bug, non solo critici)
@@ -6397,7 +6100,7 @@
                     <td>
                         <div class="project-progress-container">
                             <div class="project-progress-fill ${progressClass}" style="width: ${stats.completion}%"></div>
-                            <span class="project-progress-text">${stats.completion}% (${stats.remainingDays}gg)</span>
+                            <span class="project-progress-text">${stats.completion}%</span>
                         </div>
                     </td>
                     <td class="action-buttons">
@@ -6417,36 +6120,11 @@
             });
         }
 
-        function showProjectsStatistics() {
-            const totalProjects = projects.length;
-            let completedProjects = 0;
-            let openProjects = 0;
-            let totalRemainingDays = 0;
-
-            projects.forEach(project => {
-                const stats = calculateProjectStats(project);
-                if (stats.completion >= 100) {
-                    completedProjects++;
-                } else {
-                    openProjects++;
-                }
-                totalRemainingDays += stats.remainingDays;
-            });
-
-            const message = `📊 STATISTICHE GENERALI PROGETTI\n\n` +
-                `📁 Progetti Totali: ${totalProjects}\n` +
-                `✅ Progetti Completati: ${completedProjects}\n` +
-                `🔄 Progetti Aperti: ${openProjects}\n\n` +
-                `📅 Giorni Totali Rimasti: ${totalRemainingDays}`;
-
-            alert(message);
-        }
-
         function calculateProjectStats(project) {
             let startDate = null;
             let endDate = null;
-            let totalWeightedCompletion = 0;
-            let totalDuration = 0;
+            let totalCompletion = 0;
+            let taskCount = 0;
 
             // Calculate from milestones
             if (project.milestones && project.milestones.length > 0) {
@@ -6465,23 +6143,14 @@
                     if (task.endDate) {
                         if (!endDate || task.endDate > endDate) endDate = task.endDate;
                     }
-                    
-                    // Calcola la durata dell'attività in giorni (default 1 se non specificata)
-                    const duration = parseInt(task.duration || 1);
-                    const completion = parseInt(task.completion || 0);
-                    
-                    // Calcola i giorni completati per questa attività
-                    const completedDays = (duration * completion) / 100;
-                    
-                    totalWeightedCompletion += completedDays;
-                    totalDuration += duration;
+                    totalCompletion += parseInt(task.completion || 0);
+                    taskCount++;
                 });
             }
 
-            const completion = totalDuration > 0 ? Math.round((totalWeightedCompletion / totalDuration) * 100) : 100;
-            const remainingDays = totalDuration > 0 ? Math.round(totalDuration - totalWeightedCompletion) : 0;
+            const completion = taskCount > 0 ? Math.round(totalCompletion / taskCount) : 100;
 
-            return { startDate, endDate, completion, remainingDays, totalDuration };
+            return { startDate, endDate, completion };
         }
 
         // === GESTIONE MILESTONE ===
@@ -10773,6 +10442,7 @@
                 if (!dayInput.value) {
                     dayInput.value = formatDateLocal(new Date());
                 }
+                updateDayOfWeekLabel();
                 renderResourceView();
                 return;
             } else if (period === 'week') {
@@ -10813,6 +10483,7 @@
                 const currentDate = new Date(dayInput.value);
                 currentDate.setDate(currentDate.getDate() + direction);
                 dayInput.value = formatDateLocal(currentDate);
+                updateDayOfWeekLabel();
                 renderResourceView();
             } else if (period === 'week') {
                 const weekSelect = document.getElementById('resourceViewSpecificWeek');
@@ -10848,6 +10519,7 @@
             if (period === 'day') {
                 const dayInput = document.getElementById('resourceViewSpecificDay');
                 dayInput.value = formatDateLocal(today);
+                updateDayOfWeekLabel();
                 renderResourceView();
             } else if (period === 'week') {
                 populateWeekSelector(); // Rigenera e seleziona settimana corrente
@@ -10857,6 +10529,25 @@
                 populateYearSelector(); // Rigenera e seleziona anno corrente
             }
             renderResourceView();
+        }
+
+        function updateDayOfWeekLabel() {
+            const dayInput = document.getElementById('resourceViewSpecificDay');
+            const label = document.getElementById('dayOfWeekLabel');
+            
+            if (!dayInput || !label) return;
+            
+            const dateValue = dayInput.value;
+            if (!dateValue) {
+                label.textContent = '';
+                return;
+            }
+            
+            const date = new Date(dateValue + 'T00:00:00');
+            const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+            const dayOfWeek = date.getDay();
+            
+            label.textContent = dayNames[dayOfWeek];
         }
 
         function getProjectsDateRange() {
