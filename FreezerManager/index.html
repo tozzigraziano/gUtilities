@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Congelatore</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='15' y='10' width='70' height='80' rx='5' fill='none' stroke='white' stroke-width='4'/><rect x='20' y='15' width='60' height='70' fill='%234da6ff' opacity='0.3'/><line x1='15' y1='40' x2='85' y2='40' stroke='white' stroke-width='3'/><line x1='15' y1='60' x2='85' y2='60' stroke='white' stroke-width='3'/><circle cx='75' cy='25' r='3' fill='white'/></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #4da6ff;
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #999;
+            font-size: 0.95em;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #2d2d2d;
+            color: #4da6ff;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.2s;
+            border: 1px solid #404040;
+        }
+
+        .back-button:hover {
+            background-color: #333;
+            border-color: #4da6ff;
+        }
+
+        .controls {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #66b3ff;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            background-color: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4da6ff;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4da6ff;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #66b3ff;
+        }
+
+        button.secondary {
+            background-color: #555;
+            color: #e0e0e0;
+        }
+
+        button.secondary:hover {
+            background-color: #666;
+        }
+
+        button.danger {
+            background-color: #ff4444;
+        }
+
+        button.danger:hover {
+            background-color: #ff6666;
+        }
+
+        .info-box {
+            background-color: #2d4a66;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 3px solid #4da6ff;
+        }
+
+        .info-box h3 {
+            color: #66b3ff;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .info-box p {
+            color: #b0d4ff;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            color: #4da6ff;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .items-container {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        thead {
+            background-color: #1a1a1a;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            color: #66b3ff;
+            font-weight: 600;
+            border-bottom: 2px solid #404040;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #404040;
+        }
+
+        tbody tr {
+            transition: background-color 0.2s;
+        }
+
+        tbody tr:hover {
+            background-color: #333;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-fresh {
+            background-color: #2d5a2d;
+            color: #66ff66;
+        }
+
+        .status-warning {
+            background-color: #5a4d2d;
+            color: #ffcc66;
+        }
+
+        .status-expired {
+            background-color: #5a2d2d;
+            color: #ff6666;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            margin: 0 2px;
+            font-size: 0.85em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #4da6ff;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .close-btn:hover {
+            color: #e0e0e0;
+        }
+
+        .db-section {
+            background-color: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .db-section h3 {
+            color: #66b3ff;
+            margin-bottom: 15px;
+        }
+
+        .db-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .db-status.connected {
+            background-color: #2d5a2d;
+            color: #66ff66;
+        }
+
+        .db-status.disconnected {
+            background-color: #5a2d2d;
+            color: #ff6666;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #404040;
+            margin-top: 30px;
+            font-size: 0.85em;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.85em;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-button">← Torna a gUtilities</a>
+
+        <header>
+            <h1>❄️ Gestione Congelatore</h1>
+            <p class="subtitle">Traccia il contenuto del tuo congelatore con durate di conservazione ottimali</p>
+        </header>
+
+        <div class="info-box">
+            <h3>ℹ️ Informazioni</h3>
+            <p>Questa applicazione ti aiuta a gestire il contenuto del congelatore tracciando prodotti, date di inserimento e durate di conservazione basate sulle linee guida USDA FoodKeeper. I dati vengono salvati localmente nel browser (IndexedDB) ma puoi anche configurare una connessione a MariaDB per sincronizzare tra dispositivi.</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalItems">0</div>
+                <div class="stat-label">Prodotti totali</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="freshItems">0</div>
+                <div class="stat-label">Freschi</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="warningItems">0</div>
+                <div class="stat-label">In scadenza</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="expiredItems">0</div>
+                <div class="stat-label">Scaduti</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h2 style="color: #4da6ff; margin-bottom: 15px;">Aggiungi Prodotto</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="productType">Tipo Prodotto</label>
+                    <select id="productType">
+                        <option value="">Seleziona una categoria</option>
+                        <optgroup label="Carne">
+                            <option value="beef" data-months="12">Manzo</option>
+                            <option value="pork" data-months="6">Maiale</option>
+                            <option value="chicken" data-months="9">Pollo</option>
+                            <option value="turkey" data-months="9">Tacchino</option>
+                            <option value="lamb" data-months="9">Agnello</option>
+                            <option value="ground-meat" data-months="4">Carne macinata</option>
+                            <option value="sausages" data-months="2">Salsicce</option>
+                        </optgroup>
+                        <optgroup label="Pesce">
+                            <option value="fatty-fish" data-months="3">Pesce grasso (salmone, tonno)</option>
+                            <option value="lean-fish" data-months="6">Pesce magro (merluzzo, sogliola)</option>
+                            <option value="shellfish" data-months="3">Frutti di mare</option>
+                        </optgroup>
+                        <optgroup label="Verdure">
+                            <option value="vegetables" data-months="12">Verdure generiche</option>
+                            <option value="leafy-greens" data-months="12">Verdure a foglia</option>
+                            <option value="root-vegetables" data-months="12">Radici (carote, patate)</option>
+                        </optgroup>
+                        <optgroup label="Frutta">
+                            <option value="berries" data-months="12">Frutti di bosco</option>
+                            <option value="stone-fruits" data-months="12">Frutta con nocciolo</option>
+                            <option value="citrus" data-months="12">Agrumi</option>
+                        </optgroup>
+                        <optgroup label="Latticini">
+                            <option value="butter" data-months="9">Burro</option>
+                            <option value="cheese" data-months="6">Formaggio</option>
+                            <option value="ice-cream" data-months="2">Gelato</option>
+                        </optgroup>
+                        <optgroup label="Panificati">
+                            <option value="bread" data-months="3">Pane</option>
+                            <option value="pizza" data-months="2">Pizza</option>
+                            <option value="pastries" data-months="3">Dolci</option>
+                        </optgroup>
+                        <optgroup label="Piatti pronti">
+                            <option value="cooked-meals" data-months="3">Piatti cucinati</option>
+                            <option value="soups" data-months="3">Zuppe</option>
+                            <option value="sauces" data-months="3">Sughi e salse</option>
+                        </optgroup>
+                        <optgroup label="Altro">
+                            <option value="other" data-months="3">Altro</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="productName">Nome Prodotto</label>
+                    <input type="text" id="productName" placeholder="Es: Bistecca di manzo">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="insertDate">Data Inserimento</label>
+                    <input type="date" id="insertDate">
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantità</label>
+                    <input type="text" id="quantity" placeholder="Es: 500g, 2 pz">
+                </div>
+                <div class="form-group">
+                    <label for="storageDuration">Durata Conservazione (mesi)</label>
+                    <input type="number" id="storageDuration" min="1" max="24" readonly>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="notes">Note</label>
+                <textarea id="notes" rows="2" placeholder="Note aggiuntive..."></textarea>
+            </div>
+            <button onclick="addItem()">➕ Aggiungi</button>
+            <button onclick="clearForm()" class="secondary">🔄 Pulisci</button>
+        </div>
+
+        <div class="items-container">
+            <h2 style="color: #4da6ff; margin-bottom: 15px;">Prodotti nel Congelatore</h2>
+            
+            <div class="filters">
+                <input type="text" id="searchFilter" class="filter-input" placeholder="🔍 Cerca prodotti...">
+                <select id="categoryFilter" class="filter-input">
+                    <option value="">Tutte le categorie</option>
+                    <option value="beef">Manzo</option>
+                    <option value="pork">Maiale</option>
+                    <option value="chicken">Pollo</option>
+                    <option value="turkey">Tacchino</option>
+                    <option value="lamb">Agnello</option>
+                    <option value="ground-meat">Carne macinata</option>
+                    <option value="fatty-fish">Pesce grasso</option>
+                    <option value="lean-fish">Pesce magro</option>
+                    <option value="shellfish">Frutti di mare</option>
+                    <option value="vegetables">Verdure</option>
+                    <option value="berries">Frutti di bosco</option>
+                    <option value="bread">Pane</option>
+                    <option value="cooked-meals">Piatti pronti</option>
+                </select>
+                <select id="statusFilter" class="filter-input">
+                    <option value="">Tutti gli stati</option>
+                    <option value="fresh">Freschi</option>
+                    <option value="warning">In scadenza</option>
+                    <option value="expired">Scaduti</option>
+                </select>
+                <button onclick="exportData()" class="secondary">📥 Esporta</button>
+                <button onclick="importData()" class="secondary">📤 Importa</button>
+                <button onclick="openDBSettings()" class="secondary">⚙️ Database</button>
+            </div>
+
+            <div id="itemsTable"></div>
+        </div>
+    </div>
+
+    <!-- Modal per impostazioni database -->
+    <div id="dbModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configurazione Database MariaDB</h2>
+                <button class="close-btn" onclick="closeDBSettings()">×</button>
+            </div>
+            
+            <div class="db-section">
+                <h3>Stato Connessione <span class="db-status disconnected" id="dbStatusBadge">Disconnesso</span></h3>
+                <p style="color: #999; margin-top: 10px;">Configurare una connessione a MariaDB richiede un backend server (API REST) per motivi di sicurezza. I dati sono attualmente salvati localmente nel browser.</p>
+            </div>
+
+            <div class="db-section">
+                <h3>Configurazione Backend API</h3>
+                <div class="form-group">
+                    <label for="apiUrl">URL API Backend</label>
+                    <input type="text" id="apiUrl" placeholder="http://localhost:3000/api" value="">
+                </div>
+                <div class="form-group">
+                    <label for="apiKey">API Key (opzionale)</label>
+                    <input type="password" id="apiKey" placeholder="La tua API key">
+                </div>
+                <button onclick="testConnection()">🔌 Test Connessione</button>
+                <button onclick="saveDBSettings()" class="secondary">💾 Salva</button>
+            </div>
+
+            <div class="db-section">
+                <h3>Istruzioni per Backend</h3>
+                <p style="color: #999; line-height: 1.6;">
+                    Per connettere questa applicazione a MariaDB, è necessario creare un backend server Node.js o PHP che esponga API REST per:<br><br>
+                    • GET /items - Recuperare tutti i prodotti<br>
+                    • POST /items - Aggiungere un nuovo prodotto<br>
+                    • PUT /items/:id - Aggiornare un prodotto<br>
+                    • DELETE /items/:id - Eliminare un prodotto<br><br>
+                    
+                    <strong>Schema Database MariaDB suggerito:</strong><br>
+                    <code style="display: block; background: #1a1a1a; padding: 10px; margin-top: 10px; border-radius: 5px; overflow-x: auto;">
+CREATE TABLE freezer_items (<br>
+&nbsp;&nbsp;id INT AUTO_INCREMENT PRIMARY KEY,<br>
+&nbsp;&nbsp;product_type VARCHAR(50) NOT NULL,<br>
+&nbsp;&nbsp;product_name VARCHAR(100) NOT NULL,<br>
+&nbsp;&nbsp;insert_date DATE NOT NULL,<br>
+&nbsp;&nbsp;quantity VARCHAR(50),<br>
+&nbsp;&nbsp;storage_duration INT NOT NULL,<br>
+&nbsp;&nbsp;notes TEXT,<br>
+&nbsp;&nbsp;created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,<br>
+&nbsp;&nbsp;updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP<br>
+);
+                    </code>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Durate di conservazione basate sulle linee guida <a href="https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/freezing-and-food-safety" target="_blank" style="color: #4da6ff;">USDA FoodKeeper</a></p>
+        <p style="margin-top: 5px;">gUtilities - Freezer Manager © 2026</p>
+    </footer>
+
+    <script>
+        // Database locale IndexedDB
+        let db;
+        const DB_NAME = 'FreezerDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'items';
+
+        // Inizializza IndexedDB
+        function initDB() {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onerror = () => {
+                console.error('Errore apertura database:', request.error);
+                alert('Errore nell\'inizializzazione del database locale');
+            };
+
+            request.onsuccess = () => {
+                db = request.result;
+                loadItems();
+            };
+
+            request.onupgradeneeded = (event) => {
+                db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    objectStore.createIndex('productType', 'productType', { unique: false });
+                    objectStore.createIndex('insertDate', 'insertDate', { unique: false });
+                }
+            };
+        }
+
+        // Imposta data odierna di default
+        document.getElementById('insertDate').valueAsDate = new Date();
+
+        // Aggiorna durata quando cambia il tipo di prodotto
+        document.getElementById('productType').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const months = selectedOption.getAttribute('data-months');
+            document.getElementById('storageDuration').value = months || '';
+        });
+
+        // Funzione per aggiungere un item
+        function addItem() {
+            const productType = document.getElementById('productType').value;
+            const productName = document.getElementById('productName').value.trim();
+            const insertDate = document.getElementById('insertDate').value;
+            const quantity = document.getElementById('quantity').value.trim();
+            const storageDuration = parseInt(document.getElementById('storageDuration').value);
+            const notes = document.getElementById('notes').value.trim();
+
+            if (!productType || !productName || !insertDate || !storageDuration) {
+                alert('Compila tutti i campi obbligatori!');
+                return;
+            }
+
+            const item = {
+                productType,
+                productName,
+                insertDate,
+                quantity,
+                storageDuration,
+                notes,
+                createdAt: new Date().toISOString()
+            };
+
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const objectStore = transaction.objectStore(STORE_NAME);
+            const request = objectStore.add(item);
+
+            request.onsuccess = () => {
+                clearForm();
+                loadItems();
+            };
+
+            request.onerror = () => {
+                alert('Errore nell\'aggiunta del prodotto');
+            };
+        }
+
+        // Funzione per pulire il form
+        function clearForm() {
+            document.getElementById('productType').value = '';
+            document.getElementById('productName').value = '';
+            document.getElementById('insertDate').valueAsDate = new Date();
+            document.getElementById('quantity').value = '';
+            document.getElementById('storageDuration').value = '';
+            document.getElementById('notes').value = '';
+        }
+
+        // Funzione per calcolare lo stato del prodotto
+        function getItemStatus(insertDate, storageDuration) {
+            const inserted = new Date(insertDate);
+            const today = new Date();
+            const expiryDate = new Date(inserted);
+            expiryDate.setMonth(expiryDate.getMonth() + storageDuration);
+            
+            const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+            const warningThreshold = storageDuration * 30 * 0.2; // 20% del tempo totale
+
+            if (daysLeft < 0) {
+                return { status: 'expired', daysLeft, label: 'Scaduto' };
+            } else if (daysLeft <= warningThreshold) {
+                return { status: 'warning', daysLeft, label: 'In scadenza' };
+            } else {
+                return { status: 'fresh', daysLeft, label: 'Fresco' };
+            }
+        }
+
+        // Funzione per caricare e visualizzare gli items
+        function loadItems() {
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const objectStore = transaction.objectStore(STORE_NAME);
+            const request = objectStore.getAll();
+
+            request.onsuccess = () => {
+                const items = request.result;
+                displayItems(items);
+                updateStats(items);
+            };
+        }
+
+        // Funzione per visualizzare gli items
+        function displayItems(items) {
+            const searchTerm = document.getElementById('searchFilter').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            // Applica filtri
+            let filteredItems = items.filter(item => {
+                const matchSearch = item.productName.toLowerCase().includes(searchTerm) || 
+                                  item.notes.toLowerCase().includes(searchTerm);
+                const matchCategory = !categoryFilter || item.productType === categoryFilter;
+                
+                const itemStatus = getItemStatus(item.insertDate, item.storageDuration);
+                const matchStatus = !statusFilter || itemStatus.status === statusFilter;
+
+                return matchSearch && matchCategory && matchStatus;
+            });
+
+            // Ordina per data di scadenza
+            filteredItems.sort((a, b) => {
+                const statusA = getItemStatus(a.insertDate, a.storageDuration);
+                const statusB = getItemStatus(b.insertDate, b.storageDuration);
+                return statusA.daysLeft - statusB.daysLeft;
+            });
+
+            const tableContainer = document.getElementById('itemsTable');
+
+            if (filteredItems.length === 0) {
+                tableContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❄️</div>
+                        <h3 style="color: #666;">Nessun prodotto trovato</h3>
+                        <p style="color: #555;">Aggiungi prodotti al congelatore per iniziare</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Prodotto</th>
+                            <th>Quantità</th>
+                            <th>Data Inserimento</th>
+                            <th>Durata (mesi)</th>
+                            <th>Giorni Rimanenti</th>
+                            <th>Stato</th>
+                            <th>Note</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            filteredItems.forEach(item => {
+                const itemStatus = getItemStatus(item.insertDate, item.storageDuration);
+                const formattedDate = new Date(item.insertDate).toLocaleDateString('it-IT');
+                
+                tableHTML += `
+                    <tr>
+                        <td><strong>${item.productName}</strong></td>
+                        <td>${item.quantity || '-'}</td>
+                        <td>${formattedDate}</td>
+                        <td>${item.storageDuration}</td>
+                        <td>${itemStatus.daysLeft}</td>
+                        <td><span class="status-badge status-${itemStatus.status}">${itemStatus.label}</span></td>
+                        <td>${item.notes || '-'}</td>
+                        <td>
+                            <button class="action-btn secondary" onclick="editItem(${item.id})">✏️</button>
+                            <button class="action-btn danger" onclick="deleteItem(${item.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            tableContainer.innerHTML = tableHTML;
+        }
+
+        // Funzione per aggiornare le statistiche
+        function updateStats(items) {
+            let fresh = 0, warning = 0, expired = 0;
+
+            items.forEach(item => {
+                const status = getItemStatus(item.insertDate, item.storageDuration);
+                if (status.status === 'fresh') fresh++;
+                else if (status.status === 'warning') warning++;
+                else if (status.status === 'expired') expired++;
+            });
+
+            document.getElementById('totalItems').textContent = items.length;
+            document.getElementById('freshItems').textContent = fresh;
+            document.getElementById('warningItems').textContent = warning;
+            document.getElementById('expiredItems').textContent = expired;
+        }
+
+        // Funzione per eliminare un item
+        function deleteItem(id) {
+            if (!confirm('Sei sicuro di voler eliminare questo prodotto?')) return;
+
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const objectStore = transaction.objectStore(STORE_NAME);
+            const request = objectStore.delete(id);
+
+            request.onsuccess = () => {
+                loadItems();
+            };
+        }
+
+        // Funzione per modificare un item
+        function editItem(id) {
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const objectStore = transaction.objectStore(STORE_NAME);
+            const request = objectStore.get(id);
+
+            request.onsuccess = () => {
+                const item = request.result;
+                document.getElementById('productType').value = item.productType;
+                document.getElementById('productName').value = item.productName;
+                document.getElementById('insertDate').value = item.insertDate;
+                document.getElementById('quantity').value = item.quantity;
+                document.getElementById('storageDuration').value = item.storageDuration;
+                document.getElementById('notes').value = item.notes;
+
+                // Elimina il vecchio e crea uno nuovo
+                deleteItem(id);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+        }
+
+        // Funzione per esportare i dati
+        function exportData() {
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const objectStore = transaction.objectStore(STORE_NAME);
+            const request = objectStore.getAll();
+
+            request.onsuccess = () => {
+                const data = request.result;
+                const jsonData = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `freezer-backup-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+        }
+
+        // Funzione per importare i dati
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        
+                        if (!confirm(`Importare ${data.length} prodotti? Questo aggiungerà ai dati esistenti.`)) return;
+                        
+                        const transaction = db.transaction([STORE_NAME], 'readwrite');
+                        const objectStore = transaction.objectStore(STORE_NAME);
+                        
+                        data.forEach(item => {
+                            delete item.id; // Rimuovi l'ID per auto-increment
+                            objectStore.add(item);
+                        });
+                        
+                        transaction.oncomplete = () => {
+                            alert('Dati importati con successo!');
+                            loadItems();
+                        };
+                    } catch (error) {
+                        alert('Errore nell\'importazione: file non valido');
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        // Funzioni per le impostazioni database
+        function openDBSettings() {
+            document.getElementById('dbModal').classList.add('active');
+            loadDBSettings();
+        }
+
+        function closeDBSettings() {
+            document.getElementById('dbModal').classList.remove('active');
+        }
+
+        function loadDBSettings() {
+            const apiUrl = localStorage.getItem('freezer_api_url') || '';
+            const apiKey = localStorage.getItem('freezer_api_key') || '';
+            document.getElementById('apiUrl').value = apiUrl;
+            document.getElementById('apiKey').value = apiKey;
+        }
+
+        function saveDBSettings() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+            localStorage.setItem('freezer_api_url', apiUrl);
+            localStorage.setItem('freezer_api_key', apiKey);
+            alert('Impostazioni salvate!');
+        }
+
+        async function testConnection() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+
+            if (!apiUrl) {
+                alert('Inserisci l\'URL dell\'API');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/health`, {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+
+                if (response.ok) {
+                    document.getElementById('dbStatusBadge').textContent = 'Connesso';
+                    document.getElementById('dbStatusBadge').classList.remove('disconnected');
+                    document.getElementById('dbStatusBadge').classList.add('connected');
+                    alert('Connessione riuscita!');
+                } else {
+                    throw new Error('Connessione fallita');
+                }
+            } catch (error) {
+                document.getElementById('dbStatusBadge').textContent = 'Disconnesso';
+                document.getElementById('dbStatusBadge').classList.remove('connected');
+                document.getElementById('dbStatusBadge').classList.add('disconnected');
+                alert('Errore di connessione: ' + error.message);
+            }
+        }
+
+        // Event listeners per i filtri
+        document.getElementById('searchFilter').addEventListener('input', loadItems);
+        document.getElementById('categoryFilter').addEventListener('change', loadItems);
+        document.getElementById('statusFilter').addEventListener('change', loadItems);
+
+        // Chiudi modal cliccando fuori
+        document.getElementById('dbModal').addEventListener('click', (e) => {
+            if (e.target.id === 'dbModal') {
+                closeDBSettings();
+            }
+        });
+
+        // Inizializza l'applicazione
+        initDB();
+    </script>
+</body>
+</html>
