@@ -5641,6 +5641,11 @@
             renderProjectOffers();
             renderProjectIssues();
             renderProjectMeetings();
+            
+            // Scrolla all'inizio della pagina dopo il rendering
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 0);
         }
 
         function closeProjectDetails() {
