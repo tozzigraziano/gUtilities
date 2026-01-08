@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pianificazione Risorse e Progetti</title>
+    <!-- Marked.js for Markdown support -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
             --bg-primary: #f5f5f5;
@@ -2121,6 +2123,11 @@
             display: block;
         }
 
+        /* Previene lo scroll della pagina quando il modal è aperto */
+        body.modal-open {
+            overflow: hidden;
+        }
+
         .modal-content {
             background-color: var(--bg-secondary);
             margin: 5% auto;
@@ -2250,6 +2257,126 @@
             margin-bottom: 20px;
             display: flex;
             gap: 10px;
+        }
+
+        /* Markdown Support Styles */
+        .markdown-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .markdown-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .markdown-tab {
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: none;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            font-size: 11px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .markdown-tab:hover {
+            background: var(--bg-hover);
+        }
+
+        .markdown-tab.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .markdown-preview {
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 10px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            min-height: 100px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .markdown-preview.active {
+            display: block;
+        }
+
+        .markdown-preview h1 { font-size: 1.8em; margin: 0.5em 0; border-bottom: 2px solid var(--border-color); padding-bottom: 0.3em; }
+        .markdown-preview h2 { font-size: 1.5em; margin: 0.5em 0; border-bottom: 1px solid var(--border-color); padding-bottom: 0.2em; }
+        .markdown-preview h3 { font-size: 1.3em; margin: 0.4em 0; }
+        .markdown-preview h4 { font-size: 1.1em; margin: 0.3em 0; }
+        .markdown-preview p { margin: 0.5em 0; line-height: 1.6; }
+        .markdown-preview ul, .markdown-preview ol { margin: 0.5em 0; padding-left: 2em; }
+        .markdown-preview li { margin: 0.3em 0; }
+        .markdown-preview code { 
+            background: var(--bg-tertiary); 
+            padding: 2px 6px; 
+            border-radius: 3px; 
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .markdown-preview pre { 
+            background: var(--bg-tertiary); 
+            padding: 10px; 
+            border-radius: 5px; 
+            overflow-x: auto;
+            margin: 0.5em 0;
+        }
+        .markdown-preview pre code { 
+            background: none; 
+            padding: 0; 
+        }
+        .markdown-preview blockquote {
+            border-left: 4px solid var(--accent-color);
+            padding-left: 15px;
+            margin: 0.5em 0;
+            color: var(--text-tertiary);
+            font-style: italic;
+        }
+        .markdown-preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.5em 0;
+        }
+        .markdown-preview table th,
+        .markdown-preview table td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+        }
+        .markdown-preview table th {
+            background: var(--bg-tertiary);
+            font-weight: bold;
+        }
+        .markdown-preview a {
+            color: var(--info-color);
+            text-decoration: none;
+        }
+        .markdown-preview a:hover {
+            text-decoration: underline;
+        }
+        .markdown-preview img {
+            max-width: 100%;
+            height: auto;
+        }
+        .markdown-preview hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 1em 0;
+        }
+
+        .markdown-help {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            margin-top: 5px;
+            font-style: italic;
         }
     </style>
 </head>
@@ -2453,15 +2580,9 @@
                 <!-- Info Generali -->
                 <h3>📝 Info Generali</h3>
                 <div style="margin-bottom: 20px;">
-                    <div class="rich-text-toolbar">
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'bold')" title="Grassetto"><b>B</b></button>
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'italic')" title="Corsivo"><i>I</i></button>
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'underline')" title="Sottolineato"><u>U</u></button>
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                        <button type="button" onclick="highlightText('projectGeneralInfo')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                        <button type="button" onclick="formatText('projectGeneralInfo', 'removeFormat')" title="Rimuovi formattazione">✕</button>
+                    <div id="projectGeneralInfoContainer">
+                        <textarea id="projectGeneralInfo" placeholder="Note, informazioni generali sul progetto..." style="min-height: 150px;" oninput="saveProjectGeneralInfo()"></textarea>
                     </div>
-                    <div id="projectGeneralInfo" class="rich-text-editor" contenteditable="true" data-placeholder="Note, informazioni generali sul progetto..." oninput="saveProjectGeneralInfo()"></div>
                 </div>
 
                 <!-- Aggiornamenti -->
@@ -3662,17 +3783,7 @@
                 </div>
                 <div class="form-group">
                     <label for="offerNotes">Note</label>
-                    <div style="flex: 1;">
-                        <div class="rich-text-toolbar">
-                            <button type="button" onclick="formatText('offerNotes', 'bold')" title="Grassetto"><b>B</b></button>
-                            <button type="button" onclick="formatText('offerNotes', 'italic')" title="Corsivo"><i>I</i></button>
-                            <button type="button" onclick="formatText('offerNotes', 'underline')" title="Sottolineato"><u>U</u></button>
-                            <button type="button" onclick="formatText('offerNotes', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                            <button type="button" onclick="highlightText('offerNotes')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                            <button type="button" onclick="formatText('offerNotes', 'removeFormat')" title="Rimuovi formattazione">✕</button>
-                        </div>
-                        <div id="offerNotes" class="rich-text-editor" contenteditable="true" data-placeholder="Note aggiuntive sull'offerta..."></div>
-                    </div>
+                    <textarea id="offerNotes" rows="6" placeholder="Note aggiuntive sull'offerta..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -3752,45 +3863,7 @@
                 </div>
                 <div class="form-group">
                     <label for="meetingTopics">Argomenti Discussi</label>
-                    <div style="flex: 1;">
-                        <div class="rich-text-toolbar">
-                            <button type="button" onclick="formatText('meetingTopics', 'bold')" title="Grassetto"><b>B</b></button>
-                            <button type="button" onclick="formatText('meetingTopics', 'italic')" title="Corsivo"><i>I</i></button>
-                            <button type="button" onclick="formatText('meetingTopics', 'underline')" title="Sottolineato"><u>U</u></button>
-                            <button type="button" onclick="formatText('meetingTopics', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                            <button type="button" onclick="highlightText('meetingTopics')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                            <button type="button" onclick="formatText('meetingTopics', 'removeFormat')" title="Rimuovi formattazione">✕</button>
-                        </div>
-                        <div id="meetingTopics" class="rich-text-editor" contenteditable="true" data-placeholder="Cosa si è discusso durante la riunione..."></div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="meetingDecisions">Decisioni Prese</label>
-                    <div style="flex: 1;">
-                        <div class="rich-text-toolbar">
-                            <button type="button" onclick="formatText('meetingDecisions', 'bold')" title="Grassetto"><b>B</b></button>
-                            <button type="button" onclick="formatText('meetingDecisions', 'italic')" title="Corsivo"><i>I</i></button>
-                            <button type="button" onclick="formatText('meetingDecisions', 'underline')" title="Sottolineato"><u>U</u></button>
-                            <button type="button" onclick="formatText('meetingDecisions', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                            <button type="button" onclick="highlightText('meetingDecisions')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                            <button type="button" onclick="formatText('meetingDecisions', 'removeFormat')" title="Rimuovi formattazione">✕</button>
-                        </div>
-                        <div id="meetingDecisions" class="rich-text-editor" contenteditable="true" data-placeholder="Quali decisioni sono state prese..."></div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="meetingActions">Action Items</label>
-                    <div style="flex: 1;">
-                        <div class="rich-text-toolbar">
-                            <button type="button" onclick="formatText('meetingActions', 'bold')" title="Grassetto"><b>B</b></button>
-                            <button type="button" onclick="formatText('meetingActions', 'italic')" title="Corsivo"><i>I</i></button>
-                            <button type="button" onclick="formatText('meetingActions', 'underline')" title="Sottolineato"><u>U</u></button>
-                            <button type="button" onclick="formatText('meetingActions', 'strikeThrough')" title="Barrato"><s>S</s></button>
-                            <button type="button" onclick="highlightText('meetingActions')" title="Evidenzia" style="background-color: #FFFF00; color: #000;">🖍</button>
-                            <button type="button" onclick="formatText('meetingActions', 'removeFormat')" title="Rimuovi formattazione">✕</button>
-                        </div>
-                        <div id="meetingActions" class="rich-text-editor" contenteditable="true" data-placeholder="Azioni da intraprendere (una per riga)..."></div>
-                    </div>
+                    <textarea id="meetingTopics" rows="8" placeholder="Cosa si è discusso durante la riunione..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -3953,6 +4026,116 @@
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
+        }
+
+        // === MODAL HELPERS ===
+        function openModal(modalElement) {
+            if (modalElement) {
+                modalElement.classList.add('active');
+                document.body.classList.add('modal-open');
+            }
+        }
+
+        function closeModal(modalElement) {
+            if (modalElement) {
+                modalElement.classList.remove('active');
+                document.body.classList.remove('modal-open');
+            }
+        }
+
+        // === MARKDOWN SUPPORT ===
+        function createMarkdownEditor(textareaId, containerId = null, startInPreview = false) {
+            const textarea = document.getElementById(textareaId);
+            if (!textarea) return;
+
+            // Se l'editor markdown esiste già, resettalo alla modalità appropriata
+            const existingContainer = textarea.closest('.markdown-container');
+            if (existingContainer) {
+                switchMarkdownTab(textareaId, startInPreview ? 'preview' : 'edit');
+                return;
+            }
+
+            // Se il containerId è specificato, controlla se contiene già gli elementi markdown
+            if (containerId) {
+                const specifiedContainer = document.getElementById(containerId);
+                if (specifiedContainer && specifiedContainer.querySelector('.markdown-tabs')) {
+                    // Editor già esistente, cambia solo la tab se necessario
+                    switchMarkdownTab(textareaId, startInPreview ? 'preview' : 'edit');
+                    return;
+                }
+            }
+
+            // Se non esiste un container, creane uno
+            if (!containerId) {
+                containerId = textareaId + '_markdown_container';
+                const container = document.createElement('div');
+                container.id = containerId;
+                container.className = 'markdown-container';
+                textarea.parentNode.insertBefore(container, textarea);
+                container.appendChild(textarea);
+            }
+
+            const container = document.getElementById(containerId);
+            if (!container.classList.contains('markdown-container')) {
+                container.classList.add('markdown-container');
+            }
+            
+            // Crea i tab
+            const tabsDiv = document.createElement('div');
+            tabsDiv.className = 'markdown-tabs';
+            tabsDiv.innerHTML = `
+                <button class="markdown-tab ${startInPreview ? '' : 'active'}" onclick="switchMarkdownTab('${textareaId}', 'edit')">✏️ Modifica</button>
+                <button class="markdown-tab ${startInPreview ? 'active' : ''}" onclick="switchMarkdownTab('${textareaId}', 'preview')">👁️ Anteprima</button>
+            `;
+            container.insertBefore(tabsDiv, textarea);
+
+            // Crea l'area di preview
+            const previewDiv = document.createElement('div');
+            previewDiv.id = textareaId + '_preview';
+            previewDiv.className = 'markdown-preview';
+            container.appendChild(previewDiv);
+
+            // Aggiungi help text
+            const helpDiv = document.createElement('div');
+            helpDiv.className = 'markdown-help';
+            helpDiv.innerHTML = '💡 Supporto Markdown: **grassetto**, *corsivo*, # titoli, - liste, [link](url), ```codice```, > citazioni';
+            container.appendChild(helpDiv);
+
+            // Mostra la visualizzazione appropriata
+            if (startInPreview) {
+                textarea.style.display = 'none';
+                previewDiv.style.display = 'block';
+                const markdownText = textarea.value;
+                const html = marked.parse(markdownText);
+                previewDiv.innerHTML = html;
+            } else {
+                textarea.style.display = 'block';
+                previewDiv.style.display = 'none';
+            }
+        }
+
+        function switchMarkdownTab(textareaId, mode) {
+            const textarea = document.getElementById(textareaId);
+            const preview = document.getElementById(textareaId + '_preview');
+            const container = textarea.closest('.markdown-container');
+            const tabs = container.querySelectorAll('.markdown-tab');
+
+            if (mode === 'edit') {
+                textarea.style.display = 'block';
+                preview.style.display = 'none';
+                tabs[0].classList.add('active');
+                tabs[1].classList.remove('active');
+            } else {
+                // Converti markdown in HTML
+                const markdownText = textarea.value;
+                const html = marked.parse(markdownText);
+                preview.innerHTML = html;
+                
+                textarea.style.display = 'none';
+                preview.style.display = 'block';
+                tabs[0].classList.remove('active');
+                tabs[1].classList.add('active');
+            }
         }
 
         // Inizializzazione
@@ -4125,11 +4308,11 @@
                 container.appendChild(addBtn);
             }
             
-            modal.classList.add('active');
+            openModal(modal);
         }
 
         function closeResourceModal() {
-            document.getElementById('resourceModal').classList.remove('active');
+            closeModal(document.getElementById('resourceModal'));
             clearResourceForm();
         }
 
@@ -4151,11 +4334,11 @@
                 clearLocalHolidayForm();
             }
             
-            modal.classList.add('active');
+            openModal(modal);
         }
 
         function closeLocalHolidayModal() {
-            document.getElementById('localHolidayModal').classList.remove('active');
+            closeModal(document.getElementById('localHolidayModal'));
             clearLocalHolidayForm();
         }
 
@@ -4203,11 +4386,17 @@
                 templateSelect.parentElement.style.display = 'block';
             }
             
-            modal.classList.add('active');
+            // Inizializza editor markdown per la descrizione
+            const descTextarea = document.getElementById('projectDescription');
+            if (descTextarea) {
+                createMarkdownEditor('projectDescription', null, false);
+            }
+            
+            openModal(modal);
         }
 
         function closeProjectModal() {
-            document.getElementById('projectModal').classList.remove('active');
+            closeModal(document.getElementById('projectModal'));
             clearProjectForm();
         }
 
@@ -4231,11 +4420,11 @@
                 clearMilestoneForm();
             }
             
-            modal.classList.add('active');
+            openModal(modal);
         }
 
         function closeMilestoneModal() {
-            document.getElementById('milestoneModal').classList.remove('active');
+            closeModal(document.getElementById('milestoneModal'));
             clearMilestoneForm();
         }
 
@@ -4368,11 +4557,18 @@
             
             updateResourceSelects();
             console.log('=== OPEN TASK MODAL END ===');
-            modal.classList.add('active');
+            
+            // Inizializza editor markdown per le note
+            const notesTextarea = document.getElementById('taskNotes');
+            if (notesTextarea) {
+                createMarkdownEditor('taskNotes', null, false);
+            }
+            
+            openModal(modal);
         }
 
         function closeTaskModal() {
-            document.getElementById('taskModal').classList.remove('active');
+            closeModal(document.getElementById('taskModal'));
             clearTaskForm();
         }
 
@@ -4471,11 +4667,11 @@
                 clearTemplateForm();
             }
             
-            modal.classList.add('active');
+            openModal(modal);
         }
 
         function closeTemplateModal() {
-            document.getElementById('templateModal').classList.remove('active');
+            closeModal(document.getElementById('templateModal'));
             clearTemplateForm();
         }
 
@@ -4499,11 +4695,11 @@
                 clearTemplateMilestoneForm();
             }
             
-            modal.classList.add('active');
+            openModal(modal);
         }
 
         function closeTemplateMilestoneModal() {
-            document.getElementById('templateMilestoneModal').classList.remove('active');
+            closeModal(document.getElementById('templateMilestoneModal'));
             clearTemplateMilestoneForm();
         }
 
@@ -4530,11 +4726,11 @@
                 clearTemplateTaskForm();
             }
             
-            modal.classList.add('active');
+            openModal(modal);
         }
 
         function closeTemplateTaskModal() {
-            document.getElementById('templateTaskModal').classList.remove('active');
+            closeModal(document.getElementById('templateTaskModal'));
             clearTemplateTaskForm();
         }
 
@@ -4571,7 +4767,7 @@
             renderCopyProjectsTable();
             
             // Mostra il modal
-            document.getElementById('copyTaskModal').classList.add('active');
+            openModal(document.getElementById('copyTaskModal'));
         }
 
         function renderCopyProjectsTable(filteredProjects = null) {
@@ -4642,7 +4838,7 @@
         }
 
         function closeCopyTaskModal() {
-            document.getElementById('copyTaskModal').classList.remove('active');
+            closeModal(document.getElementById('copyTaskModal'));
             taskToCopy = null;
         }
 
@@ -5464,14 +5660,17 @@
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
             
-            document.getElementById('projectGeneralInfo').innerHTML = project.generalInfo || '';
+            document.getElementById('projectGeneralInfo').value = project.generalInfo || '';
+            
+            // Inizializza editor markdown per info generali
+            createMarkdownEditor('projectGeneralInfo', 'projectGeneralInfoContainer', false);
         }
         
         function saveProjectGeneralInfo() {
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
             
-            project.generalInfo = document.getElementById('projectGeneralInfo').innerHTML;
+            project.generalInfo = document.getElementById('projectGeneralInfo').value;
             saveToIndexedDB('projects', projects);
         }
 
@@ -5813,6 +6012,7 @@
             editingOfferId = id;
             const modal = document.getElementById('offerModal');
             modal.style.display = 'block';
+            document.body.classList.add('modal-open');
             
             // Se viewOnly, disabilita tutti i campi
             const isViewOnly = viewOnly === true;
@@ -5821,13 +6021,7 @@
             document.getElementById('offerEstimate').disabled = isViewOnly;
             document.getElementById('offerValue').disabled = isViewOnly;
             document.getElementById('offerStatus').disabled = isViewOnly;
-            document.getElementById('offerNotes').contentEditable = !isViewOnly;
-            
-            // Nascondi toolbar se viewOnly
-            const toolbars = document.querySelectorAll('#offerModal .rich-text-toolbar');
-            toolbars.forEach(toolbar => {
-                toolbar.style.display = isViewOnly ? 'none' : 'flex';
-            });
+            document.getElementById('offerNotes').disabled = isViewOnly;
             
             // Nascondi pulsante salva se viewOnly
             const saveBtn = document.querySelector('#offerModal .modal-footer button:last-child');
@@ -5845,7 +6039,7 @@
                 document.getElementById('offerEstimate').value = offer.estimate;
                 document.getElementById('offerValue').value = offer.value || '';
                 document.getElementById('offerStatus').value = offer.status;
-                document.getElementById('offerNotes').innerHTML = offer.notes || '';
+                document.getElementById('offerNotes').value = offer.notes || '';
             } else {
                 document.getElementById('offerModalTitle').textContent = '💼 Nuova Offerta';
                 document.getElementById('offerTitle').value = '';
@@ -5853,12 +6047,19 @@
                 document.getElementById('offerEstimate').value = '';
                 document.getElementById('offerValue').value = '';
                 document.getElementById('offerStatus').value = 'in-preparazione';
-                document.getElementById('offerNotes').innerHTML = '';
+                document.getElementById('offerNotes').value = '';
+            }
+            
+            // Inizializza editor markdown per le note
+            const notesTextarea = document.getElementById('offerNotes');
+            if (notesTextarea) {
+                createMarkdownEditor('offerNotes', null, isViewOnly);
             }
         }
         
         function closeOfferModal() {
             document.getElementById('offerModal').style.display = 'none';
+            document.body.classList.remove('modal-open');
             editingOfferId = null;
         }
         
@@ -5871,7 +6072,7 @@
             const estimate = document.getElementById('offerEstimate').value.trim();
             const value = document.getElementById('offerValue').value;
             const status = document.getElementById('offerStatus').value;
-            const notes = document.getElementById('offerNotes').innerHTML;
+            const notes = document.getElementById('offerNotes').value;
             
             if (!title || !date || !estimate || !status) {
                 alert('⚠️ Compila tutti i campi obbligatori');
@@ -5992,6 +6193,7 @@
             editingIssueId = id;
             const modal = document.getElementById('issueModal');
             modal.style.display = 'block';
+            document.body.classList.add('modal-open');
             
             // Popola select assegnatario con le risorse
             const select = document.getElementById('issueAssignee');
@@ -6035,10 +6237,17 @@
                 document.getElementById('issueStatus').value = 'aperto';
                 document.getElementById('issueDescription').value = '';
             }
+            
+            // Inizializza editor markdown per la descrizione
+            const descTextarea = document.getElementById('issueDescription');
+            if (descTextarea) {
+                createMarkdownEditor('issueDescription', null, isViewOnly);
+            }
         }
         
         function closeIssueModal() {
             document.getElementById('issueModal').style.display = 'none';
+            document.body.classList.remove('modal-open');
             editingIssueId = null;
         }
         
@@ -6149,21 +6358,14 @@
             editingMeetingId = id;
             const modal = document.getElementById('meetingModal');
             modal.style.display = 'block';
+            document.body.classList.add('modal-open');
             
             // Se viewOnly, disabilita tutti i campi
             const isViewOnly = viewOnly === true;
             document.getElementById('meetingDate').disabled = isViewOnly;
             document.getElementById('meetingSubject').disabled = isViewOnly;
             document.getElementById('meetingParticipants').disabled = isViewOnly;
-            document.getElementById('meetingTopics').contentEditable = !isViewOnly;
-            document.getElementById('meetingDecisions').contentEditable = !isViewOnly;
-            document.getElementById('meetingActions').contentEditable = !isViewOnly;
-            
-            // Nascondi toolbar se viewOnly
-            const toolbars = document.querySelectorAll('#meetingModal .rich-text-toolbar');
-            toolbars.forEach(toolbar => {
-                toolbar.style.display = isViewOnly ? 'none' : 'flex';
-            });
+            document.getElementById('meetingTopics').disabled = isViewOnly;
             
             // Nascondi pulsante salva se viewOnly
             const saveBtn = document.querySelector('#meetingModal .modal-footer button:last-child');
@@ -6180,22 +6382,25 @@
                 document.getElementById('meetingDate').value = meeting.date;
                 document.getElementById('meetingSubject').value = meeting.subject;
                 document.getElementById('meetingParticipants').value = meeting.participants;
-                document.getElementById('meetingTopics').innerHTML = meeting.topics || '';
-                document.getElementById('meetingDecisions').innerHTML = meeting.decisions || '';
-                document.getElementById('meetingActions').innerHTML = meeting.actions || '';
+                document.getElementById('meetingTopics').value = meeting.topics || '';
             } else {
                 document.getElementById('meetingModalTitle').textContent = '👥 Nuova Riunione';
                 document.getElementById('meetingDate').value = formatDateLocal(new Date());
                 document.getElementById('meetingSubject').value = '';
                 document.getElementById('meetingParticipants').value = '';
-                document.getElementById('meetingTopics').innerHTML = '';
-                document.getElementById('meetingDecisions').innerHTML = '';
-                document.getElementById('meetingActions').innerHTML = '';
+                document.getElementById('meetingTopics').value = '';
+            }
+            
+            // Inizializza editor markdown
+            const topicsTextarea = document.getElementById('meetingTopics');
+            if (topicsTextarea) {
+                createMarkdownEditor('meetingTopics', null, isViewOnly);
             }
         }
         
         function closeMeetingModal() {
             document.getElementById('meetingModal').style.display = 'none';
+            document.body.classList.remove('modal-open');
             editingMeetingId = null;
         }
         
@@ -6206,9 +6411,7 @@
             const date = document.getElementById('meetingDate').value;
             const subject = document.getElementById('meetingSubject').value.trim();
             const participants = document.getElementById('meetingParticipants').value.trim();
-            const topics = document.getElementById('meetingTopics').innerHTML;
-            const decisions = document.getElementById('meetingDecisions').innerHTML;
-            const actions = document.getElementById('meetingActions').innerHTML;
+            const topics = document.getElementById('meetingTopics').value;
             
             if (!date || !subject || !participants) {
                 alert('⚠️ Compila tutti i campi obbligatori');
@@ -6219,9 +6422,7 @@
                 date,
                 subject,
                 participants,
-                topics,
-                decisions,
-                actions
+                topics
             };
             
             if (!project.meetings) project.meetings = [];
