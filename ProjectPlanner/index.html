@@ -4967,6 +4967,8 @@
                 if (!project.tasks) return;
                 
                 project.tasks.forEach(task => {
+                    // Escludi attività completate
+                    if (task.status === 'completata') return;
                     if (!task.resources || task.resources.length === 0) return;
                     if (!task.startDate || !task.duration) return;
                     
@@ -11935,8 +11937,9 @@
                                           hasAnyResourceAbsent(assignment.endDate, taskResources);
                         
                         // Calcola data fine ipotetica senza assenze per confronto
+                        // Non mostrare l'avviso per attività completate
                         let absenceWarning = '';
-                        if (hasAbsences) {
+                        if (hasAbsences && assignment.task.status !== 'completata') {
                             const endWithoutAbsences = calculateEndDateForTask(
                                 assignment.task.startDate,
                                 assignment.task.duration,
