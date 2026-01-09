@@ -17,6 +17,7 @@
             --text-tertiary: #555;
             --border-color: #ddd;
             --accent-color: #4CAF50;
+            --accent-color-light: #e8f5e9;
             --accent-hover: #45a049;
             --danger-color: #f44336;
             --danger-hover: #da190b;
@@ -41,6 +42,7 @@
             --text-tertiary: #b0b0b0;
             --border-color: #404040;
             --accent-color: #575757;
+            --accent-color-light: #3a4a3a;
             --accent-hover: #000000;
             --danger-color: #4d2221;
             --danger-hover: #30100f;
@@ -3952,12 +3954,49 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="globalMeetingDate">Data *</label>
+                    <label for="globalMeetingDate">Data Inizio *</label>
                     <input type="date" id="globalMeetingDate" required>
                 </div>
                 <div class="form-group">
                     <label for="globalMeetingTime">Ora</label>
                     <input type="time" id="globalMeetingTime">
+                </div>
+                <div class="form-group" style="align-items: center;">
+                    <label style="margin: 0;">
+                        <input type="checkbox" id="globalMeetingRecurring" onchange="toggleRecurringFields()" style="cursor: pointer;"> Riunione Ricorsiva
+                    </label>
+                </div>
+                <div id="recurringFieldsContainer" style="display: none; width: 100%;">
+                    <div class="form-group">
+                        <label for="globalMeetingEndDate">Data Fine Ricorrenza *</label>
+                        <input type="date" id="globalMeetingEndDate">
+                    </div>
+                    <div class="form-group" style="flex-direction: column; align-items: stretch;">
+                        <label>Giorni della Settimana *</label>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="1" class="recurring-day"> Lunedì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="2" class="recurring-day"> Martedì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="3" class="recurring-day"> Mercoledì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="4" class="recurring-day"> Giovedì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="5" class="recurring-day"> Venerdì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="6" class="recurring-day"> Sabato
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="0" class="recurring-day"> Domenica
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="globalMeetingSubject">Oggetto *</label>
@@ -6619,7 +6658,7 @@
             
             const filterTag = document.getElementById('meetingFilterTag')?.value.toLowerCase() || '';
             
-            // Filtra e ordina per data decrescente
+            // Filtra e ordina per data crescente
             let filteredMeetings = meetings.filter(meeting => {
                 if (filterTag && (!meeting.tags || !meeting.tags.toLowerCase().includes(filterTag))) {
                     return false;
@@ -6628,16 +6667,39 @@
             });
             
             filteredMeetings.sort((a, b) => {
-                const dateA = new Date(a.date + (a.time ? 'T' + a.time : ''));
-                const dateB = new Date(b.date + (b.time ? 'T' + b.time : ''));
-                return dateB - dateA;
+                const dateA = new Date(a.date + (a.time ? 'T' + a.time : 'T00:00'));
+                const dateB = new Date(b.date + (b.time ? 'T' + b.time : 'T00:00'));
+                return dateA - dateB;
             });
+            
+            // Trova la prossima riunione
+            const now = new Date();
+            let nextMeetingId = null;
+            for (let meeting of filteredMeetings) {
+                const meetingDate = new Date(meeting.date + (meeting.time ? 'T' + meeting.time : 'T00:00'));
+                if (meetingDate >= now) {
+                    nextMeetingId = meeting.id;
+                    break;
+                }
+            }
             
             filteredMeetings.forEach((meeting) => {
                 const row = tbody.insertRow();
                 const date = new Date(meeting.date);
+                const meetingDateTime = new Date(meeting.date + (meeting.time ? 'T' + meeting.time : 'T00:00'));
+                const isPast = meetingDateTime < now;
+                const isNext = meeting.id === nextMeetingId;
                 
                 row.style.cursor = 'pointer';
+                
+                // Stili per riunioni passate e prossima
+                if (isPast) {
+                    row.style.opacity = '0.5';
+                } else if (isNext) {
+                    row.style.backgroundColor = 'var(--accent-color-light)';
+                    row.style.fontWeight = '600';
+                }
+                
                 row.onclick = function(e) {
                     if (e.target.tagName !== 'BUTTON') {
                         viewGlobalMeeting(meeting.id);
@@ -6649,8 +6711,10 @@
                     .map(id => getResourceName(id))
                     .join(', ');
                 
+                const seriesIndicator = meeting.seriesId ? '🔁 ' : '';
+                
                 row.innerHTML = `
-                    <td>${date.toLocaleDateString('it-IT')}${meeting.time ? ' ' + meeting.time : ''}</td>
+                    <td>${seriesIndicator}${date.toLocaleDateString('it-IT')}${meeting.time ? ' ' + meeting.time : ''}</td>
                     <td>${escapeHtml(meeting.subject)}</td>
                     <td>${escapeHtml(meeting.tags || '')}</td>
                     <td>${resourceNames || '-'}</td>
@@ -6694,6 +6758,12 @@
                 const meeting = meetings.find(m => m.id === meetingId);
                 if (meeting) {
                     title.textContent = viewOnly ? '👀 Visualizza Riunione' : '✏️ Modifica Riunione';
+                    
+                    // Se la riunione è parte di una serie, mostra indicatore
+                    if (meeting.seriesId) {
+                        title.textContent += ' (Ricorsiva)';
+                    }
+                    
                     document.getElementById('globalMeetingDate').value = meeting.date;
                     document.getElementById('globalMeetingTime').value = meeting.time || '';
                     document.getElementById('globalMeetingSubject').value = meeting.subject;
@@ -6702,6 +6772,10 @@
                     document.getElementById('globalMeetingActualDuration').value = meeting.actualDuration || '';
                     document.getElementById('globalMeetingDescription').value = meeting.description || '';
                     document.getElementById('globalMeetingMinutes').value = meeting.minutes || '';
+                    
+                    // Nascondi i campi ricorrenza quando si modifica una riunione esistente
+                    document.getElementById('globalMeetingRecurring').closest('.form-group').style.display = 'none';
+                    document.getElementById('recurringFieldsContainer').style.display = 'none';
                     
                     // Seleziona le risorse
                     (meeting.resourceIds || []).forEach(resId => {
@@ -6719,6 +6793,9 @@
                 document.getElementById('globalMeetingActualDuration').value = '';
                 document.getElementById('globalMeetingDescription').value = '';
                 document.getElementById('globalMeetingMinutes').value = '';
+                
+                // Mostra i campi ricorrenza per nuove riunioni
+                document.getElementById('globalMeetingRecurring').closest('.form-group').style.display = 'flex';
             }
             
             // Disabilita campi se view only
@@ -6743,10 +6820,22 @@
             const modal = document.getElementById('globalMeetingModal');
             closeModal(modal);
             editingGlobalMeetingId = null;
+            
+            // Reset campi ricorrenza
+            document.getElementById('globalMeetingRecurring').checked = false;
+            document.getElementById('globalMeetingEndDate').value = '';
+            document.querySelectorAll('.recurring-day').forEach(cb => cb.checked = false);
+            document.getElementById('recurringFieldsContainer').style.display = 'none';
+        }
+        
+        function toggleRecurringFields() {
+            const isRecurring = document.getElementById('globalMeetingRecurring').checked;
+            const container = document.getElementById('recurringFieldsContainer');
+            container.style.display = isRecurring ? 'block' : 'none';
         }
         
         function saveGlobalMeeting() {
-            const date = document.getElementById('globalMeetingDate').value;
+            const startDate = document.getElementById('globalMeetingDate').value;
             const time = document.getElementById('globalMeetingTime').value;
             const subject = document.getElementById('globalMeetingSubject').value.trim();
             const tags = document.getElementById('globalMeetingTags').value.trim();
@@ -6754,8 +6843,9 @@
             const actualDuration = document.getElementById('globalMeetingActualDuration').value;
             const description = document.getElementById('globalMeetingDescription').value;
             const minutes = document.getElementById('globalMeetingMinutes').value;
+            const isRecurring = document.getElementById('globalMeetingRecurring').checked;
             
-            if (!date || !subject) {
+            if (!startDate || !subject) {
                 alert('⚠️ Compila almeno Data e Oggetto');
                 return;
             }
@@ -6774,26 +6864,84 @@
                 return;
             }
             
-            const meeting = {
-                id: editingGlobalMeetingId || 'meeting_' + Date.now(),
-                date,
-                time,
-                subject,
-                tags,
-                resourceIds,
-                expectedDuration: expectedDuration ? parseFloat(expectedDuration) : null,
-                actualDuration: actualDuration ? parseFloat(actualDuration) : null,
-                description,
-                minutes
-            };
-            
-            if (editingGlobalMeetingId) {
-                const index = meetings.findIndex(m => m.id === editingGlobalMeetingId);
-                if (index > -1) {
-                    meetings[index] = meeting;
+            // Se è ricorsiva, valida e genera le istanze
+            if (isRecurring) {
+                const endDate = document.getElementById('globalMeetingEndDate').value;
+                if (!endDate) {
+                    alert('⚠️ Specifica la data fine per la riunione ricorsiva');
+                    return;
+                }
+                
+                const selectedDays = [];
+                document.querySelectorAll('.recurring-day:checked').forEach(cb => {
+                    selectedDays.push(parseInt(cb.value));
+                });
+                
+                if (selectedDays.length === 0) {
+                    alert('⚠️ Seleziona almeno un giorno della settimana');
+                    return;
+                }
+                
+                // Se stiamo modificando, rimuovi le istanze esistenti della serie
+                if (editingGlobalMeetingId) {
+                    const editingMeeting = meetings.find(m => m.id === editingGlobalMeetingId);
+                    if (editingMeeting && editingMeeting.seriesId) {
+                        meetings = meetings.filter(m => m.seriesId !== editingMeeting.seriesId);
+                    } else {
+                        meetings = meetings.filter(m => m.id !== editingGlobalMeetingId);
+                    }
+                }
+                
+                // Genera le istanze ricorsive
+                const seriesId = 'series_' + Date.now();
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const current = new Date(start);
+                
+                while (current <= end) {
+                    const dayOfWeek = current.getDay();
+                    if (selectedDays.includes(dayOfWeek)) {
+                        const meeting = {
+                            id: 'meeting_' + Date.now() + '_' + current.getTime(),
+                            date: current.toISOString().split('T')[0],
+                            time,
+                            subject,
+                            tags,
+                            resourceIds,
+                            expectedDuration: expectedDuration ? parseFloat(expectedDuration) : null,
+                            actualDuration: actualDuration ? parseFloat(actualDuration) : null,
+                            description,
+                            minutes,
+                            seriesId,
+                            isRecurring: true
+                        };
+                        meetings.push(meeting);
+                    }
+                    current.setDate(current.getDate() + 1);
                 }
             } else {
-                meetings.push(meeting);
+                // Riunione singola
+                const meeting = {
+                    id: editingGlobalMeetingId || 'meeting_' + Date.now(),
+                    date: startDate,
+                    time,
+                    subject,
+                    tags,
+                    resourceIds,
+                    expectedDuration: expectedDuration ? parseFloat(expectedDuration) : null,
+                    actualDuration: actualDuration ? parseFloat(actualDuration) : null,
+                    description,
+                    minutes
+                };
+                
+                if (editingGlobalMeetingId) {
+                    const index = meetings.findIndex(m => m.id === editingGlobalMeetingId);
+                    if (index > -1) {
+                        meetings[index] = meeting;
+                    }
+                } else {
+                    meetings.push(meeting);
+                }
             }
             
             saveToIndexedDB('meetings', meetings);
@@ -11810,9 +11958,13 @@
                 if (meeting.resourceIds && meeting.resourceIds.includes(resource.id)) {
                     const meetingDate = new Date(meeting.date);
                     meetingDate.setHours(0, 0, 0, 0);
+                    const periodStart = new Date(startDate);
+                    periodStart.setHours(0, 0, 0, 0);
+                    const periodEnd = new Date(endDate);
+                    periodEnd.setHours(23, 59, 59, 999);
                     
                     // Filtra per periodo
-                    if (meetingDate >= startDate && meetingDate <= endDate) {
+                    if (meetingDate >= periodStart && meetingDate <= periodEnd) {
                         assignments.push({
                             type: 'meeting',
                             meeting: meeting,
@@ -12144,6 +12296,15 @@
                         
                         // Filtra attività per questo giorno considerando se l'attività specifica lavora nel weekend/festivo
                         const dayAssignments = assignmentsInPeriod.filter(assignment => {
+                            // Le riunioni hanno confronto specifico per data
+                            if (assignment.type === 'meeting') {
+                                const meetingDate = new Date(assignment.meeting.date);
+                                const checkDateInner = new Date(currentDate);
+                                meetingDate.setHours(0, 0, 0, 0);
+                                checkDateInner.setHours(0, 0, 0, 0);
+                                return meetingDate.getTime() === checkDateInner.getTime();
+                            }
+                            
                             const taskStart = new Date(assignment.startDate);
                             const taskEnd = new Date(assignment.endDate);
                             const checkDateInner = new Date(currentDate);
@@ -12156,13 +12317,18 @@
                                 return false;
                             }
                             
-                            // Le riunioni sono sempre incluse (non hanno vincoli di giorni lavorativi)
-                            if (assignment.type === 'meeting') {
-                                return true;
-                            }
-                            
                             // Verifica se l'attività può lavorare in questo giorno specifico
                             return isWorkingDay(currentDate, assignment.task);
+                        });
+                        
+                        // Ordina: riunioni prima, poi per data
+                        dayAssignments.sort((a, b) => {
+                            // Riunioni sempre in testa
+                            if (a.type === 'meeting' && b.type !== 'meeting') return -1;
+                            if (a.type !== 'meeting' && b.type === 'meeting') return 1;
+                            
+                            // Altrimenti ordina per data
+                            return a.startDate.localeCompare(b.startDate);
                         });
                         
                         // Aggiungi ogni attività come card compatta
