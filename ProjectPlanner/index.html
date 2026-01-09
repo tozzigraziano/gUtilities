@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -1735,6 +1735,44 @@
         .resource-assignment.status-cancelled {
             border-left-color: #333333 !important;
         }
+        
+        .resource-assignment.meeting-item {
+            border-left-color: #f32121 !important;
+            background: #f32121b8 !important;
+            color: white !important;
+        }
+        
+        [data-theme="dark"] .resource-assignment.meeting-item {
+            background: #f32121b8 !important;
+            color: white !important;
+        }
+        
+        .week-task-card.meeting-item {
+            border-left-color: #f32121 !important;
+            background: #f32121b8 !important;
+            color: white !important;
+        }
+        
+        .week-task-card.meeting-item div {
+            color: white !important;
+        }
+        
+        .week-task-card.meeting-item span {
+            color: white !important;
+        }
+        
+        [data-theme="dark"] .week-task-card.meeting-item {
+            background: #f32121b8 !important;
+            color: white !important;
+        }
+        
+        [data-theme="dark"] .week-task-card.meeting-item div {
+            color: white !important;
+        }
+        
+        [data-theme="dark"] .week-task-card.meeting-item span {
+            color: white !important;
+        }
 
         .resource-assignment.flexible-suggestion {
             border-left: none !important;
@@ -2393,6 +2431,7 @@
             <button class="tab" onclick="switchTab('holidays')">Festività</button>
             <button class="tab" onclick="switchTab('projects')">Progetti</button>
             <button class="tab" onclick="switchTab('templates')">Template</button>
+            <button class="tab" onclick="switchTab('meetings')">👥 Riunioni</button>
             <button class="tab" onclick="switchTab('bacheca')">📋 Bacheca</button>
             <button class="tab" onclick="switchTab('gantt')">Gantt</button>
             <button class="tab" onclick="switchTab('resourceView')">Vista Risorse</button>
@@ -2733,6 +2772,37 @@
 
                 <button onclick="closeTemplateDetails()" class="secondary">← Torna ai Template</button>
             </div>
+        </div>
+
+        <!-- TAB RIUNIONI -->
+        <div id="meetings" class="tab-content">
+            <h2>👥 Gestione Riunioni</h2>
+            
+            <div class="action-bar">
+                <button onclick="openGlobalMeetingModal()">➕ Nuova Riunione</button>
+                <div style="display: flex; gap: 15px; align-items: center; margin-left: auto; flex-wrap: nowrap;">
+                    <label style="white-space: nowrap;">
+                        Filtra per tag:
+                        <input type="text" id="meetingFilterTag" placeholder="Tag" onkeyup="renderGlobalMeetings()" style="width: 120px;">
+                    </label>
+                </div>
+            </div>
+
+            <h3>Elenco Riunioni</h3>
+            <table id="globalMeetingsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 120px;">Data</th>
+                        <th>Oggetto</th>
+                        <th>Tag</th>
+                        <th>Risorse</th>
+                        <th style="width: 100px;">Durata Prev.</th>
+                        <th style="width: 100px;">Durata Reale</th>
+                        <th style="width: 120px;">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
 
         <!-- TAB BACHECA -->
@@ -3873,10 +3943,65 @@
         </div>
     </div>
 
+    <!-- Modal Riunione Globale -->
+    <div id="globalMeetingModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 id="globalMeetingModalTitle">👥 Nuova Riunione</h3>
+                <button class="modal-close" onclick="closeGlobalMeetingModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="globalMeetingDate">Data *</label>
+                    <input type="date" id="globalMeetingDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingTime">Ora</label>
+                    <input type="time" id="globalMeetingTime">
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingSubject">Oggetto *</label>
+                    <input type="text" id="globalMeetingSubject" placeholder="Oggetto della riunione" required>
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingTags">Tag</label>
+                    <input type="text" id="globalMeetingTags" placeholder="es: Planning, Review, Technical" list="meetingTagsSuggestions">
+                    <datalist id="meetingTagsSuggestions"></datalist>
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingResources">Risorse *</label>
+                    <div id="globalMeetingResourcesContainer" style="flex: 1;">
+                        <!-- Checkboxes generate dinamicamente -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingExpectedDuration">Durata Prevista (ore)</label>
+                    <input type="number" id="globalMeetingExpectedDuration" min="0" step="0.25" placeholder="es: 1.5">
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingActualDuration">Durata Reale (ore)</label>
+                    <input type="number" id="globalMeetingActualDuration" min="0" step="0.25" placeholder="es: 2">
+                </div>
+                <div class="form-group" style="flex-direction: column; align-items: stretch;">
+                    <label for="globalMeetingDescription">Descrizione</label>
+                    <textarea id="globalMeetingDescription" rows="6" placeholder="Descrizione della riunione (supporta Markdown)"></textarea>
+                </div>
+                <div class="form-group" style="flex-direction: column; align-items: stretch;">
+                    <label for="globalMeetingMinutes">Resoconto</label>
+                    <textarea id="globalMeetingMinutes" rows="8" placeholder="Resoconto della riunione (supporta Markdown)"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeGlobalMeetingModal()" class="secondary">Annulla</button>
+                <button onclick="saveGlobalMeeting()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // === INDEXEDDB SETUP ===
         const DB_NAME = 'ProjectPlannerDB';
-        const DB_VERSION = 1;
+        const DB_VERSION = 2;
         let db = null;
 
         // Inizializza IndexedDB
@@ -3908,6 +4033,9 @@
                     }
                     if (!db.objectStoreNames.contains('settings')) {
                         db.createObjectStore('settings', { keyPath: 'key' });
+                    }
+                    if (!db.objectStoreNames.contains('meetings')) {
+                        db.createObjectStore('meetings', { keyPath: 'id' });
                     }
                 };
             });
@@ -4008,6 +4136,7 @@
         let localHolidays = []; // Festività locali ricorrenti
         let projects = [];
         let templates = [];
+        let meetings = []; // Riunioni globali
         let currentProjectId = null;
         let currentTemplateId = null;
         let editingResourceId = null;
@@ -4016,6 +4145,7 @@
         let editingLocalHolidayId = null;
         let editingTemplateMilestoneId = null;
         let editingTemplateTaskId = null;
+        let editingGlobalMeetingId = null; // Per le riunioni globali
         let suggestedStartDate = null; // Data suggerita dal click su attività flessibile
         let suggestedResourceId = null; // Risorsa suggerita dal click su attività non assegnata
         let collapsedResources = {}; // Salva lo stato di collapse per ogni risorsa
@@ -4209,6 +4339,11 @@
             // Renderizza la Revisione Attività quando si apre la tab
             if (tabName === 'taskReview') {
                 renderTaskReview();
+            }
+            // Renderizza le Riunioni quando si apre la tab
+            if (tabName === 'meetings') {
+                renderGlobalMeetings();
+                updateMeetingTagsSuggestions();
             }
             // Mostra la vista iniziale con l'elenco progetti quando si apre la tab Progetti
             if (tabName === 'projects') {
@@ -6472,6 +6607,241 @@
             
             saveToIndexedDB('projects', projects);
             renderProjectMeetings();
+        }
+
+        // ========================================
+        // === GLOBAL MEETINGS MANAGEMENT ===
+        // ========================================
+        
+        function renderGlobalMeetings() {
+            const tbody = document.querySelector('#globalMeetingsTable tbody');
+            tbody.innerHTML = '';
+            
+            const filterTag = document.getElementById('meetingFilterTag')?.value.toLowerCase() || '';
+            
+            // Filtra e ordina per data decrescente
+            let filteredMeetings = meetings.filter(meeting => {
+                if (filterTag && (!meeting.tags || !meeting.tags.toLowerCase().includes(filterTag))) {
+                    return false;
+                }
+                return true;
+            });
+            
+            filteredMeetings.sort((a, b) => {
+                const dateA = new Date(a.date + (a.time ? 'T' + a.time : ''));
+                const dateB = new Date(b.date + (b.time ? 'T' + b.time : ''));
+                return dateB - dateA;
+            });
+            
+            filteredMeetings.forEach((meeting) => {
+                const row = tbody.insertRow();
+                const date = new Date(meeting.date);
+                
+                row.style.cursor = 'pointer';
+                row.onclick = function(e) {
+                    if (e.target.tagName !== 'BUTTON') {
+                        viewGlobalMeeting(meeting.id);
+                    }
+                };
+                
+                // Formatta le risorse
+                const resourceNames = (meeting.resourceIds || [])
+                    .map(id => getResourceName(id))
+                    .join(', ');
+                
+                row.innerHTML = `
+                    <td>${date.toLocaleDateString('it-IT')}${meeting.time ? ' ' + meeting.time : ''}</td>
+                    <td>${escapeHtml(meeting.subject)}</td>
+                    <td>${escapeHtml(meeting.tags || '')}</td>
+                    <td>${resourceNames || '-'}</td>
+                    <td>${meeting.expectedDuration ? meeting.expectedDuration + 'h' : '-'}</td>
+                    <td>${meeting.actualDuration ? meeting.actualDuration + 'h' : '-'}</td>
+                    <td>
+                        <button onclick="event.stopPropagation(); editGlobalMeeting('${meeting.id}')" title="Modifica" style="padding: 4px 8px; font-size: 12px;">✏️</button>
+                        <button onclick="event.stopPropagation(); deleteGlobalMeeting('${meeting.id}')" title="Elimina" class="delete" style="padding: 4px 8px; font-size: 12px;">🗑️</button>
+                    </td>
+                `;
+            });
+            
+            if (filteredMeetings.length === 0) {
+                const row = tbody.insertRow();
+                row.innerHTML = '<td colspan="7" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessuna riunione trovata</td>';
+            }
+        }
+        
+        function openGlobalMeetingModal(meetingId = null, viewOnly = false) {
+            const modal = document.getElementById('globalMeetingModal');
+            const title = document.getElementById('globalMeetingModalTitle');
+            
+            editingGlobalMeetingId = meetingId;
+            
+            // Popola la lista delle risorse
+            const resourcesContainer = document.getElementById('globalMeetingResourcesContainer');
+            resourcesContainer.innerHTML = '';
+            
+            resources.forEach(resource => {
+                const fullName = `${resource.firstName || ''} ${resource.lastName || ''}`.trim();
+                const checkbox = document.createElement('div');
+                checkbox.style.marginBottom = '6px';
+                checkbox.innerHTML = `
+                    <input type="checkbox" id="meetingRes_${resource.id}" value="${resource.id}" ${viewOnly ? 'disabled' : ''}>
+                    <label for="meetingRes_${resource.id}" style="cursor: pointer; user-select: none;">${fullName || 'Sconosciuto'}</label>
+                `;
+                resourcesContainer.appendChild(checkbox);
+            });
+            
+            if (meetingId) {
+                const meeting = meetings.find(m => m.id === meetingId);
+                if (meeting) {
+                    title.textContent = viewOnly ? '👀 Visualizza Riunione' : '✏️ Modifica Riunione';
+                    document.getElementById('globalMeetingDate').value = meeting.date;
+                    document.getElementById('globalMeetingTime').value = meeting.time || '';
+                    document.getElementById('globalMeetingSubject').value = meeting.subject;
+                    document.getElementById('globalMeetingTags').value = meeting.tags || '';
+                    document.getElementById('globalMeetingExpectedDuration').value = meeting.expectedDuration || '';
+                    document.getElementById('globalMeetingActualDuration').value = meeting.actualDuration || '';
+                    document.getElementById('globalMeetingDescription').value = meeting.description || '';
+                    document.getElementById('globalMeetingMinutes').value = meeting.minutes || '';
+                    
+                    // Seleziona le risorse
+                    (meeting.resourceIds || []).forEach(resId => {
+                        const checkbox = document.getElementById('meetingRes_' + resId);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+            } else {
+                title.textContent = '👥 Nuova Riunione';
+                document.getElementById('globalMeetingDate').value = '';
+                document.getElementById('globalMeetingTime').value = '';
+                document.getElementById('globalMeetingSubject').value = '';
+                document.getElementById('globalMeetingTags').value = '';
+                document.getElementById('globalMeetingExpectedDuration').value = '';
+                document.getElementById('globalMeetingActualDuration').value = '';
+                document.getElementById('globalMeetingDescription').value = '';
+                document.getElementById('globalMeetingMinutes').value = '';
+            }
+            
+            // Disabilita campi se view only
+            if (viewOnly) {
+                document.querySelectorAll('#globalMeetingModal input, #globalMeetingModal textarea, #globalMeetingModal select').forEach(el => {
+                    el.disabled = true;
+                });
+            } else {
+                document.querySelectorAll('#globalMeetingModal input, #globalMeetingModal textarea, #globalMeetingModal select').forEach(el => {
+                    el.disabled = false;
+                });
+            }
+            
+            // Inizializza editor markdown per descrizione e resoconto
+            createMarkdownEditor('globalMeetingDescription', null, viewOnly);
+            createMarkdownEditor('globalMeetingMinutes', null, viewOnly);
+            
+            openModal(modal);
+        }
+        
+        function closeGlobalMeetingModal() {
+            const modal = document.getElementById('globalMeetingModal');
+            closeModal(modal);
+            editingGlobalMeetingId = null;
+        }
+        
+        function saveGlobalMeeting() {
+            const date = document.getElementById('globalMeetingDate').value;
+            const time = document.getElementById('globalMeetingTime').value;
+            const subject = document.getElementById('globalMeetingSubject').value.trim();
+            const tags = document.getElementById('globalMeetingTags').value.trim();
+            const expectedDuration = document.getElementById('globalMeetingExpectedDuration').value;
+            const actualDuration = document.getElementById('globalMeetingActualDuration').value;
+            const description = document.getElementById('globalMeetingDescription').value;
+            const minutes = document.getElementById('globalMeetingMinutes').value;
+            
+            if (!date || !subject) {
+                alert('⚠️ Compila almeno Data e Oggetto');
+                return;
+            }
+            
+            // Raccogli le risorse selezionate
+            const resourceIds = [];
+            resources.forEach(resource => {
+                const checkbox = document.getElementById('meetingRes_' + resource.id);
+                if (checkbox && checkbox.checked) {
+                    resourceIds.push(resource.id);
+                }
+            });
+            
+            if (resourceIds.length === 0) {
+                alert('⚠️ Seleziona almeno una risorsa');
+                return;
+            }
+            
+            const meeting = {
+                id: editingGlobalMeetingId || 'meeting_' + Date.now(),
+                date,
+                time,
+                subject,
+                tags,
+                resourceIds,
+                expectedDuration: expectedDuration ? parseFloat(expectedDuration) : null,
+                actualDuration: actualDuration ? parseFloat(actualDuration) : null,
+                description,
+                minutes
+            };
+            
+            if (editingGlobalMeetingId) {
+                const index = meetings.findIndex(m => m.id === editingGlobalMeetingId);
+                if (index > -1) {
+                    meetings[index] = meeting;
+                }
+            } else {
+                meetings.push(meeting);
+            }
+            
+            saveToIndexedDB('meetings', meetings);
+            closeGlobalMeetingModal();
+            renderGlobalMeetings();
+            updateMeetingTagsSuggestions();
+        }
+        
+        function editGlobalMeeting(meetingId) {
+            openGlobalMeetingModal(meetingId);
+        }
+        
+        function viewGlobalMeeting(meetingId) {
+            openGlobalMeetingModal(meetingId, true);
+        }
+        
+        function deleteGlobalMeeting(meetingId) {
+            if (!confirm('Eliminare questa riunione?')) return;
+            
+            const index = meetings.findIndex(m => m.id === meetingId);
+            if (index > -1) {
+                meetings.splice(index, 1);
+            }
+            
+            saveToIndexedDB('meetings', meetings);
+            renderGlobalMeetings();
+            updateMeetingTagsSuggestions();
+        }
+        
+        function updateMeetingTagsSuggestions() {
+            const datalist = document.getElementById('meetingTagsSuggestions');
+            if (!datalist) return;
+            
+            const tagsSet = new Set();
+            meetings.forEach(meeting => {
+                if (meeting.tags) {
+                    meeting.tags.split(',').forEach(tag => {
+                        tagsSet.add(tag.trim());
+                    });
+                }
+            });
+            
+            datalist.innerHTML = '';
+            tagsSet.forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag;
+                datalist.appendChild(option);
+            });
         }
         
         // Helper function per ottenere il nome di una risorsa
@@ -8756,12 +9126,13 @@
         // === IMPORT/EXPORT ===
         function exportData() {
             const data = {
-                version: '1.0',
+                version: '2.0',
                 exportDate: new Date().toISOString(),
                 resources,
                 localHolidays,
                 projects,
-                templates
+                templates,
+                meetings
             };
 
             const dataStr = JSON.stringify(data, null, 2);
@@ -8798,6 +9169,7 @@
                     localHolidays = data.localHolidays || [];
                     projects = data.projects || [];
                     templates = data.templates || [];
+                    meetings = data.meetings || [];
                     
                     saveToIndexedDBAll();
                     calculateHolidays();
@@ -8806,9 +9178,11 @@
                     renderHolidays();
                     renderProjects();
                     renderTemplates();
+                    renderGlobalMeetings();
                     updateResourceSelects();
                     updateProjectSelects();
                     updateTemplateSelects();
+                    updateMeetingTagsSuggestions();
                     
                     alert('Dati importati con successo!');
                     fileInput.value = '';
@@ -8862,6 +9236,13 @@
                         });
                     }
                     
+                    if (data.meetings) {
+                        data.meetings.forEach(m => {
+                            m.id = 'meeting_' + Date.now() + '_' + Math.random();
+                            meetings.push(m);
+                        });
+                    }
+                    
                     saveToIndexedDBAll();
                     calculateHolidays();
                     renderResources();
@@ -8869,9 +9250,11 @@
                     renderHolidays();
                     renderProjects();
                     renderTemplates();
+                    renderGlobalMeetings();
                     updateResourceSelects();
                     updateProjectSelects();
                     updateTemplateSelects();
+                    updateMeetingTagsSuggestions();
                     
                     alert('Dati uniti con successo!');
                     fileInput.value = '';
@@ -8889,6 +9272,7 @@
                 await saveToIndexedDB('localHolidays', localHolidays);
                 await saveToIndexedDB('projects', projects);
                 await saveToIndexedDB('templates', templates);
+                await saveToIndexedDB('meetings', meetings);
             } catch (error) {
                 console.error('Errore salvataggio IndexedDB:', error);
             }
@@ -8900,6 +9284,7 @@
                 localHolidays = await loadFromIndexedDB('localHolidays');
                 projects = await loadFromIndexedDB('projects');
                 templates = await loadFromIndexedDB('templates');
+                meetings = await loadFromIndexedDB('meetings');
                 
                 // Carica holidays (calcolato, non salvato)
                 const savedHolidays = localStorage.getItem('projectPlanner_holidays');
@@ -11406,6 +11791,7 @@
                                 // Filtra per periodo
                                 if (taskEnd >= startDate && taskStart <= endDate) {
                                     assignments.push({
+                                        type: 'task',
                                         project,
                                         task,
                                         percentage: res.percentage,
@@ -11418,9 +11804,28 @@
                     });
                 }
             });
+            
+            // Raccogli le riunioni per questa risorsa
+            meetings.forEach(meeting => {
+                if (meeting.resourceIds && meeting.resourceIds.includes(resource.id)) {
+                    const meetingDate = new Date(meeting.date);
+                    meetingDate.setHours(0, 0, 0, 0);
+                    
+                    // Filtra per periodo
+                    if (meetingDate >= startDate && meetingDate <= endDate) {
+                        assignments.push({
+                            type: 'meeting',
+                            meeting: meeting,
+                            startDate: meeting.date,
+                            endDate: meeting.date
+                        });
+                    }
+                }
+            });
 
-            // Calcola sovraccarico solo nel periodo visualizzato
-            const overload = calculateResourceOverload(assignments, startDate, endDate);
+            // Calcola sovraccarico solo nel periodo visualizzato (escluse le riunioni)
+            const taskAssignments = assignments.filter(a => a.type === 'task');
+            const overload = calculateResourceOverload(taskAssignments, startDate, endDate);
             if (overload.maxLoad > 100) {
                 card.classList.add('overloaded');
             }
@@ -11651,6 +12056,11 @@
             // Timeline assegnazioni
             // Filtra solo le attività che hanno giorni lavorativi nel periodo visualizzato
             const assignmentsInPeriod = assignments.filter(assignment => {
+                // Le riunioni sono sempre incluse (sono eventi puntuali)
+                if (assignment.type === 'meeting') {
+                    return true;
+                }
+                
                 const start = new Date(assignment.startDate);
                 const end = new Date(assignment.endDate);
                 const calcStart = start < startDate ? new Date(startDate) : new Date(start);
@@ -11746,6 +12156,11 @@
                                 return false;
                             }
                             
+                            // Le riunioni sono sempre incluse (non hanno vincoli di giorni lavorativi)
+                            if (assignment.type === 'meeting') {
+                                return true;
+                            }
+                            
                             // Verifica se l'attività può lavorare in questo giorno specifico
                             return isWorkingDay(currentDate, assignment.task);
                         });
@@ -11757,6 +12172,36 @@
                             if (isMonthView) taskCard.classList.add('month-view');
                             taskCard.style.cursor = 'pointer';
                             
+                            // Gestisci riunioni separatamente
+                            if (assignment.type === 'meeting') {
+                                const meeting = assignment.meeting;
+                                taskCard.classList.add('meeting-item');
+                                
+                                if (isMonthView) {
+                                    taskCard.innerHTML = `
+                                        <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Riunione">�️ Riunione</div>
+                                        <div style="font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${meeting.subject}">${meeting.subject}</div>
+                                        <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${meeting.tags || ''}</div>
+                                    `;
+                                } else {
+                                    taskCard.innerHTML = `
+                                        <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: white;" title="${meeting.subject}">🗓️ ${meeting.subject}</div>
+                                        <div style="font-size: 10px; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${meeting.tags || ''}</div>
+                                        <div style="font-size: 10px; margin-top: 2px; color: white;">
+                                            <span>Durata: ${meeting.expectedDuration ? meeting.expectedDuration + 'h' : '-'}</span>
+                                        </div>
+                                    `;
+                                }
+                                
+                                taskCard.onclick = () => {
+                                    viewGlobalMeeting(meeting.id);
+                                };
+                                
+                                dayColumn.appendChild(taskCard);
+                                return;
+                            }
+                            
+                            // Gestione normale per task
                             // Aggiungi classe per stato
                             const status = assignment.task.status || 'nessuno';
                             if (status === 'nessuno') taskCard.classList.add('status-none');
@@ -11907,14 +12352,61 @@
                     const timeline = document.createElement('div');
                     timeline.className = 'resource-timeline';
 
-                    // Ordina per data
-                    assignmentsInPeriod.sort((a, b) => a.startDate.localeCompare(b.startDate));
+                    // Ordina per data e metti le riunioni sempre in testa
+                    assignmentsInPeriod.sort((a, b) => {
+                        // Riunioni sempre prima
+                        if (a.type === 'meeting' && b.type !== 'meeting') return -1;
+                        if (a.type !== 'meeting' && b.type === 'meeting') return 1;
+                        // Altrimenti ordina per data
+                        return a.startDate.localeCompare(b.startDate);
+                    });
 
                     assignmentsInPeriod.forEach(assignment => {
                         const assignDiv = document.createElement('div');
                         assignDiv.className = 'resource-assignment';
                         assignDiv.style.cursor = 'pointer';
+                        
+                        // Gestisci riunioni diversamente
+                        if (assignment.type === 'meeting') {
+                            assignDiv.classList.add('meeting-item');
+                            
+                            const meeting = assignment.meeting;
+                            const meetingInfo = document.createElement('div');
+                            meetingInfo.style.fontSize = '13px';
+                            meetingInfo.style.padding = '8px 10px';
+                            meetingInfo.style.display = 'grid';
+                            meetingInfo.style.gridTemplateColumns = '50px 200px 1fr 120px 120px';
+                            meetingInfo.style.gap = '15px';
+                            meetingInfo.style.alignItems = 'center';
+                            meetingInfo.innerHTML = `
+                                <span style="font-size: 24px;">🗓️</span>
+                                <span style="font-weight: bold; color: white;">${meeting.subject}</span>
+                                <span style="color: white;">${meeting.tags || ''}</span>
+                                <span style="color: white;">Prev: ${meeting.expectedDuration ? meeting.expectedDuration + 'h' : '-'}</span>
+                                <span style="color: white;">Reale: ${meeting.actualDuration ? meeting.actualDuration + 'h' : '-'}</span>
+                            `;
+                            assignDiv.appendChild(meetingInfo);
+                            
+                            // Riga con data
+                            const dateRow = document.createElement('div');
+                            dateRow.style.fontSize = '12px';
+                            dateRow.style.padding = '0 10px 8px 10px';
+                            dateRow.style.color = 'white';
+                            dateRow.innerHTML = `
+                                <span>📅 ${meeting.date}${meeting.time ? ' ' + meeting.time : ''}</span>
+                            `;
+                            assignDiv.appendChild(dateRow);
+                            
+                            // Click handler per riunioni
+                            assignDiv.onclick = () => {
+                                viewGlobalMeeting(meeting.id);
+                            };
+                            
+                            timeline.appendChild(assignDiv);
+                            return;
+                        }
 
+                        // Gestione normale per task
                         // Aggiungi classe per stato
                         const status = assignment.task.status || 'nessuno';
                         if (status === 'nessuno') assignDiv.classList.add('status-none');
