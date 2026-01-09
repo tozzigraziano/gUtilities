@@ -1,0 +1,2461 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timesheet Manager</title>
+    <style>
+        :root {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f9f9f9;
+            --bg-hover: #f0f0f0;
+            --text-primary: #333;
+            --text-secondary: #444;
+            --text-tertiary: #555;
+            --border-color: #ddd;
+            --accent-color: #667eea;
+            --accent-hover: #5568d3;
+            --danger-color: #dc3545;
+            --danger-hover: #c82333;
+            --success-color: #28a745;
+            --success-hover: #218838;
+            --info-color: #17a2b8;
+            --info-hover: #138496;
+            --warning-color: #ffc107;
+            --warning-hover: #e0a800;
+            --input-bg: #ffffff;
+            --input-disabled: #f0f0f0;
+            --table-stripe: #f9f9f9;
+            --shadow: rgba(0,0,0,0.1);
+            --modal-bg: rgba(0,0,0,0.5);
+            --gradient-start: #667eea;
+            --gradient-end: #764ba2;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #252525;
+            --bg-hover: #3a3a3a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #d0d0d0;
+            --text-tertiary: #b0b0b0;
+            --border-color: #404040;
+            --accent-color: #575757;
+            --accent-hover: #000000;
+            --danger-color: #4d2221;
+            --danger-hover: #30100f;
+            --success-color: #1e4620;
+            --success-hover: #152e17;
+            --info-color: #1d4363;
+            --info-hover: #072035;
+            --warning-color: #665300;
+            --warning-hover: #4d3f00;
+            --input-bg: #3a3a3a;
+            --input-disabled: #2a2a2a;
+            --table-stripe: #252525;
+            --shadow: rgba(0,0,0,0.3);
+            --modal-bg: rgba(0,0,0,0.7);
+            --gradient-start: #2a2a2a;
+            --gradient-end: #1a1a1a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            padding: 8px;
+            transition: background-color 0.3s, color 0.3s;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: var(--bg-secondary);
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 8px 15px;
+            text-align: center;
+            position: relative;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            color: var(--text-primary);
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-hover);
+            transform: scale(1.05);
+        }
+
+        .header h1 {
+            font-size: 1.3em;
+            margin-bottom: 2px;
+        }
+
+        .header p {
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-bottom: 2px solid var(--border-color);
+            gap: 3px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 8px 10px;
+            text-align: center;
+            cursor: pointer;
+            background: var(--bg-tertiary);
+            border: none;
+            font-size: 12px;
+            transition: all 0.3s;
+            color: var(--text-primary);
+            border-radius: 4px 4px 0 0;
+        }
+
+        .nav-tab:hover {
+            background: var(--bg-hover);
+        }
+
+        .nav-tab.active {
+            background: var(--accent-color);
+            color: white;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 10px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .section h2 {
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 5px;
+            font-size: 1.1em;
+        }
+
+        .section h3 {
+            color: var(--text-secondary);
+            margin-top: 15px;
+            font-size: 1em;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            font-size: 12px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            font-size: 13px;
+            transition: border 0.3s;
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+            margin-right: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--info-color);
+            color: white;
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+
+        .btn-secondary:hover {
+            background: var(--info-hover);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-hover);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: var(--success-hover);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: var(--bg-secondary);
+            font-size: 12px;
+        }
+
+        table thead {
+            background: #37474f;
+            color: white;
+        }
+
+        table th,
+        table td {
+            padding: 5px 8px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        table thead th {
+            color: white;
+            font-weight: 600;
+        }
+
+        table tbody tr:hover {
+            background: var(--bg-hover);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 3px;
+            white-space: nowrap;
+        }
+
+        .action-buttons button {
+            padding: 3px 6px;
+            font-size: 11px;
+            margin-right: 3px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px var(--shadow);
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-card h3 {
+            color: var(--accent-color);
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            color: var(--text-tertiary);
+            font-size: 11px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-bg);
+        }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            margin: 2% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 95%;
+            max-width: 1400px;
+            max-height: 94vh;
+            overflow-y: auto;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-content h2 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .modal-content h3 {
+            font-size: 1em;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+
+        .modal-content p {
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .modal-content ul {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .modal-content ul li {
+            margin-bottom: 3px;
+        }
+
+        .close {
+            color: var(--text-tertiary);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: var(--text-primary);
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        [data-theme="dark"] .alert-success {
+            background: #1e4620;
+            color: #95d89e;
+            border: 1px solid #2d5a2f;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        [data-theme="dark"] .alert-error {
+            background: #4a1f23;
+            color: #f1959b;
+            border: 1px solid #6a2c30;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tab {
+                font-size: 11px;
+                padding: 6px 4px;
+            }
+        }
+
+        pre {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 500px;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        h3, h4 {
+            color: var(--text-secondary);
+        }
+
+        .project-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .project-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--accent-color);
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .project-tag:hover {
+            opacity: 0.8;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .add-day-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px var(--shadow);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+
+        .add-day-button:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
+        }
+
+        #entryModal .modal-content {
+            max-width: 1200px;
+        }
+
+        datalist {
+            display: none;
+        }
+
+        .weekend-row {
+            background-color: #fff3e0 !important;
+        }
+
+        [data-theme="dark"] .weekend-row {
+            background-color: #3d2f1f !important;
+        }
+
+        .holiday-row {
+            background-color: #ffebee !important;
+        }
+
+        [data-theme="dark"] .holiday-row {
+            background-color: #4a1f1f !important;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar label {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .filter-bar input {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            font-size: 12px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+
+        .hours-input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .hours-input-group input {
+            width: 70px;
+            text-align: center;
+        }
+
+        .hours-btn {
+            padding: 4px 8px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .hours-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .hours-total {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 3px;
+        }
+
+        .hours-warning {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+
+        .timestamp-total {
+            background: var(--bg-tertiary);
+            padding: 8px;
+            border-radius: 3px;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .timestamp-total strong {
+            color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Cambia tema">🌓</button>
+            <h1>📊 Timesheet Manager</h1>
+            <p>Gestisci le tue ore di lavoro in modo semplice ed efficace</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('timesheet')">Timesheet</button>
+            <button class="nav-tab" onclick="switchTab('worktypes')">Tipi di Lavoro</button>
+            <button class="nav-tab" onclick="switchTab('daytypes')">Tipi di Giorno</button>
+            <button class="nav-tab" onclick="switchTab('holidays')">Festività</button>
+            <button class="nav-tab" onclick="switchTab('export')">Esporta</button>
+        </div>
+
+        <!-- Timesheet Tab -->
+        <div id="timesheet" class="tab-content active">
+            <button class="add-day-button" onclick="openEntryModal()" title="Aggiungi Giornata">+</button>
+            
+            <div class="section">
+                <h2>Registro Timesheet</h2>
+                <div class="filter-bar">
+                    <label>Da:</label>
+                    <input type="date" id="filterDateFrom" onchange="renderTimesheetTable()">
+                    <label>A:</label>
+                    <input type="date" id="filterDateTo" onchange="renderTimesheetTable()">
+                    <button class="btn btn-secondary" onclick="clearDateFilter()">Pulisci Filtro</button>
+                    <button class="btn btn-primary" onclick="openProjectStatsModal()" style="margin-left: 10px;">📊 Statistiche Progetto</button>
+                </div>
+                <div id="timesheetStats" class="stats"></div>
+                <table id="timesheetTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 90px;">Data</th>
+                            <th style="width: 70px;">Giorno</th>
+                            <th style="width: 120px;">Tipo Giorno</th>
+                            <th style="width: 70px;">Ore Timbr.</th>
+                            <th style="width: 70px;">Ore Segn.</th>
+                            <th>Progetti</th>
+                            <th style="width: 130px;">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Work Types Tab -->
+        <div id="worktypes" class="tab-content">
+            <div class="section">
+                <h2>Gestione Tipi di Lavoro</h2>
+                <div class="two-column">
+                    <div>
+                        <div class="form-group">
+                            <label>Nome Tipo di Lavoro</label>
+                            <input type="text" id="workTypeName" placeholder="es. Sviluppo">
+                        </div>
+                        <div class="form-group">
+                            <label>Colore</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="color" id="workTypeColor" value="#667eea" onchange="updateHexFromPicker('workTypeColor', 'workTypeHex')">
+                                <input type="text" id="workTypeHex" value="#667eea" maxlength="7" placeholder="#667eea" style="width: 90px; font-family: monospace;" oninput="updatePickerFromHex('workTypeHex', 'workTypeColor')">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="addWorkType()">Aggiungi Tipo</button>
+                    </div>
+                    <div>
+                        <h3>Tipi Esistenti</h3>
+                        <table id="workTypesTable">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Colore</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day Types Tab -->
+        <div id="daytypes" class="tab-content">
+            <div class="section">
+                <h2>Gestione Tipi di Giorno</h2>
+                <div class="two-column">
+                    <div>
+                        <div class="form-group">
+                            <label>Nome Tipo di Giorno</label>
+                            <input type="text" id="dayTypeName" placeholder="es. In Ufficio">
+                        </div>
+                        <div class="form-group">
+                            <label>Colore</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="color" id="dayTypeColor" value="#28a745" onchange="updateHexFromPicker('dayTypeColor', 'dayTypeHex')">
+                                <input type="text" id="dayTypeHex" value="#28a745" maxlength="7" placeholder="#28a745" style="width: 90px; font-family: monospace;" oninput="updatePickerFromHex('dayTypeHex', 'dayTypeColor')">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="addDayType()">Aggiungi Tipo</button>
+                    </div>
+                    <div>
+                        <h3>Tipi Esistenti</h3>
+                        <table id="dayTypesTable">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Colore</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Holidays Tab -->
+        <div id="holidays" class="tab-content">
+            <div class="section">
+                <h2>Gestione Festività Locali</h2>
+                <p style="margin-bottom: 15px;">Le festività nazionali italiane sono già incluse. Aggiungi qui le festività locali ricorrenti (es. Santo Patrono).</p>
+                <div class="two-column">
+                    <div>
+                        <div class="form-group">
+                            <label>Nome Festività</label>
+                            <input type="text" id="localHolidayName" placeholder="es. San Geminiano (Modena)">
+                        </div>
+                        <div class="form-group">
+                            <label>Giorno</label>
+                            <input type="number" id="localHolidayDay" min="1" max="31" placeholder="es. 31">
+                        </div>
+                        <div class="form-group">
+                            <label>Mese</label>
+                            <select id="localHolidayMonth">
+                                <option value="1">Gennaio</option>
+                                <option value="2">Febbraio</option>
+                                <option value="3">Marzo</option>
+                                <option value="4">Aprile</option>
+                                <option value="5">Maggio</option>
+                                <option value="6">Giugno</option>
+                                <option value="7">Luglio</option>
+                                <option value="8">Agosto</option>
+                                <option value="9">Settembre</option>
+                                <option value="10">Ottobre</option>
+                                <option value="11">Novembre</option>
+                                <option value="12">Dicembre</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveLocalHoliday()">Aggiungi Festività</button>
+                        <button class="btn btn-secondary" onclick="clearLocalHolidayForm()">Annulla</button>
+                    </div>
+                    <div>
+                        <h3>Festività Locali</h3>
+                        <table id="localHolidaysTable">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Data</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <h2>Festività Nazionali</h2>
+                <table id="holidaysTable">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Nome</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Export Tab -->
+        <div id="export" class="tab-content">
+            <div class="section">
+                <h2>Esporta Dati</h2>
+                <p>Scarica tutti i tuoi dati in formato JSON ben strutturato</p>
+                <button class="btn btn-success" onclick="exportToJSON()">📥 Scarica JSON</button>
+                <button class="btn btn-secondary" onclick="importFromJSON()">📤 Importa JSON</button>
+                <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+            </div>
+
+            <div class="section">
+                <h2>Anteprima JSON</h2>
+                <pre id="jsonPreview" style="background: #f5f5f5; padding: 20px; border-radius: 5px; overflow-x: auto; max-height: 500px;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for viewing day details -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDetailsModal()">&times;</span>
+            <div id="detailsContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal for adding/editing day entry -->
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEntryModal()">&times;</span>
+            <h2 id="entryModalTitle">Aggiungi Giornata</h2>
+            
+            <div class="form-group">
+                <label>Data</label>
+                <input type="date" id="entryDate" value="">
+            </div>
+            <div class="form-group">
+                <label>Tipo di Giorno</label>
+                <select id="entryDayType"></select>
+            </div>
+            <div class="form-group">
+                <label>Timbrature (formato: E HH:MM - U HH:MM oppure 08:30-12:30, 14:00-18:00)</label>
+                <input type="text" id="entryTimestamps" placeholder="E 07:09 - U 12:32 - E 13:44 - U 17:13" oninput="calculateTimestampTotal()">
+                <div id="timestampTotal" class="timestamp-total" style="display: none;"></div>
+            </div>
+            <h3>Lavori Svolti</h3>
+            <div id="workEntriesContainer"></div>
+            <button class="btn btn-secondary" onclick="addWorkEntryForm()">+ Aggiungi Lavoro</button>
+            <div style="margin-top: 10px;">
+                <button class="btn btn-primary" onclick="saveTimesheetEntry()">Salva Giornata</button>
+                <button class="btn btn-secondary" onclick="closeEntryModal()">Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <datalist id="projectSuggestions"></datalist>
+
+    <!-- Modal for project statistics -->
+    <div id="projectStatsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeProjectStatsModal()">&times;</span>
+            <h2>📊 Statistiche Progetto</h2>
+            
+            <div class="form-group">
+                <label>Seleziona Progetto</label>
+                <select id="projectSelect" onchange="updateProjectStats()">
+                    <option value="">-- Seleziona un progetto --</option>
+                </select>
+            </div>
+            
+            <div id="projectStatsContent" style="display: none;">
+                <div class="stats" id="projectMainStats"></div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                    <div>
+                        <h3>Ore per Tipo Giorno</h3>
+                        <table id="projectDayTypeStats" style="margin-top: 10px;">
+                            <thead>
+                                <tr>
+                                    <th>Tipo Giorno</th>
+                                    <th>Ore</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <h3>Ore per Tipo Lavoro</h3>
+                        <table id="projectWorkTypeStats" style="margin-top: 10px;">
+                            <thead>
+                                <tr>
+                                    <th>Tipo Lavoro</th>
+                                    <th>Ore</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px;">
+                    <h3 style="text-align: center;">Distribuzione Ore per Tipo Lavoro</h3>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
+                        <canvas id="projectPieChart" width="500" height="500" style="max-width: 500px;"></canvas>
+                        <div id="chartLegend" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 800px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing work type -->
+    <div id="editWorkTypeModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeEditWorkTypeModal()">&times;</span>
+            <h2>Modifica Tipo di Lavoro</h2>
+            
+            <div class="form-group">
+                <label>Nome Tipo di Lavoro</label>
+                <input type="text" id="editWorkTypeName">
+            </div>
+            <div class="form-group">
+                <label>Colore</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="color" id="editWorkTypeColor" onchange="updateHexFromPicker('editWorkTypeColor', 'editWorkTypeHex')">
+                    <input type="text" id="editWorkTypeHex" maxlength="7" placeholder="#667eea" style="width: 90px; font-family: monospace;" oninput="updatePickerFromHex('editWorkTypeHex', 'editWorkTypeColor')">
+                </div>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-primary" onclick="saveEditWorkType()">Salva</button>
+                <button class="btn btn-secondary" onclick="closeEditWorkTypeModal()">Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing day type -->
+    <div id="editDayTypeModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeEditDayTypeModal()">&times;</span>
+            <h2>Modifica Tipo di Giorno</h2>
+            
+            <div class="form-group">
+                <label>Nome Tipo di Giorno</label>
+                <input type="text" id="editDayTypeName">
+            </div>
+            <div class="form-group">
+                <label>Colore</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="color" id="editDayTypeColor" onchange="updateHexFromPicker('editDayTypeColor', 'editDayTypeHex')">
+                    <input type="text" id="editDayTypeHex" maxlength="7" placeholder="#28a745" style="width: 90px; font-family: monospace;" oninput="updatePickerFromHex('editDayTypeHex', 'editDayTypeColor')">
+                </div>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-primary" onclick="saveEditDayType()">Salva</button>
+                <button class="btn btn-secondary" onclick="closeEditDayTypeModal()">Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for work type statistics -->
+    <div id="workTypeStatsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeWorkTypeStatsModal()">&times;</span>
+            <h2 id="workTypeStatsTitle">📊 Statistiche Tipo Lavoro</h2>
+            
+            <div class="stats" id="workTypeMainStats"></div>
+            
+            <div style="margin-top: 20px;">
+                <h3>Giorni con questo tipo di lavoro</h3>
+                <table id="workTypeEntriesTable" style="margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Progetto</th>
+                            <th>Ore</th>
+                            <th>Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === COLOR PICKER & HEX SYNC ===
+        function updateHexFromPicker(pickerId, hexId) {
+            const picker = document.getElementById(pickerId);
+            const hexInput = document.getElementById(hexId);
+            if (picker && hexInput) {
+                hexInput.value = picker.value.toUpperCase();
+            }
+        }
+
+        function updatePickerFromHex(hexId, pickerId) {
+            const hexInput = document.getElementById(hexId);
+            const picker = document.getElementById(pickerId);
+            if (hexInput && picker) {
+                let hex = hexInput.value.trim();
+                // Aggiungi # se manca
+                if (hex && !hex.startsWith('#')) {
+                    hex = '#' + hex;
+                    hexInput.value = hex;
+                }
+                // Valida formato HEX (#RGB o #RRGGBB)
+                if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex)) {
+                    picker.value = hex;
+                }
+            }
+        }
+
+        // === THEME MANAGEMENT ===
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } else {
+                // Rileva preferenza sistema
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            }
+        }
+
+        // Initialize data structures
+        let workTypes = [];
+        let dayTypes = [];
+        let timesheetEntries = [];
+        let holidays = [];
+        let localHolidays = [];
+        let editingIndex = -1; // Track if we're editing an existing entry
+        let editingLocalHolidayId = null; // Track if we're editing a local holiday
+        let workEntryCounter = 0; // Counter for work entry forms
+        let totalTimestampMinutes = 0; // Track total minutes from timestamps
+
+        // === COLOR UTILITIES ===
+        // Calcola la luminosità di un colore e restituisce il colore del testo appropriato
+        function getContrastColor(hexColor) {
+            // Rimuovi il # se presente
+            const hex = hexColor.replace('#', '');
+            
+            // Converti in RGB
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            // Calcola la luminosità relativa (formula W3C)
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            
+            // Restituisci bianco per colori scuri, nero per colori chiari
+            return luminance > 0.5 ? '#000000' : '#FFFFFF';
+        }
+
+        // === TIMESTAMP PARSING AND CALCULATION ===
+        function parseTimestamps(input) {
+            const timestamps = [];
+            
+            // Check if format is "E HH:MM - U HH:MM" (Entrata/Uscita)
+            if (input.includes('E ') && input.includes('U ')) {
+                const parts = input.split('-').map(p => p.trim());
+                let entries = [];
+                let exits = [];
+                
+                parts.forEach(part => {
+                    const match = part.match(/(E|U)\s*(\d{1,2}):(\d{2})/);
+                    if (match) {
+                        const type = match[1];
+                        const time = `${match[2].padStart(2, '0')}:${match[3]}`;
+                        if (type === 'E') {
+                            entries.push(time);
+                        } else if (type === 'U') {
+                            exits.push(time);
+                        }
+                    }
+                });
+                
+                // Pair entries with exits
+                const maxPairs = Math.min(entries.length, exits.length);
+                for (let i = 0; i < maxPairs; i++) {
+                    timestamps.push({ start: entries[i], end: exits[i] });
+                }
+            } else {
+                // Standard format: "08:30-12:30, 14:00-18:00"
+                const pairs = input.split(',').map(p => p.trim());
+                pairs.forEach(pair => {
+                    const [start, end] = pair.split('-').map(t => t.trim());
+                    if (start && end) {
+                        timestamps.push({ start, end });
+                    }
+                });
+            }
+            
+            return timestamps;
+        }
+
+        function calculateMinutesFromTimestamps(timestamps) {
+            let totalMinutes = 0;
+            timestamps.forEach(pair => {
+                const [startH, startM] = pair.start.split(':').map(Number);
+                const [endH, endM] = pair.end.split(':').map(Number);
+                const startMinutes = startH * 60 + startM;
+                const endMinutes = endH * 60 + endM;
+                totalMinutes += endMinutes - startMinutes;
+            });
+            return totalMinutes;
+        }
+
+        function calculateTimestampTotal() {
+            const input = document.getElementById('entryTimestamps').value;
+            const totalDiv = document.getElementById('timestampTotal');
+            
+            if (!input.trim()) {
+                totalDiv.style.display = 'none';
+                totalTimestampMinutes = 0;
+                return;
+            }
+            
+            const timestamps = parseTimestamps(input);
+            totalTimestampMinutes = calculateMinutesFromTimestamps(timestamps);
+            
+            const hours = Math.floor(totalTimestampMinutes / 60);
+            const minutes = totalTimestampMinutes % 60;
+            
+            totalDiv.innerHTML = `<strong>Totale ore disponibili:</strong> ${hours}:${minutes.toString().padStart(2, '0')}`;
+            totalDiv.style.display = 'block';
+            
+            // Update work hours validation
+            updateWorkHoursValidation();
+        }
+
+        function updateWorkHoursValidation() {
+            const container = document.getElementById('workEntriesContainer');
+            const workDivs = container.querySelectorAll('[id^="work-entry-"]');
+            
+            let totalWorkMinutes = 0;
+            workDivs.forEach(div => {
+                const id = div.id.split('-')[2];
+                const hoursInput = document.getElementById(`workHours-${id}`);
+                if (hoursInput && hoursInput.value) {
+                    const [h, m] = hoursInput.value.split(':').map(Number);
+                    if (!isNaN(h) && !isNaN(m)) {
+                        totalWorkMinutes += h * 60 + m;
+                    }
+                }
+            });
+            
+            // Update all work hour displays
+            workDivs.forEach(div => {
+                const id = div.id.split('-')[2];
+                const totalSpan = document.getElementById(`workHoursTotal-${id}`);
+                if (totalSpan) {
+                    const hours = Math.floor(totalWorkMinutes / 60);
+                    const minutes = totalWorkMinutes % 60;
+                    totalSpan.textContent = `Totale lavori: ${hours}:${minutes.toString().padStart(2, '0')}`;
+                    
+                    if (totalTimestampMinutes > 0 && totalWorkMinutes > totalTimestampMinutes) {
+                        totalSpan.classList.add('hours-warning');
+                    } else {
+                        totalSpan.classList.remove('hours-warning');
+                    }
+                }
+            });
+        }
+
+        function incrementHours(id, delta) {
+            const input = document.getElementById(`workHours-${id}`);
+            let [hours, minutes] = (input.value || '0:00').split(':').map(Number);
+            
+            let totalMinutes = hours * 60 + minutes + delta;
+            if (totalMinutes < 0) totalMinutes = 0;
+            
+            hours = Math.floor(totalMinutes / 60);
+            minutes = totalMinutes % 60;
+            
+            input.value = `${hours}:${minutes.toString().padStart(2, '0')}`;
+            updateWorkHoursValidation();
+        }
+
+        function clearDateFilter() {
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            renderTimesheetTable();
+        }
+
+        // Initialize default work types
+        const defaultWorkTypes = [
+            // Sviluppo/Tecnico (toni blu/viola)
+            { name: 'Development', color: '#5B9BD5' },
+            { name: 'Simulation', color: '#7C5ABD' },
+            { name: 'Research And Development', color: '#8E7CC3' },
+            { name: 'Libraries And Utilities', color: '#4A7BA7' },
+            
+            // Supporto (toni arancione/rosso)
+            { name: 'Support', color: '#E67E50' },
+            { name: 'Remote Support', color: '#D9534F' },
+            
+            // Commissioning (toni verde acqua/azzurro)
+            { name: 'Commissioning On Site', color: '#5DADE2' },
+            { name: 'Commissioning Off Site', color: '#48C9B0' },
+            
+            // Comunicazione (toni giallo/verde)
+            { name: 'Meeting', color: '#F4D03F' },
+            { name: 'Documentation', color: '#52BE80' },
+            { name: 'Training', color: '#85C1E2' },
+            
+            // Interfaccia/Design (toni rosa/lilla)
+            { name: 'Interface', color: '#EC7063' },
+            { name: 'Engineering Cooperation', color: '#BB8FCE' },
+            
+            // Business (verde chiaro)
+            { name: 'Commercial Proposal', color: '#58D68D' },
+            
+            // Regolazioni (toni arancio)
+            { name: 'Mechanical Adjustments', color: '#F39C12' },
+            { name: 'Electrical Adjustments', color: '#E59866' },
+            
+            // Altro (grigio)
+            { name: 'Miscellaneous', color: '#95A5A6' }
+        ];
+
+        // Initialize default day types
+        const defaultDayTypes = [
+            { name: 'In Office', color: '#28a745' },
+            { name: 'One Day Trip', color: '#17a2b8' },
+            { name: 'Multi Day Trip', color: '#fd7e14' },
+            { name: 'Remote Work', color: '#007bff' },
+            { name: 'Holiday', color: '#ffc107' },
+            { name: 'Sick Leave', color: '#dc3545' },
+            { name: 'Holiday Work', color: '#6f42c1' }
+        ];
+
+        // Load data from localStorage
+        function loadData() {
+            const savedWorkTypes = localStorage.getItem('workTypes');
+            const savedDayTypes = localStorage.getItem('dayTypes');
+            const savedEntries = localStorage.getItem('timesheetEntries');
+            const savedLocalHolidays = localStorage.getItem('localHolidays');
+
+            workTypes = savedWorkTypes ? JSON.parse(savedWorkTypes) : defaultWorkTypes;
+            dayTypes = savedDayTypes ? JSON.parse(savedDayTypes) : defaultDayTypes;
+            timesheetEntries = savedEntries ? JSON.parse(savedEntries) : [];
+            localHolidays = savedLocalHolidays ? JSON.parse(savedLocalHolidays) : [];
+
+            // Migrazione dati: calcola workHours dai workEntries se non presente
+            migrateWorkHours();
+            
+            // Calcola festività
+            calculateHolidays();
+
+            saveData();
+        }
+
+        // Migrazione: calcola workHours dai workEntries per i record vecchi
+        function migrateWorkHours() {
+            let migrated = false;
+            timesheetEntries.forEach(entry => {
+                if (!entry.workHours && entry.workEntries && entry.workEntries.length > 0) {
+                    let workMinutes = 0;
+                    entry.workEntries.forEach(we => {
+                        const [h, m] = we.hours.split(':').map(Number);
+                        workMinutes += h * 60 + m;
+                    });
+                    entry.workHours = `${Math.floor(workMinutes / 60)}:${(workMinutes % 60).toString().padStart(2, '0')}`;
+                    migrated = true;
+                }
+            });
+            if (migrated) {
+                console.log('Dati migrati: workHours calcolato dai workEntries');
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('workTypes', JSON.stringify(workTypes));
+            localStorage.setItem('dayTypes', JSON.stringify(dayTypes));
+            localStorage.setItem('timesheetEntries', JSON.stringify(timesheetEntries));
+            localStorage.setItem('localHolidays', JSON.stringify(localHolidays));
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'export') {
+                updateJSONPreview();
+            }
+        }
+
+        // === HOLIDAYS MANAGEMENT ===
+        function getItalianHolidays(year) {
+            const holidays = [];
+            
+            // Festività fisse
+            holidays.push({ date: `${year}-01-01`, name: 'Capodanno' });
+            holidays.push({ date: `${year}-01-06`, name: 'Epifania' });
+            holidays.push({ date: `${year}-04-25`, name: 'Festa della Liberazione' });
+            holidays.push({ date: `${year}-05-01`, name: 'Festa dei Lavoratori' });
+            holidays.push({ date: `${year}-06-02`, name: 'Festa della Repubblica' });
+            holidays.push({ date: `${year}-08-15`, name: 'Ferragosto' });
+            holidays.push({ date: `${year}-11-01`, name: 'Tutti i Santi' });
+            holidays.push({ date: `${year}-12-08`, name: 'Immacolata Concezione' });
+            holidays.push({ date: `${year}-12-25`, name: 'Natale' });
+            holidays.push({ date: `${year}-12-26`, name: 'Santo Stefano' });
+
+            // Calcolo Pasqua (algoritmo di Gauss)
+            const a = year % 19;
+            const b = Math.floor(year / 100);
+            const c = year % 100;
+            const d = Math.floor(b / 4);
+            const e = b % 4;
+            const f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3);
+            const h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4);
+            const k = c % 4;
+            const l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const month = Math.floor((h + l - 7 * m + 114) / 31);
+            const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+            const easterMonth = String(month).padStart(2, '0');
+            const easterDay = String(day).padStart(2, '0');
+            const easterDate = `${year}-${easterMonth}-${easterDay}`;
+            
+            holidays.push({ date: easterDate, name: 'Pasqua' });
+
+            // Lunedì dell'Angelo (Pasquetta)
+            const easter = new Date(year, month - 1, day);
+            const easterMonday = new Date(easter);
+            easterMonday.setDate(easter.getDate() + 1);
+            const mondayMonth = String(easterMonday.getMonth() + 1).padStart(2, '0');
+            const mondayDay = String(easterMonday.getDate()).padStart(2, '0');
+            const mondayDate = `${easterMonday.getFullYear()}-${mondayMonth}-${mondayDay}`;
+            
+            holidays.push({ date: mondayDate, name: "Lunedì dell'Angelo" });
+
+            return holidays.sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        function calculateHolidays() {
+            // Trova il range di anni dai dati esistenti
+            let minYear = new Date().getFullYear();
+            let maxYear = minYear;
+
+            timesheetEntries.forEach(entry => {
+                const year = new Date(entry.date).getFullYear();
+                if (year < minYear) minYear = year;
+                if (year > maxYear) maxYear = year;
+            });
+
+            // Genera festività nazionali per tutti gli anni nel range
+            holidays = [];
+            for (let year = minYear; year <= maxYear; year++) {
+                holidays = holidays.concat(getItalianHolidays(year));
+            }
+
+            // Aggiungi festività locali per tutti gli anni
+            localHolidays.forEach(local => {
+                for (let year = minYear; year <= maxYear; year++) {
+                    const month = String(local.month).padStart(2, '0');
+                    const day = String(local.day).padStart(2, '0');
+                    holidays.push({
+                        date: `${year}-${month}-${day}`,
+                        name: `${local.name} (Locale)`
+                    });
+                }
+            });
+
+            holidays.sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        function isHoliday(dateStr) {
+            return holidays.some(h => h.date === dateStr);
+        }
+
+        function isWeekend(dateStr) {
+            const date = new Date(dateStr);
+            const day = date.getDay();
+            return day === 0 || day === 6; // 0 = domenica, 6 = sabato
+        }
+
+        function saveLocalHoliday() {
+            const name = document.getElementById('localHolidayName').value.trim();
+            const dayInput = document.getElementById('localHolidayDay').value;
+            const monthInput = document.getElementById('localHolidayMonth').value;
+            
+            if (!name || !dayInput) {
+                return;
+            }
+            
+            const day = parseInt(dayInput);
+            const month = parseInt(monthInput);
+            
+            if (isNaN(day) || day < 1 || day > 31) {
+                return;
+            }
+
+            const localHoliday = {
+                id: editingLocalHolidayId || Date.now(),
+                name,
+                day,
+                month
+            };
+
+            if (editingLocalHolidayId) {
+                const index = localHolidays.findIndex(h => h.id === editingLocalHolidayId);
+                localHolidays[index] = localHoliday;
+            } else {
+                localHolidays.push(localHoliday);
+            }
+
+            saveData();
+            calculateHolidays();
+            renderLocalHolidays();
+            renderHolidays();
+            renderTimesheetTable();
+            clearLocalHolidayForm();
+        }
+
+        function editLocalHoliday(id) {
+            const holiday = localHolidays.find(h => h.id === id);
+            if (!holiday) return;
+
+            editingLocalHolidayId = id;
+            document.getElementById('localHolidayName').value = holiday.name;
+            document.getElementById('localHolidayDay').value = holiday.day;
+            document.getElementById('localHolidayMonth').value = holiday.month;
+        }
+
+        function deleteLocalHoliday(id) {
+            if (!confirm('Sei sicuro di voler eliminare questa festività locale?')) return;
+            localHolidays = localHolidays.filter(h => h.id !== id);
+            saveData();
+            calculateHolidays();
+            renderLocalHolidays();
+            renderHolidays();
+            renderTimesheetTable();
+        }
+
+        function clearLocalHolidayForm() {
+            editingLocalHolidayId = null;
+            document.getElementById('localHolidayName').value = '';
+            document.getElementById('localHolidayDay').value = '';
+            document.getElementById('localHolidayMonth').value = '1';
+        }
+
+        function renderLocalHolidays() {
+            const tbody = document.querySelector('#localHolidaysTable tbody');
+            tbody.innerHTML = '';
+
+            localHolidays.forEach(holiday => {
+                const tr = document.createElement('tr');
+                const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+                tr.innerHTML = `
+                    <td>${holiday.name}</td>
+                    <td>${holiday.day} ${monthNames[holiday.month - 1]}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-secondary" onclick="editLocalHoliday(${holiday.id})">Modifica</button>
+                        <button class="btn btn-danger" onclick="deleteLocalHoliday(${holiday.id})">Elimina</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderHolidays() {
+            const tbody = document.querySelector('#holidaysTable tbody');
+            tbody.innerHTML = '';
+
+            // Filtra solo l'anno corrente per non mostrare troppi dati
+            const currentYear = new Date().getFullYear();
+            const currentYearHolidays = holidays.filter(h => h.date.startsWith(String(currentYear)));
+
+            currentYearHolidays.forEach(holiday => {
+                const tr = document.createElement('tr');
+                const dateObj = new Date(holiday.date + 'T00:00:00');
+                tr.innerHTML = `
+                    <td>${dateObj.toLocaleDateString('it-IT')}</td>
+                    <td>${holiday.name}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // === MODAL MANAGEMENT ===
+        function openEntryModal(index = -1) {
+            editingIndex = index;
+            const modal = document.getElementById('entryModal');
+            const title = document.getElementById('entryModalTitle');
+            
+            if (index >= 0) {
+                // Edit mode
+                title.textContent = 'Modifica Giornata';
+                const entry = timesheetEntries[index];
+                document.getElementById('entryDate').value = entry.date;
+                document.getElementById('entryDayType').value = entry.dayType;
+                document.getElementById('entryTimestamps').value = entry.timestamps.map(t => `${t.start}-${t.end}`).join(', ');
+                
+                // Calculate timestamp total
+                calculateTimestampTotal();
+                
+                // Clear and populate work entries
+                document.getElementById('workEntriesContainer').innerHTML = '';
+                workEntryCounter = 0;
+                entry.workEntries.forEach(we => {
+                    addWorkEntryForm();
+                    const id = workEntryCounter - 1;
+                    document.getElementById(`workType-${id}`).value = we.workType;
+                    document.getElementById(`workCode-${id}`).value = we.workCode;
+                    document.getElementById(`workDesc-${id}`).value = we.description;
+                    document.getElementById(`workHours-${id}`).value = we.hours;
+                });
+                
+                updateWorkHoursValidation();
+            } else {
+                // Add mode
+                title.textContent = 'Aggiungi Giornata';
+                document.getElementById('entryDate').valueAsDate = new Date();
+                document.getElementById('entryDayType').value = '';
+                document.getElementById('entryTimestamps').value = '';
+                document.getElementById('timestampTotal').style.display = 'none';
+                document.getElementById('workEntriesContainer').innerHTML = '';
+                workEntryCounter = 0;
+                totalTimestampMinutes = 0;
+                // Aggiungi automaticamente il primo work entry
+                addWorkEntryForm();
+            }
+            
+            updateProjectSuggestions();
+            modal.style.display = 'block';
+        }
+
+        function closeEntryModal() {
+            document.getElementById('entryModal').style.display = 'none';
+            editingIndex = -1;
+        }
+
+        function updateProjectSuggestions() {
+            const projects = new Set();
+            timesheetEntries.forEach(entry => {
+                entry.workEntries.forEach(we => projects.add(we.workCode));
+            });
+            
+            const datalist = document.getElementById('projectSuggestions');
+            datalist.innerHTML = '';
+            Array.from(projects).sort().forEach(project => {
+                const option = document.createElement('option');
+                option.value = project;
+                datalist.appendChild(option);
+            });
+        }
+
+        // Work Types Management
+        function addWorkType() {
+            const name = document.getElementById('workTypeName').value.trim();
+            const color = document.getElementById('workTypeColor').value;
+
+            if (!name) {
+                return;
+            }
+
+            workTypes.push({ name, color });
+            saveData();
+            renderWorkTypes();
+            updateWorkTypeSelects();
+            
+            document.getElementById('workTypeName').value = '';
+        }
+
+        function deleteWorkType(index) {
+            if (!confirm('Sei sicuro di voler eliminare questo tipo di lavoro?')) return;
+            workTypes.splice(index, 1);
+            saveData();
+            renderWorkTypes();
+            updateWorkTypeSelects();
+        }
+
+        let editingWorkTypeIndex = -1;
+        
+        function editWorkType(index) {
+            const type = workTypes[index];
+            editingWorkTypeIndex = index;
+            
+            document.getElementById('editWorkTypeName').value = type.name;
+            document.getElementById('editWorkTypeColor').value = type.color;
+            document.getElementById('editWorkTypeHex').value = type.color.toUpperCase();
+            
+            document.getElementById('editWorkTypeModal').style.display = 'block';
+        }
+        
+        function closeEditWorkTypeModal() {
+            document.getElementById('editWorkTypeModal').style.display = 'none';
+            editingWorkTypeIndex = -1;
+        }
+        
+        function saveEditWorkType() {
+            if (editingWorkTypeIndex < 0) return;
+            
+            const type = workTypes[editingWorkTypeIndex];
+            const oldName = type.name;
+            const newName = document.getElementById('editWorkTypeName').value.trim();
+            const newColor = document.getElementById('editWorkTypeColor').value;
+            
+            if (!newName) {
+                return;
+            }
+            
+            // Update the type
+            workTypes[editingWorkTypeIndex].name = newName;
+            workTypes[editingWorkTypeIndex].color = newColor;
+            
+            // Update all entries that use this work type
+            timesheetEntries.forEach(entry => {
+                entry.workEntries.forEach(we => {
+                    if (we.workType === oldName) {
+                        we.workType = newName;
+                    }
+                });
+            });
+            
+            saveData();
+            renderWorkTypes();
+            updateWorkTypeSelects();
+            renderTimesheetTable();
+            closeEditWorkTypeModal();
+        }
+
+        function renderWorkTypes() {
+            const tbody = document.querySelector('#workTypesTable tbody');
+            tbody.innerHTML = '';
+
+            workTypes.forEach((type, index) => {
+                const textColor = getContrastColor(type.color);
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td><span class="project-tag" style="background: ${type.color}; color: ${textColor}; cursor: pointer;" onclick="openWorkTypeStatsModal('${type.name}')">${type.name}</span></td>
+                    <td><span style="display: inline-block; width: 30px; height: 20px; background: ${type.color}; border-radius: 3px;"></span></td>
+                    <td class="action-buttons">
+                        <button class="btn btn-secondary" onclick="editWorkType(${index})">Modifica</button>
+                        <button class="btn btn-danger" onclick="deleteWorkType(${index})">Elimina</button>
+                    </td>
+                `;
+            });
+        }
+
+        // Day Types Management
+        function addDayType() {
+            const name = document.getElementById('dayTypeName').value.trim();
+            const color = document.getElementById('dayTypeColor').value;
+
+            if (!name) {
+                return;
+            }
+
+            dayTypes.push({ name, color });
+            saveData();
+            renderDayTypes();
+            updateDayTypeSelects();
+            
+            document.getElementById('dayTypeName').value = '';
+        }
+
+        function deleteDayType(index) {
+            if (!confirm('Sei sicuro di voler eliminare questo tipo di giorno?')) return;
+            dayTypes.splice(index, 1);
+            saveData();
+            renderDayTypes();
+            updateDayTypeSelects();
+        }
+
+        let editingDayTypeIndex = -1;
+        
+        function editDayType(index) {
+            const type = dayTypes[index];
+            editingDayTypeIndex = index;
+            
+            document.getElementById('editDayTypeName').value = type.name;
+            document.getElementById('editDayTypeColor').value = type.color;
+            document.getElementById('editDayTypeHex').value = type.color.toUpperCase();
+            
+            document.getElementById('editDayTypeModal').style.display = 'block';
+        }
+        
+        function closeEditDayTypeModal() {
+            document.getElementById('editDayTypeModal').style.display = 'none';
+            editingDayTypeIndex = -1;
+        }
+        
+        function saveEditDayType() {
+            if (editingDayTypeIndex < 0) return;
+            
+            const type = dayTypes[editingDayTypeIndex];
+            const oldName = type.name;
+            const newName = document.getElementById('editDayTypeName').value.trim();
+            const newColor = document.getElementById('editDayTypeColor').value;
+            
+            if (!newName) {
+                return;
+            }
+            
+            // Update the type
+            dayTypes[editingDayTypeIndex].name = newName;
+            dayTypes[editingDayTypeIndex].color = newColor;
+            
+            // Update all entries that use this day type
+            timesheetEntries.forEach(entry => {
+                if (entry.dayType === oldName) {
+                    entry.dayType = newName;
+                }
+            });
+            
+            saveData();
+            renderDayTypes();
+            updateDayTypeSelects();
+            renderTimesheetTable();
+            closeEditDayTypeModal();
+        }
+
+        function renderDayTypes() {
+            const tbody = document.querySelector('#dayTypesTable tbody');
+            tbody.innerHTML = '';
+
+            dayTypes.forEach((type, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${type.name}</td>
+                    <td><span style="display: inline-block; width: 30px; height: 20px; background: ${type.color}; border-radius: 3px;"></span></td>
+                    <td class="action-buttons">
+                        <button class="btn btn-secondary" onclick="editDayType(${index})">Modifica</button>
+                        <button class="btn btn-danger" onclick="deleteDayType(${index})">Elimina</button>
+                    </td>
+                `;
+            });
+        }
+
+        // Update selects
+        function updateWorkTypeSelects() {
+            const selects = document.querySelectorAll('.work-type-select');
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Seleziona tipo lavoro</option>';
+                workTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.name;
+                    option.textContent = type.name;
+                    select.appendChild(option);
+                });
+                select.value = currentValue;
+            });
+        }
+
+        function updateDayTypeSelects() {
+            const select = document.getElementById('entryDayType');
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Seleziona tipo giorno</option>';
+            dayTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.name;
+                option.textContent = type.name;
+                select.appendChild(option);
+            });
+            select.value = currentValue;
+        }
+
+        // Work Entry Forms
+        function addWorkEntryForm() {
+            const container = document.getElementById('workEntriesContainer');
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'section';
+            entryDiv.id = `work-entry-${workEntryCounter}`;
+            entryDiv.style.background = 'var(--bg-secondary)';
+            entryDiv.style.marginBottom = '10px';
+            entryDiv.style.border = '1px solid var(--border-color)';
+            
+            entryDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4>Lavoro ${workEntryCounter + 1}</h4>
+                    <button class="btn btn-danger" onclick="removeWorkEntryForm(${workEntryCounter})">Rimuovi</button>
+                </div>
+                <div class="form-group">
+                    <label>Tipo di Lavoro</label>
+                    <select class="work-type-select" id="workType-${workEntryCounter}"></select>
+                </div>
+                <div class="form-group">
+                    <label>Codice Lavoro</label>
+                    <input type="text" id="workCode-${workEntryCounter}" list="projectSuggestions" placeholder="es. PRJ-001">
+                </div>
+                <div class="form-group">
+                    <label>Descrizione</label>
+                    <textarea id="workDesc-${workEntryCounter}" rows="2" placeholder="Descrizione dell'attività svolta"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Ore (formato: HH:MM)</label>
+                    <div class="hours-input-group">
+                        <button type="button" class="hours-btn" onclick="incrementHours(${workEntryCounter}, -30)">-</button>
+                        <input type="text" id="workHours-${workEntryCounter}" placeholder="0:00" pattern="[0-9]+:[0-9]{2}" oninput="updateWorkHoursValidation()">
+                        <button type="button" class="hours-btn" onclick="incrementHours(${workEntryCounter}, 30)">+</button>
+                    </div>
+                    <div class="hours-total" id="workHoursTotal-${workEntryCounter}"></div>
+                </div>
+            `;
+            
+            container.appendChild(entryDiv);
+            updateWorkTypeSelects();
+            workEntryCounter++;
+            updateWorkHoursValidation();
+        }
+
+        function removeWorkEntryForm(id) {
+            const element = document.getElementById(`work-entry-${id}`);
+            if (element) {
+                element.remove();
+                updateWorkHoursValidation();
+            }
+        }
+
+        // Save timesheet entry
+        function saveTimesheetEntry() {
+            const date = document.getElementById('entryDate').value;
+            const dayType = document.getElementById('entryDayType').value;
+            const timestampsInput = document.getElementById('entryTimestamps').value;
+
+            if (!date || !dayType || !timestampsInput) {
+                return;
+            }
+
+            // Parse timestamps using the new parser
+            const timestampPairs = parseTimestamps(timestampsInput);
+            
+            if (timestampPairs.length === 0) {
+                return;
+            }
+
+            // Collect work entries
+            const workEntries = [];
+            const container = document.getElementById('workEntriesContainer');
+            const workDivs = container.querySelectorAll('[id^="work-entry-"]');
+            
+            workDivs.forEach(div => {
+                const id = div.id.split('-')[2];
+                const workType = document.getElementById(`workType-${id}`).value;
+                const workCode = document.getElementById(`workCode-${id}`).value;
+                const workDesc = document.getElementById(`workDesc-${id}`).value;
+                const workHours = document.getElementById(`workHours-${id}`).value;
+
+                if (workType && workCode && workHours) {
+                    workEntries.push({
+                        workType,
+                        workCode,
+                        description: workDesc,
+                        hours: workHours
+                    });
+                }
+            });
+
+            // Calculate total hours from timestamps
+            const totalMinutes = calculateMinutesFromTimestamps(timestampPairs);
+
+            // Calculate total hours from work entries
+            let workMinutes = 0;
+            workEntries.forEach(we => {
+                const [h, m] = we.hours.split(':').map(Number);
+                workMinutes += h * 60 + m;
+            });
+
+            const entry = {
+                date,
+                dayType,
+                timestamps: timestampPairs,
+                workEntries,
+                totalHours: `${Math.floor(totalMinutes / 60)}:${(totalMinutes % 60).toString().padStart(2, '0')}`,
+                workHours: `${Math.floor(workMinutes / 60)}:${(workMinutes % 60).toString().padStart(2, '0')}`
+            };
+
+            if (editingIndex >= 0) {
+                // Update existing entry
+                timesheetEntries[editingIndex] = entry;
+            } else {
+                // Add new entry
+                timesheetEntries.push(entry);
+            }
+            
+            saveData();
+            renderTimesheetTable();
+            closeEntryModal();
+        }
+
+        // Render timesheet table
+        function renderTimesheetTable() {
+            const tbody = document.querySelector('#timesheetTable tbody');
+            tbody.innerHTML = '';
+
+            // Get filter dates
+            const filterFrom = document.getElementById('filterDateFrom').value;
+            const filterTo = document.getElementById('filterDateTo').value;
+
+            // Filter entries by date range
+            let filteredEntries = [...timesheetEntries];
+            
+            if (filterFrom) {
+                filteredEntries = filteredEntries.filter(entry => entry.date >= filterFrom);
+            }
+            if (filterTo) {
+                filteredEntries = filteredEntries.filter(entry => entry.date <= filterTo);
+            }
+
+            // Sort by date descending
+            const sortedEntries = filteredEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedEntries.forEach((entry, index) => {
+                // Find original index for edit/delete operations
+                const originalIndex = timesheetEntries.indexOf(entry);
+                
+                const row = tbody.insertRow();
+                const dateObj = new Date(entry.date + 'T00:00:00');
+                const dayNames = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+                const dayName = dayNames[dateObj.getDay()];
+                
+                // Create project tags with work type color
+                const projectTags = entry.workEntries.map(we => {
+                    const workType = workTypes.find(wt => wt.name === we.workType);
+                    const color = workType ? workType.color : 'var(--accent-color)';
+                    const textColor = workType ? getContrastColor(color) : '#FFFFFF';
+                    const tooltip = `${we.workType} - ${we.hours}`;
+                    return `<span class="project-tag" style="background: ${color}; color: ${textColor};" title="${tooltip}" onclick="openProjectStatsModal('${we.workCode}')">${we.workCode}</span>`;
+                }).join('');
+                
+                // Applica classi per weekend e festivi
+                if (isHoliday(entry.date)) {
+                    row.classList.add('holiday-row');
+                } else if (isWeekend(entry.date)) {
+                    row.classList.add('weekend-row');
+                }
+                
+                // Get day type color
+                const dayType = dayTypes.find(dt => dt.name === entry.dayType);
+                const dayColor = dayType ? dayType.color : '#cccccc';
+                
+                row.innerHTML = `
+                    <td style="border-left: 4px solid ${dayColor}; padding-left: 8px;">${dateObj.toLocaleDateString('it-IT')}</td>
+                    <td>${dayName}</td>
+                    <td>${entry.dayType}</td>
+                    <td>${entry.totalHours}</td>
+                    <td>${entry.workHours || '0:00'}</td>
+                    <td><div class="project-tags">${projectTags}</div></td>
+                    <td class="action-buttons">
+                        <button class="btn btn-secondary" onclick="openEntryModal(${originalIndex})">Modifica</button>
+                        <button class="btn btn-secondary" onclick="viewDetails(${originalIndex})">Dettagli</button>
+                        <button class="btn btn-danger" onclick="deleteEntry(${originalIndex})">Elimina</button>
+                    </td>
+                `;
+            });
+
+            updateStats(filteredEntries);
+        }
+
+        // View entry details
+        function viewDetails(index) {
+            const entry = timesheetEntries[index];
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('detailsContent');
+            
+            const dateObj = new Date(entry.date + 'T00:00:00');
+            const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+            const dayName = dayNames[dateObj.getDay()];
+
+            let html = `
+                <h2>Dettagli Giornata - ${dateObj.toLocaleDateString('it-IT')} (${dayName})</h2>
+                <p><strong>Tipo Giorno:</strong> ${entry.dayType}</p>
+                <p><strong>Ore Timbrature:</strong> ${entry.totalHours}</p>
+                <p><strong>Ore Lavorate:</strong> ${entry.workHours || entry.totalHours}</p>
+                
+                <h3>Timbrature</h3>
+                <ul>
+                    ${entry.timestamps.map(t => `<li>${t.start} - ${t.end}</li>`).join('')}
+                </ul>
+                
+                <h3>Lavori Svolti</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Codice</th>
+                            <th>Ore</th>
+                            <th>Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${entry.workEntries.map(we => `
+                            <tr>
+                                <td>${we.workType}</td>
+                                <td>${we.workCode}</td>
+                                <td>${we.hours}</td>
+                                <td>${we.description}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            content.innerHTML = html;
+            modal.style.display = 'block';
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').style.display = 'none';
+        }
+
+        // Delete entry
+        function deleteEntry(index) {
+            if (!confirm('Sei sicuro di voler eliminare questa giornata?')) return;
+            timesheetEntries.splice(index, 1);
+            saveData();
+            renderTimesheetTable();
+        }
+
+        // Update statistics
+        function updateStats(entries = timesheetEntries) {
+            const statsDiv = document.getElementById('timesheetStats');
+            const totalDays = entries.length;
+            
+            let totalTimbratureMinutes = 0;
+            let totalSegnateMinutes = 0;
+            let weekendMinutes = 0;
+            let holidayMinutes = 0;
+            
+            entries.forEach(entry => {
+                // Ore timbrature
+                const [h1, m1] = entry.totalHours.split(':').map(Number);
+                const minutes = h1 * 60 + m1;
+                totalTimbratureMinutes += minutes;
+                
+                // Ore segnate - usa workHours se esiste, altrimenti 0
+                let workMinutes = 0;
+                if (entry.workHours) {
+                    const [h2, m2] = entry.workHours.split(':').map(Number);
+                    workMinutes = h2 * 60 + m2;
+                    totalSegnateMinutes += workMinutes;
+                }
+                
+                // Calcola ore in weekend e festivi
+                if (isHoliday(entry.date)) {
+                    holidayMinutes += workMinutes;
+                } else if (isWeekend(entry.date)) {
+                    weekendMinutes += workMinutes;
+                }
+            });
+
+            const projects = new Set();
+            entries.forEach(entry => {
+                entry.workEntries.forEach(we => projects.add(we.workCode));
+            });
+            
+            const diffMinutes = totalSegnateMinutes - totalTimbratureMinutes;
+            const diffSign = diffMinutes >= 0 ? '+' : '';
+            const diffHours = Math.floor(Math.abs(diffMinutes) / 60);
+            const diffMins = Math.abs(diffMinutes) % 60;
+
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <h3>${totalDays}</h3>
+                    <p>Giorni Registrati</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${Math.floor(totalTimbratureMinutes / 60)}:${(totalTimbratureMinutes % 60).toString().padStart(2, '0')}</h3>
+                    <p>Ore Timbrature</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${Math.floor(totalSegnateMinutes / 60)}:${(totalSegnateMinutes % 60).toString().padStart(2, '0')}</h3>
+                    <p>Ore Segnate</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${diffSign}${diffHours}:${diffMins.toString().padStart(2, '0')}</h3>
+                    <p>Differenza</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${projects.size}</h3>
+                    <p>Progetti Unici</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${Math.floor(weekendMinutes / 60)}:${(weekendMinutes % 60).toString().padStart(2, '0')}</h3>
+                    <p>Ore Weekend</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${Math.floor(holidayMinutes / 60)}:${(holidayMinutes % 60).toString().padStart(2, '0')}</h3>
+                    <p>Ore Festivi</p>
+                </div>
+            `;
+        }
+
+        // Export to JSON
+        function exportToJSON() {
+            const data = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                workTypes,
+                dayTypes,
+                timesheetEntries
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `timesheet-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Import from JSON
+        function importFromJSON() {
+            const input = document.getElementById('jsonFileInput');
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (!confirm('Importare questi dati? I dati attuali saranno sovrascritti.')) return;
+                        workTypes = data.workTypes || workTypes;
+                        dayTypes = data.dayTypes || dayTypes;
+                        timesheetEntries = data.timesheetEntries || timesheetEntries;
+                        saveData();
+                        renderWorkTypes();
+                        renderDayTypes();
+                        renderTimesheetTable();
+                        updateWorkTypeSelects();
+                        updateDayTypeSelects();
+                    } catch (error) {
+                        console.error('Errore nel parsing del file JSON:', error);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Update JSON preview
+        function updateJSONPreview() {
+            const data = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                workTypes,
+                dayTypes,
+                timesheetEntries
+            };
+            document.getElementById('jsonPreview').textContent = JSON.stringify(data, null, 2);
+        }
+
+        // === WORK TYPE STATISTICS ===
+        function openWorkTypeStatsModal(workTypeName) {
+            const modal = document.getElementById('workTypeStatsModal');
+            document.getElementById('workTypeStatsTitle').textContent = `📊 Statistiche: ${workTypeName}`;
+            
+            // Calculate statistics
+            let totalMinutes = 0;
+            let entryCount = 0;
+            const entries = [];
+            
+            timesheetEntries.forEach(entry => {
+                entry.workEntries.forEach(we => {
+                    if (we.workType === workTypeName) {
+                        const [h, m] = we.hours.split(':').map(Number);
+                        const minutes = h * 60 + m;
+                        totalMinutes += minutes;
+                        entryCount++;
+                        
+                        entries.push({
+                            date: entry.date,
+                            project: we.workCode,
+                            hours: we.hours,
+                            description: we.description
+                        });
+                    }
+                });
+            });
+            
+            // Show main stats
+            const mainStatsDiv = document.getElementById('workTypeMainStats');
+            mainStatsDiv.innerHTML = `
+                <div class="stat-card">
+                    <h3>${Math.floor(totalMinutes / 60)}:${(totalMinutes % 60).toString().padStart(2, '0')}</h3>
+                    <p>Ore Totali</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${entryCount}</h3>
+                    <p>Record Totali</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${entryCount > 0 ? (totalMinutes / entryCount / 60).toFixed(1) : '0.0'}</h3>
+                    <p>Ore Medie/Record</p>
+                </div>
+            `;
+            
+            // Show entries table
+            const tbody = document.getElementById('workTypeEntriesTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            
+            // Sort by date descending
+            entries.sort((a, b) => b.date.localeCompare(a.date));
+            
+            entries.forEach(entry => {
+                const row = tbody.insertRow();
+                const dateObj = new Date(entry.date + 'T00:00:00');
+                row.innerHTML = `
+                    <td>${dateObj.toLocaleDateString('it-IT')}</td>
+                    <td>${entry.project}</td>
+                    <td>${entry.hours}</td>
+                    <td>${entry.description || '-'}</td>
+                `;
+            });
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeWorkTypeStatsModal() {
+            document.getElementById('workTypeStatsModal').style.display = 'none';
+        }
+
+        // === PROJECT STATISTICS ===
+        function openProjectStatsModal(projectCode = null) {
+            const modal = document.getElementById('projectStatsModal');
+            const select = document.getElementById('projectSelect');
+            
+            // Populate project list
+            const projects = new Set();
+            timesheetEntries.forEach(entry => {
+                entry.workEntries.forEach(we => projects.add(we.workCode));
+            });
+            
+            select.innerHTML = '<option value="">-- Seleziona un progetto --</option>';
+            Array.from(projects).sort().forEach(project => {
+                const option = document.createElement('option');
+                option.value = project;
+                option.textContent = project;
+                select.appendChild(option);
+            });
+            
+            // Se è stato passato un progetto, selezionalo e mostra le statistiche
+            if (projectCode) {
+                select.value = projectCode;
+                updateProjectStats();
+            } else {
+                document.getElementById('projectStatsContent').style.display = 'none';
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeProjectStatsModal() {
+            document.getElementById('projectStatsModal').style.display = 'none';
+        }
+        
+        function updateProjectStats() {
+            const projectCode = document.getElementById('projectSelect').value;
+            if (!projectCode) {
+                document.getElementById('projectStatsContent').style.display = 'none';
+                return;
+            }
+            
+            // Calculate statistics for the selected project
+            let totalMinutes = 0;
+            let dayCount = 0;
+            let weekendMinutes = 0;
+            let holidayMinutes = 0;
+            const dayTypeMinutes = {};
+            const workTypeMinutes = {};
+            
+            timesheetEntries.forEach(entry => {
+                let entryHasProject = false;
+                let entryMinutes = 0;
+                
+                entry.workEntries.forEach(we => {
+                    if (we.workCode === projectCode) {
+                        entryHasProject = true;
+                        const [h, m] = we.hours.split(':').map(Number);
+                        const minutes = h * 60 + m;
+                        entryMinutes += minutes;
+                        totalMinutes += minutes;
+                        
+                        // Group by work type
+                        if (!workTypeMinutes[we.workType]) {
+                            workTypeMinutes[we.workType] = 0;
+                        }
+                        workTypeMinutes[we.workType] += minutes;
+                    }
+                });
+                
+                if (entryHasProject) {
+                    dayCount++;
+                    // Group by day type
+                    if (!dayTypeMinutes[entry.dayType]) {
+                        dayTypeMinutes[entry.dayType] = 0;
+                    }
+                    dayTypeMinutes[entry.dayType] += entryMinutes;
+                    
+                    // Calcola ore weekend/festivi
+                    if (isHoliday(entry.date)) {
+                        holidayMinutes += entryMinutes;
+                    } else if (isWeekend(entry.date)) {
+                        weekendMinutes += entryMinutes;
+                    }
+                }
+            });
+            
+            // Show main stats
+            const mainStatsDiv = document.getElementById('projectMainStats');
+            mainStatsDiv.innerHTML = `
+                <div class="stat-card">
+                    <h3>${projectCode}</h3>
+                    <p>Progetto</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${Math.floor(totalMinutes / 60)}:${(totalMinutes % 60).toString().padStart(2, '0')}</h3>
+                    <p>Ore Totali</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${dayCount}</h3>
+                    <p>Giorni Lavorati</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${dayCount > 0 ? (totalMinutes / dayCount / 60).toFixed(1) : '0.0'}</h3>
+                    <p>Ore Medie/Giorno</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${Math.floor(weekendMinutes / 60)}:${(weekendMinutes % 60).toString().padStart(2, '0')}</h3>
+                    <p>Ore Weekend</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${Math.floor(holidayMinutes / 60)}:${(holidayMinutes % 60).toString().padStart(2, '0')}</h3>
+                    <p>Ore Festivi</p>
+                </div>
+            `;
+            
+            // Show day type stats
+            const dayTypeTable = document.getElementById('projectDayTypeStats').querySelector('tbody');
+            dayTypeTable.innerHTML = '';
+            Object.entries(dayTypeMinutes).sort((a, b) => b[1] - a[1]).forEach(([type, minutes]) => {
+                const row = dayTypeTable.insertRow();
+                const percentage = ((minutes / totalMinutes) * 100).toFixed(1);
+                row.innerHTML = `
+                    <td>${type}</td>
+                    <td>${Math.floor(minutes / 60)}:${(minutes % 60).toString().padStart(2, '0')}</td>
+                    <td>${percentage}%</td>
+                `;
+            });
+            
+            // Show work type stats
+            const workTypeTable = document.getElementById('projectWorkTypeStats').querySelector('tbody');
+            workTypeTable.innerHTML = '';
+            Object.entries(workTypeMinutes).sort((a, b) => b[1] - a[1]).forEach(([type, minutes]) => {
+                const row = workTypeTable.insertRow();
+                const percentage = ((minutes / totalMinutes) * 100).toFixed(1);
+                row.innerHTML = `
+                    <td>${type}</td>
+                    <td>${Math.floor(minutes / 60)}:${(minutes % 60).toString().padStart(2, '0')}</td>
+                    <td>${percentage}%</td>
+                `;
+            });
+            
+            // Draw pie chart
+            drawPieChart(workTypeMinutes);
+            
+            document.getElementById('projectStatsContent').style.display = 'block';
+        }
+        
+        function drawPieChart(data) {
+            const canvas = document.getElementById('projectPieChart');
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 20;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Calculate total
+            const total = Object.values(data).reduce((sum, val) => sum + val, 0);
+            if (total === 0) return;
+            
+            // Colors for pie slices
+            const colors = [
+                '#667eea', '#764ba2', '#f093fb', '#4facfe',
+                '#43e97b', '#fa709a', '#fee140', '#30cfd0',
+                '#a8edea', '#fed6e3', '#c471f5', '#12c2e9'
+            ];
+            
+            // Draw slices
+            let currentAngle = -Math.PI / 2; // Start at top
+            Object.entries(data).forEach(([type, minutes], index) => {
+                const sliceAngle = (minutes / total) * 2 * Math.PI;
+                
+                // Draw slice
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = colors[index % colors.length];
+                ctx.fill();
+                ctx.strokeStyle = 'var(--bg-secondary)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw label if slice is large enough
+                if (sliceAngle > 0.2) {
+                    const labelAngle = currentAngle + sliceAngle / 2;
+                    const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
+                    const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
+                    
+                    const percentage = ((minutes / total) * 100).toFixed(0);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`${percentage}%`, labelX, labelY);
+                }
+                
+                currentAngle += sliceAngle;
+            });
+            
+            // Create HTML legend below the chart
+            const legendDiv = document.getElementById('chartLegend');
+            legendDiv.innerHTML = '';
+            Object.entries(data).forEach(([type, minutes], index) => {
+                const legendItem = document.createElement('div');
+                legendItem.style.display = 'flex';
+                legendItem.style.alignItems = 'center';
+                legendItem.style.gap = '8px';
+                
+                const colorBox = document.createElement('div');
+                colorBox.style.width = '20px';
+                colorBox.style.height = '20px';
+                colorBox.style.backgroundColor = colors[index % colors.length];
+                colorBox.style.borderRadius = '3px';
+                colorBox.style.border = '1px solid var(--border-color)';
+                
+                const label = document.createElement('span');
+                label.textContent = type;
+                label.style.fontSize = '14px';
+                
+                legendItem.appendChild(colorBox);
+                legendItem.appendChild(label);
+                legendDiv.appendChild(legendItem);
+            });
+        }
+
+        // Initialize on load
+        // Modal closing removed - modals now close only via buttons
+
+        // Load theme
+        loadTheme();
+
+        // Load and render on page load
+        loadData();
+        renderWorkTypes();
+        renderDayTypes();
+        renderLocalHolidays();
+        renderHolidays();
+        renderTimesheetTable();
+        updateWorkTypeSelects();
+        updateDayTypeSelects();
+        updateProjectSuggestions();
+    </script>
+</body>
+</html>
