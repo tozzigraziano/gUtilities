@@ -2899,20 +2899,19 @@
                     notes.forEach(note => {
                         addWorkEntryForm();
                         
-                        // Fill in the data
+                        // Fill in the data - use correct field IDs with hyphens
                         const lastIndex = workEntryCounter - 1;
-                        document.getElementById(`workProject${lastIndex}`).value = note.project;
-                        document.getElementById(`workType${lastIndex}`).value = note.workType;
-                        
-                        // Hours are already in HH:MM format
-                        document.getElementById(`workHours${lastIndex}`).value = note.hours;
+                        document.getElementById(`workCode-${lastIndex}`).value = note.project;
+                        document.getElementById(`workType-${lastIndex}`).value = note.workType;
+                        document.getElementById(`workHours-${lastIndex}`).value = note.hours;
                         
                         if (note.description) {
-                            document.getElementById(`workDescription${lastIndex}`).value = note.description;
+                            document.getElementById(`workDesc-${lastIndex}`).value = note.description;
                         }
                     });
                 });
 
+                updateWorkHoursValidation();
                 alert(`📋 Trasferiti ${dailyNotes.length} appunti nel modal. Completa i dati (data, tipo giorno, timbrature) e salva la giornata.`);
             }, 100);
         }
