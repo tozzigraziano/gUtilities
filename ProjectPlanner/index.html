@@ -2455,6 +2455,7 @@
             <table id="resourcesTable">
                 <thead>
                     <tr>
+                        <th style="width: 80px;">Ordine</th>
                         <th>Nome</th>
                         <th>Cognome</th>
                         <th>Tipo Risorsa</th>
@@ -5265,7 +5266,10 @@
                 firstName,
                 lastName,
                 type: document.getElementById('resourceType').value || '',
-                absences
+                absences,
+                order: editingResourceId ? 
+                    (resources.find(r => r.id === editingResourceId)?.order || 0) : 
+                    resources.length
             };
             
             // Controlla se le nuove assenze sovrapporranno progetti attivi
@@ -5421,7 +5425,7 @@
             const tbody = document.querySelector('#resourcesTable tbody');
             tbody.innerHTML = '';
 
-            resources.forEach(resource => {
+            resources.forEach((resource, index) => {
                 const tr = document.createElement('tr');
                 const absencesStr = resource.absences.map(a => {
                     const typeLabel = a.type === 'sick' ? '🤒 Malattia' : '🏖️ Ferie';
@@ -5441,6 +5445,10 @@
                 const typeLabel = resource.type ? typeLabels[resource.type] || resource.type : '-';
 
                 tr.innerHTML = `
+                    <td style="width: 80px;">
+                        <button onclick="moveResourceUp(${index})" ${index === 0 ? 'disabled' : ''} style="padding: 2px 6px; font-size: 12px; margin-right: 2px;" title="Sposta su">⬆️</button>
+                        <button onclick="moveResourceDown(${index})" ${index === resources.length - 1 ? 'disabled' : ''} style="padding: 2px 6px; font-size: 12px;" title="Sposta giù">⬇️</button>
+                    </td>
                     <td>${resource.firstName}</td>
                     <td>${resource.lastName}</td>
                     <td>${typeLabel}</td>
@@ -5452,6 +5460,44 @@
                 `;
                 tbody.appendChild(tr);
             });
+        }
+        
+        function moveResourceUp(index) {
+            if (index > 0) {
+                const temp = resources[index];
+                resources[index] = resources[index - 1];
+                resources[index - 1] = temp;
+                // Aggiorna campo order
+                resources.forEach((r, i) => r.order = i);
+                saveToIndexedDBAll();
+                renderResources();
+                // Aggiorna le altre viste se aperte
+                if (document.getElementById('projectGantt')?.style.display !== 'none') {
+                    renderGantt();
+                }
+                if (document.getElementById('resourceView')?.style.display !== 'none') {
+                    renderResourceView();
+                }
+            }
+        }
+        
+        function moveResourceDown(index) {
+            if (index < resources.length - 1) {
+                const temp = resources[index];
+                resources[index] = resources[index + 1];
+                resources[index + 1] = temp;
+                // Aggiorna campo order
+                resources.forEach((r, i) => r.order = i);
+                saveToIndexedDBAll();
+                renderResources();
+                // Aggiorna le altre viste se aperte
+                if (document.getElementById('projectGantt')?.style.display !== 'none') {
+                    renderGantt();
+                }
+                if (document.getElementById('resourceView')?.style.display !== 'none') {
+                    renderResourceView();
+                }
+            }
         }
 
         // === GESTIONE FESTIVITÀ LOCALI ===
@@ -9429,6 +9475,19 @@
         async function loadFromIndexedDBAll() {
             try {
                 resources = await loadFromIndexedDB('resources');
+                // Assegna order a risorse che non ce l'hanno (per retrocompatibilità)
+                let needsSave = false;
+                resources.forEach((r, i) => {
+                    if (r.order === undefined) {
+                        r.order = i;
+                        needsSave = true;
+                    }
+                });
+                if (needsSave) {
+                    await saveToIndexedDB('resources', resources);
+                }
+                // Ordina le risorse in base al campo order
+                resources.sort((a, b) => (a.order || 0) - (b.order || 0));
                 localHolidays = await loadFromIndexedDB('localHolidays');
                 projects = await loadFromIndexedDB('projects');
                 templates = await loadFromIndexedDB('templates');
@@ -10173,8 +10232,12 @@
                 }
             });
 
-            // Renderizza per risorsa e progetto
-            Object.values(resourceTasks).forEach(({ resource, projectGroups }) => {
+            // Renderizza per risorsa e progetto, mantenendo l'ordine dell'array resources
+            resources.forEach(resource => {
+                const resourceData = resourceTasks[resource.id];
+                if (!resourceData) return; // Salta risorse senza task
+                
+                const { projectGroups } = resourceData;
                 // Calcola tutti i task della risorsa per la barra di carico
                 const allTasks = Object.values(projectGroups).flatMap(pg => pg.tasks);
                 
