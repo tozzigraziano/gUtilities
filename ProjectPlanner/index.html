@@ -2460,6 +2460,7 @@
                         <th>Cognome</th>
                         <th>Tipo Risorsa</th>
                         <th>Assenze</th>
+                        <th style="width: 100px;">Visibilità</th>
                         <th>Azioni</th>
                     </tr>
                 </thead>
@@ -3414,6 +3415,7 @@
                         <option value="elettricista">Elettricista</option>
                         <option value="project-manager">Project Manager</option>
                         <option value="esterno">Esterno</option>
+                        <option value="responsabile">Responsabile</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -5440,9 +5442,11 @@
                     'meccanico': 'Meccanico',
                     'elettricista': 'Elettricista',
                     'project-manager': 'Project Manager',
-                    'esterno': 'Esterno'
+                    'esterno': 'Esterno',
+                    'responsabile': 'Responsabile'
                 };
                 const typeLabel = resource.type ? typeLabels[resource.type] || resource.type : '-';
+                const isHidden = resource.hidden || false;
 
                 tr.innerHTML = `
                     <td style="width: 80px;">
@@ -5453,6 +5457,9 @@
                     <td>${resource.lastName}</td>
                     <td>${typeLabel}</td>
                     <td style="font-size: 11px;">${absencesStr}</td>
+                    <td style="text-align: center;">
+                        <button onclick="toggleResourceVisibility(${resource.id})" style="padding: 4px 8px; font-size: 18px; cursor: pointer; ${isHidden ? 'opacity: 0.3;' : ''}" title="${isHidden ? 'Mostra in Gantt e Vista Risorse' : 'Nascondi da Gantt e Vista Risorse'}">${isHidden ? '○' : '●'}</button>
+                    </td>
                     <td class="action-buttons">
                         <button onclick="openResourceModal(${resource.id})" class="secondary">✏️ Modifica</button>
                         <button onclick="deleteResource(${resource.id})" class="delete">🗑️ Elimina</button>
@@ -5488,6 +5495,22 @@
                 resources[index + 1] = temp;
                 // Aggiorna campo order
                 resources.forEach((r, i) => r.order = i);
+                saveToIndexedDBAll();
+                renderResources();
+                // Aggiorna le altre viste se aperte
+                if (document.getElementById('projectGantt')?.style.display !== 'none') {
+                    renderGantt();
+                }
+                if (document.getElementById('resourceView')?.style.display !== 'none') {
+                    renderResourceView();
+                }
+            }
+        }
+        
+        function toggleResourceVisibility(resourceId) {
+            const resource = resources.find(r => r.id === resourceId);
+            if (resource) {
+                resource.hidden = !resource.hidden;
                 saveToIndexedDBAll();
                 renderResources();
                 // Aggiorna le altre viste se aperte
@@ -10233,7 +10256,8 @@
             });
 
             // Renderizza per risorsa e progetto, mantenendo l'ordine dell'array resources
-            resources.forEach(resource => {
+            // Filtra risorse nascoste
+            resources.filter(r => !r.hidden).forEach(resource => {
                 const resourceData = resourceTasks[resource.id];
                 if (!resourceData) return; // Salta risorse senza task
                 
@@ -11968,7 +11992,7 @@
 
             const filteredResources = resourceFilter ? 
                 resources.filter(r => r.id == resourceFilter) : 
-                resources;
+                resources.filter(r => !r.hidden);
 
             if (filteredResources.length === 0) {
                 container.innerHTML = '<p style="padding: 20px; text-align: center;">Nessuna risorsa disponibile.</p>';
