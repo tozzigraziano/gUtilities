@@ -595,6 +595,68 @@
         .timestamp-total strong {
             color: var(--accent-color);
         }
+
+        .note-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .note-card:hover {
+            box-shadow: 0 2px 6px var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .note-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .note-project {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .note-hours {
+            font-size: 13px;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .note-worktype {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .note-description {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .note-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .note-empty {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-tertiary);
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -607,10 +669,60 @@
 
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('timesheet')">Timesheet</button>
+            <button class="nav-tab" onclick="switchTab('notes')">📝 Appunti</button>
             <button class="nav-tab" onclick="switchTab('worktypes')">Tipi di Lavoro</button>
             <button class="nav-tab" onclick="switchTab('daytypes')">Tipi di Giorno</button>
             <button class="nav-tab" onclick="switchTab('holidays')">Festività</button>
             <button class="nav-tab" onclick="switchTab('export')">Esporta</button>
+        </div>
+
+        <!-- Notes Tab -->
+        <div id="notes" class="tab-content">
+            <div class="section">
+                <h2>📝 Appunti Giornalieri</h2>
+                <p style="margin-bottom: 15px; font-size: 12px; color: var(--text-tertiary);">
+                    Usa questa sezione per annotare i progetti su cui lavori durante il giorno. <br>
+                    A fine giornata, clicca "Crea Giornata" per trasferire automaticamente gli appunti nel modal di inserimento.
+                </p>
+                
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                    <h3>Aggiungi Nuovo Appunto</h3>
+                    <div class="form-group">
+                        <label>Codice Progetto</label>
+                        <input type="text" id="noteProject" placeholder="es. PROJ-001" list="projectSuggestions">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo di Lavoro</label>
+                        <select id="noteWorkType"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ore Stimate (formato HH:MM, incrementi 30 min)</label>
+                        <div class="hours-input-group">
+                            <button type="button" class="hours-btn" onclick="decrementNoteHours()">−</button>
+                            <input type="text" id="noteHours" placeholder="00:30" pattern="[0-9]{1,2}:[0-5][0-9]" maxlength="5" value="00:30">
+                            <button type="button" class="hours-btn" onclick="incrementNoteHours()">+</button>
+                        </div>
+                        <small style="font-size: 11px; color: var(--text-tertiary);">Usa i bottoni +/- per incrementi di 30 minuti</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrizione (opzionale)</label>
+                        <textarea id="noteDescription" rows="2" placeholder="Breve descrizione dell'attività..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="addNote()">➕ Aggiungi Appunto</button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3>Appunti di Oggi</h3>
+                        <div>
+                            <button class="btn btn-success" onclick="createDayFromNotes()" style="margin-right: 5px;">📅 Crea Giornata</button>
+                            <button class="btn btn-danger" onclick="clearAllNotes()">🗑️ Pulisci Tutto</button>
+                        </div>
+                    </div>
+                    <div id="notesContainer" style="min-height: 100px;"></div>
+                    <div id="notesTotalHours" style="margin-top: 10px; font-weight: bold; color: var(--accent-color);"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Timesheet Tab -->
@@ -1020,6 +1132,7 @@
         let timesheetEntries = [];
         let holidays = [];
         let localHolidays = [];
+        let dailyNotes = []; // Daily work notes
         let editingIndex = -1; // Track if we're editing an existing entry
         let editingLocalHolidayId = null; // Track if we're editing a local holiday
         let workEntryCounter = 0; // Counter for work entry forms
@@ -1227,11 +1340,13 @@
             const savedDayTypes = localStorage.getItem('dayTypes');
             const savedEntries = localStorage.getItem('timesheetEntries');
             const savedLocalHolidays = localStorage.getItem('localHolidays');
+            const savedDailyNotes = localStorage.getItem('dailyNotes');
 
             workTypes = savedWorkTypes ? JSON.parse(savedWorkTypes) : defaultWorkTypes;
             dayTypes = savedDayTypes ? JSON.parse(savedDayTypes) : defaultDayTypes;
             timesheetEntries = savedEntries ? JSON.parse(savedEntries) : [];
             localHolidays = savedLocalHolidays ? JSON.parse(savedLocalHolidays) : [];
+            dailyNotes = savedDailyNotes ? JSON.parse(savedDailyNotes) : [];
 
             // Migrazione dati: calcola workHours dai workEntries se non presente
             migrateWorkHours();
@@ -1267,6 +1382,7 @@
             localStorage.setItem('dayTypes', JSON.stringify(dayTypes));
             localStorage.setItem('timesheetEntries', JSON.stringify(timesheetEntries));
             localStorage.setItem('localHolidays', JSON.stringify(localHolidays));
+            localStorage.setItem('dailyNotes', JSON.stringify(dailyNotes));
         }
 
         // Switch tabs
@@ -1279,6 +1395,9 @@
 
             if (tabName === 'export') {
                 updateJSONPreview();
+            } else if (tabName === 'notes') {
+                renderNotes();
+                populateNoteWorkTypes();
             }
         }
 
@@ -2443,6 +2562,361 @@
         // Initialize on load
         // Modal closing removed - modals now close only via buttons
 
+        // === DAILY NOTES MANAGEMENT ===
+        function incrementNoteHours() {
+            const input = document.getElementById('noteHours');
+            const value = input.value.trim();
+            
+            let hours = 0, minutes = 0;
+            if (value) {
+                const match = value.match(/^(\d{1,2}):(\d{2})$/);
+                if (match) {
+                    hours = parseInt(match[1], 10);
+                    minutes = parseInt(match[2], 10);
+                }
+            }
+            
+            // Increment by 30 minutes
+            minutes += 30;
+            if (minutes >= 60) {
+                hours += Math.floor(minutes / 60);
+                minutes = minutes % 60;
+            }
+            
+            // Cap at 23:30
+            if (hours > 23 || (hours === 23 && minutes > 30)) {
+                hours = 23;
+                minutes = 30;
+            }
+            
+            input.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+        
+        function decrementNoteHours() {
+            const input = document.getElementById('noteHours');
+            const value = input.value.trim();
+            
+            let hours = 0, minutes = 0;
+            if (value) {
+                const match = value.match(/^(\d{1,2}):(\d{2})$/);
+                if (match) {
+                    hours = parseInt(match[1], 10);
+                    minutes = parseInt(match[2], 10);
+                }
+            }
+            
+            // Decrement by 30 minutes
+            minutes -= 30;
+            if (minutes < 0) {
+                hours -= 1;
+                minutes = 30;
+            }
+            
+            // Can't go below 00:00
+            if (hours < 0) {
+                hours = 0;
+                minutes = 0;
+            }
+            
+            input.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        function addNote() {
+            const project = document.getElementById('noteProject').value.trim();
+            const workType = document.getElementById('noteWorkType').value;
+            const hoursInput = document.getElementById('noteHours').value.trim();
+            const description = document.getElementById('noteDescription').value.trim();
+
+            if (!project) {
+                alert('Inserisci il codice progetto');
+                return;
+            }
+
+            if (!workType) {
+                alert('Seleziona il tipo di lavoro');
+                return;
+            }
+
+            // Validate HH:MM format
+            const timePattern = /^(\d{1,2}):(\d{2})$/;
+            const match = hoursInput.match(timePattern);
+            
+            if (!match) {
+                alert('Inserisci le ore nel formato HH:MM (es. 02:30)');
+                return;
+            }
+
+            const hours = parseInt(match[1], 10);
+            const minutes = parseInt(match[2], 10);
+
+            if (hours < 0 || minutes < 0 || minutes > 59) {
+                alert('Formato ore non valido');
+                return;
+            }
+
+            if (hours === 0 && minutes === 0) {
+                alert('Le ore devono essere maggiori di 0');
+                return;
+            }
+
+            // Check 30-minute increments
+            if (minutes !== 0 && minutes !== 30) {
+                alert('Le ore devono essere in incrementi di 30 minuti (es. 01:00, 01:30)');
+                return;
+            }
+
+            const hoursFormatted = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+            const note = {
+                id: Date.now(),
+                project: project,
+                workType: workType,
+                hours: hoursFormatted,
+                description: description,
+                timestamp: new Date().toISOString()
+            };
+
+            dailyNotes.push(note);
+            saveData();
+            renderNotes();
+
+            // Clear form
+            document.getElementById('noteProject').value = '';
+            document.getElementById('noteWorkType').value = workTypes.length > 0 ? workTypes[0].name : '';
+            document.getElementById('noteHours').value = '';
+            document.getElementById('noteDescription').value = '';
+        }
+
+        function deleteNote(id) {
+            if (confirm('Eliminare questo appunto?')) {
+                dailyNotes = dailyNotes.filter(note => note.id !== id);
+                saveData();
+                renderNotes();
+            }
+        }
+
+        function incrementNoteCardHours(noteId) {
+            const note = dailyNotes.find(n => n.id === noteId);
+            if (!note) return;
+            
+            const [h, m] = note.hours.split(':').map(Number);
+            let hours = h;
+            let minutes = m;
+            
+            // Increment by 30 minutes
+            minutes += 30;
+            if (minutes >= 60) {
+                hours += Math.floor(minutes / 60);
+                minutes = minutes % 60;
+            }
+            
+            // Cap at 23:30
+            if (hours > 23 || (hours === 23 && minutes > 30)) {
+                hours = 23;
+                minutes = 30;
+            }
+            
+            note.hours = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            saveData();
+            renderNotes();
+        }
+        
+        function decrementNoteCardHours(noteId) {
+            const note = dailyNotes.find(n => n.id === noteId);
+            if (!note) return;
+            
+            const [h, m] = note.hours.split(':').map(Number);
+            let hours = h;
+            let minutes = m;
+            
+            // Decrement by 30 minutes
+            minutes -= 30;
+            if (minutes < 0) {
+                hours -= 1;
+                minutes = 30;
+            }
+            
+            // Can't go below 00:00
+            if (hours < 0) {
+                hours = 0;
+                minutes = 0;
+            }
+            
+            note.hours = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            saveData();
+            renderNotes();
+        }
+        
+        function updateNoteHours(noteId) {
+            const input = document.getElementById(`noteCardHours${noteId}`);
+            const value = input.value.trim();
+            
+            // Validate HH:MM format
+            const timePattern = /^(\d{1,2}):(\d{2})$/;
+            const match = value.match(timePattern);
+            
+            if (!match) {
+                alert('Formato non valido. Usa HH:MM (es. 02:30)');
+                renderNotes();
+                return;
+            }
+            
+            const hours = parseInt(match[1], 10);
+            const minutes = parseInt(match[2], 10);
+            
+            if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+                alert('Ore non valide (massimo 23:59)');
+                renderNotes();
+                return;
+            }
+            
+            // Check 30-minute increments
+            if (minutes !== 0 && minutes !== 30) {
+                alert('Le ore devono essere in incrementi di 30 minuti (es. 01:00, 01:30)');
+                renderNotes();
+                return;
+            }
+            
+            if (hours === 0 && minutes === 0) {
+                alert('Le ore devono essere maggiori di 0');
+                renderNotes();
+                return;
+            }
+            
+            const note = dailyNotes.find(n => n.id === noteId);
+            if (note) {
+                note.hours = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                saveData();
+                renderNotes();
+            }
+        }
+
+        function clearAllNotes() {
+            if (dailyNotes.length === 0) {
+                alert('Non ci sono appunti da eliminare');
+                return;
+            }
+
+            if (confirm('Eliminare tutti gli appunti? Questa operazione non può essere annullata.')) {
+                dailyNotes = [];
+                saveData();
+                renderNotes();
+            }
+        }
+
+        function renderNotes() {
+            const container = document.getElementById('notesContainer');
+            const totalDiv = document.getElementById('notesTotalHours');
+
+            if (dailyNotes.length === 0) {
+                container.innerHTML = '<div class="note-empty">📝 Nessun appunto ancora. Inizia ad annotare i tuoi progetti!</div>';
+                totalDiv.textContent = '';
+                return;
+            }
+
+            let html = '';
+            let totalMinutes = 0;
+
+            dailyNotes.forEach(note => {
+                // Parse HH:MM format
+                const [h, m] = note.hours.split(':').map(Number);
+                totalMinutes += h * 60 + m;
+                
+                const workTypeObj = workTypes.find(wt => wt.name === note.workType);
+                const color = workTypeObj ? workTypeObj.color : '#667eea';
+                const textColor = getContrastColor(color);
+
+                html += `
+                    <div class="note-card">
+                        <div class="note-card-header">
+                            <span class="note-project">${note.project}</span>
+                            <div class="hours-input-group" style="margin: 0;">
+                                <button type="button" class="hours-btn" onclick="decrementNoteCardHours(${note.id})" style="padding: 2px 6px; font-size: 12px;">−</button>
+                                <input type="text" id="noteCardHours${note.id}" value="${note.hours}" 
+                                       style="width: 60px; text-align: center; padding: 2px 4px; font-weight: bold; color: var(--accent-color);"
+                                       onchange="updateNoteHours(${note.id})" 
+                                       pattern="[0-9]{1,2}:[0-5][0-9]" maxlength="5">
+                                <button type="button" class="hours-btn" onclick="incrementNoteCardHours(${note.id})" style="padding: 2px 6px; font-size: 12px;">+</button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="note-worktype" style="background-color: ${color}; color: ${textColor};">
+                                ${note.workType}
+                            </span>
+                        </div>
+                        ${note.description ? `<div class="note-description">${note.description}</div>` : ''}
+                        <div class="note-actions">
+                            <button class="btn btn-danger" onclick="deleteNote(${note.id})" style="padding: 3px 8px; font-size: 11px;">🗑️ Elimina</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            const totalHours = Math.floor(totalMinutes / 60);
+            const totalMins = totalMinutes % 60;
+            totalDiv.textContent = `📊 Totale ore annotate: ${totalHours.toString().padStart(2, '0')}:${totalMins.toString().padStart(2, '0')}`;
+        }
+
+        function populateNoteWorkTypes() {
+            const select = document.getElementById('noteWorkType');
+            select.innerHTML = '';
+            
+            workTypes.forEach(wt => {
+                const option = document.createElement('option');
+                option.value = wt.name;
+                option.textContent = wt.name;
+                select.appendChild(option);
+            });
+        }
+
+        function createDayFromNotes() {
+            if (dailyNotes.length === 0) {
+                alert('Non ci sono appunti da trasferire. Aggiungi prima degli appunti!');
+                return;
+            }
+
+            // Open the entry modal
+            openEntryModal();
+
+            // Wait for modal to be fully rendered
+            setTimeout(() => {
+                // Group notes by project
+                const projectGroups = {};
+                dailyNotes.forEach(note => {
+                    if (!projectGroups[note.project]) {
+                        projectGroups[note.project] = [];
+                    }
+                    projectGroups[note.project].push(note);
+                });
+
+                // Clear existing work entries
+                document.getElementById('workEntriesContainer').innerHTML = '';
+                workEntryCounter = 0;
+
+                // Add work entries for each project
+                Object.entries(projectGroups).forEach(([project, notes]) => {
+                    notes.forEach(note => {
+                        addWorkEntryForm();
+                        
+                        // Fill in the data
+                        const lastIndex = workEntryCounter - 1;
+                        document.getElementById(`workProject${lastIndex}`).value = note.project;
+                        document.getElementById(`workType${lastIndex}`).value = note.workType;
+                        
+                        // Hours are already in HH:MM format
+                        document.getElementById(`workHours${lastIndex}`).value = note.hours;
+                        
+                        if (note.description) {
+                            document.getElementById(`workDescription${lastIndex}`).value = note.description;
+                        }
+                    });
+                });
+
+                alert(`📋 Trasferiti ${dailyNotes.length} appunti nel modal. Completa i dati (data, tipo giorno, timbrature) e salva la giornata.`);
+            }, 100);
+        }
+
         // Load theme
         loadTheme();
 
@@ -2456,6 +2930,8 @@
         updateWorkTypeSelects();
         updateDayTypeSelects();
         updateProjectSuggestions();
+        populateNoteWorkTypes();
+        renderNotes();
     </script>
 </body>
 </html>
