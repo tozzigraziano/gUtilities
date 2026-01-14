@@ -2523,6 +2523,7 @@
             <button class="tab" onclick="switchTab('templates')">Template</button>
             <button class="tab" onclick="switchTab('meetings')">👥 Riunioni</button>
             <button class="tab" onclick="switchTab('bacheca')">📋 Bacheca</button>
+            <button class="tab" onclick="switchTab('offerte')">💼 Offerte</button>
             <button class="tab" onclick="switchTab('gantt')">Gantt</button>
             <button class="tab" onclick="switchTab('resourceView')">Vista Risorse</button>
             <button class="tab" onclick="switchTab('warnings')">⚠️ Avvisi</button>
@@ -2588,6 +2589,51 @@
                     <tr>
                         <th>Data</th>
                         <th>Festività</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB OFFERTE -->
+        <div id="offerte" class="tab-content">
+            <h2>💼 Riepilogo Offerte</h2>
+            
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label>Stato:</label>
+                    <select id="offerFilterStatus" onchange="renderOffersOverview()">
+                        <option value="">Tutti</option>
+                        <option value="in-preparazione">📝 In Preparazione</option>
+                        <option value="inviata">📤 Inviata</option>
+                        <option value="accettata">✅ Accettata</option>
+                        <option value="rifiutata">❌ Rifiutata</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Cliente:</label>
+                    <input type="text" id="offerFilterClient" placeholder="Filtra cliente" onkeyup="renderOffersOverview()" style="width: 200px;">
+                </div>
+                <div class="filter-group">
+                    <label>Codice Progetto:</label>
+                    <input type="text" id="offerFilterProjectCode" placeholder="Filtra codice" onkeyup="renderOffersOverview()" style="width: 150px;">
+                </div>
+                <div class="filter-group">
+                    <button onclick="clearOfferFilters()" class="secondary" style="padding: 4px 8px; font-size: 12px;">Pulisci Filtri</button>
+                </div>
+            </div>
+
+            <table id="offersOverviewTable">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Codice Progetto</th>
+                        <th>Titolo Offerta</th>
+                        <th>Data</th>
+                        <th>Stima Tempi</th>
+                        <th>Valore</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -4475,6 +4521,10 @@
                 renderGlobalMeetings();
                 updateMeetingTagsSuggestions();
             }
+            // Renderizza il Riepilogo Offerte quando si apre la tab
+            if (tabName === 'offerte') {
+                renderOffersOverview();
+            }
             // Mostra la vista iniziale con l'elenco progetti quando si apre la tab Progetti
             if (tabName === 'projects') {
                 closeProjectDetails();
@@ -6291,6 +6341,124 @@
         // ========================================
         
         let editingOfferId = null;
+        let editingOfferProjectId = null;
+        
+        function renderOffersOverview() {
+            const tbody = document.querySelector('#offersOverviewTable tbody');
+            tbody.innerHTML = '';
+            
+            const filterStatus = document.getElementById('offerFilterStatus')?.value || '';
+            const filterClient = document.getElementById('offerFilterClient')?.value.toLowerCase() || '';
+            const filterProjectCode = document.getElementById('offerFilterProjectCode')?.value.toLowerCase() || '';
+            
+            const statusColors = {
+                'in-preparazione': '#999',
+                'inviata': '#2196F3',
+                'accettata': '#4CAF50',
+                'rifiutata': '#f44336'
+            };
+            
+            const statusLabels = {
+                'in-preparazione': '📝 In Preparazione',
+                'inviata': '📤 Inviata',
+                'accettata': '✅ Accettata',
+                'rifiutata': '❌ Rifiutata'
+            };
+            
+            let allOffers = [];
+            
+            // Raccogli tutte le offerte da tutti i progetti
+            projects.forEach(project => {
+                if (project.offers && project.offers.length > 0) {
+                    project.offers.forEach((offer, offerIndex) => {
+                        allOffers.push({
+                            offer: offer,
+                            project: project,
+                            offerIndex: offerIndex
+                        });
+                    });
+                }
+            });
+            
+            // Applica filtri
+            let filteredOffers = allOffers;
+            
+            if (filterStatus) {
+                filteredOffers = filteredOffers.filter(item => item.offer.status === filterStatus);
+            }
+            
+            if (filterClient) {
+                filteredOffers = filteredOffers.filter(item => 
+                    (item.project.client || '').toLowerCase().includes(filterClient)
+                );
+            }
+            
+            if (filterProjectCode) {
+                filteredOffers = filteredOffers.filter(item => 
+                    (item.project.code || '').toLowerCase().includes(filterProjectCode)
+                );
+            }
+            
+            // Ordina per data decrescente (più recenti prima)
+            filteredOffers.sort((a, b) => {
+                const dateA = new Date(a.offer.date);
+                const dateB = new Date(b.offer.date);
+                return dateB - dateA;
+            });
+            
+            // Renderizza le offerte
+            filteredOffers.forEach(item => {
+                const row = tbody.insertRow();
+                const value = item.offer.value ? `€ ${parseFloat(item.offer.value).toFixed(2)}` : '-';
+                
+                row.style.cursor = 'pointer';
+                row.onclick = function(e) {
+                    if (e.target.tagName !== 'BUTTON') {
+                        // Apri modal di visualizzazione
+                        openOfferModal(item.offerIndex, true, item.project.id);
+                    }
+                };
+                
+                row.innerHTML = `
+                    <td>${escapeHtml(item.project.client || '-')}</td>
+                    <td>${escapeHtml(item.project.code || '-')}</td>
+                    <td>${escapeHtml(item.offer.title)}</td>
+                    <td>${formatDateLocal(new Date(item.offer.date))}</td>
+                    <td>${escapeHtml(item.offer.estimate)}</td>
+                    <td style="text-align: right;">${value}</td>
+                    <td><span style="color: ${statusColors[item.offer.status]}">${statusLabels[item.offer.status]}</span></td>
+                    <td>
+                        <button onclick="event.stopPropagation(); openOfferModal(${item.offerIndex}, false, ${item.project.id})" title="Modifica" style="padding: 4px 8px; font-size: 12px;">✏️</button>
+                    </td>
+                `;
+            });
+            
+            if (filteredOffers.length === 0) {
+                const row = tbody.insertRow();
+                row.innerHTML = '<td colspan="8" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessuna offerta trovata</td>';
+            }
+            
+            // Mostra totale
+            const totalValue = filteredOffers.reduce((sum, item) => {
+                return sum + (item.offer.value ? parseFloat(item.offer.value) : 0);
+            }, 0);
+            
+            const summaryRow = tbody.insertRow();
+            summaryRow.style.fontWeight = 'bold';
+            summaryRow.style.backgroundColor = 'var(--bg-tertiary)';
+            summaryRow.innerHTML = `
+                <td colspan="5" style="text-align: right;">Totale Offerte: ${filteredOffers.length}</td>
+                <td style="text-align: right;">€ ${totalValue.toFixed(2)}</td>
+                <td colspan="2"></td>
+            `;
+        }
+        
+        function clearOfferFilters() {
+            document.getElementById('offerFilterStatus').value = '';
+            document.getElementById('offerFilterClient').value = '';
+            document.getElementById('offerFilterProjectCode').value = '';
+            renderOffersOverview();
+        }
         
         function renderProjectOffers() {
             const project = projects.find(p => p.id === currentProjectId);
@@ -6346,8 +6514,9 @@
             }
         }
         
-        function openOfferModal(id = null, viewOnly = false) {
+        function openOfferModal(id = null, viewOnly = false, projectId = null) {
             editingOfferId = id;
+            editingOfferProjectId = projectId || currentProjectId;
             const modal = document.getElementById('offerModal');
             modal.style.display = 'block';
             document.body.classList.add('modal-open');
@@ -6368,7 +6537,7 @@
             }
             
             if (id !== null) {
-                const project = projects.find(p => p.id === currentProjectId);
+                const project = projects.find(p => p.id === editingOfferProjectId);
                 const offer = project.offers[id];
                 
                 document.getElementById('offerModalTitle').textContent = isViewOnly ? '💼 Visualizza Offerta' : '💼 Modifica Offerta';
@@ -6399,10 +6568,11 @@
             document.getElementById('offerModal').style.display = 'none';
             document.body.classList.remove('modal-open');
             editingOfferId = null;
+            editingOfferProjectId = null;
         }
         
         function saveOffer() {
-            const project = projects.find(p => p.id === currentProjectId);
+            const project = projects.find(p => p.id === (editingOfferProjectId || currentProjectId));
             if (!project) return;
             
             const title = document.getElementById('offerTitle').value.trim();
@@ -6436,7 +6606,16 @@
             
             saveToIndexedDB('projects', projects);
             closeOfferModal();
-            renderProjectOffers();
+            
+            // Aggiorna la vista corretta
+            if (currentProjectId) {
+                renderProjectOffers();
+            }
+            // Se siamo nella tab offerte, aggiorna anche quella
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab && activeTab.id === 'offerte') {
+                renderOffersOverview();
+            }
         }
         
         function editOffer(index) {
