@@ -2138,6 +2138,10 @@
             let totalSegnateMinutes = 0;
             let weekendMinutes = 0;
             let holidayMinutes = 0;
+            let overtimeMinutes = 0;
+            let saturdayCount = 0;
+            let sundayCount = 0;
+            let holidayCount = 0;
             
             entries.forEach(entry => {
                 // Ore timbrature
@@ -2153,11 +2157,27 @@
                     totalSegnateMinutes += workMinutes;
                 }
                 
-                // Calcola ore in weekend e festivi
+                // Conta giorni per tipo
+                const date = new Date(entry.date);
+                const dayOfWeek = date.getDay();
+                
                 if (isHoliday(entry.date)) {
+                    holidayCount++;
                     holidayMinutes += workMinutes;
-                } else if (isWeekend(entry.date)) {
+                } else if (dayOfWeek === 6) {
+                    saturdayCount++;
                     weekendMinutes += workMinutes;
+                } else if (dayOfWeek === 0) {
+                    sundayCount++;
+                    weekendMinutes += workMinutes;
+                }
+                
+                // Calcola ore di straordinario (oltre le 8 ore al giorno, solo giorni lavorativi)
+                if (!isHoliday(entry.date) && !isWeekend(entry.date)) {
+                    const dailyOvertime = workMinutes - (8 * 60);
+                    if (dailyOvertime > 0) {
+                        overtimeMinutes += dailyOvertime;
+                    }
                 }
             });
 
@@ -2171,34 +2191,58 @@
             const diffHours = Math.floor(Math.abs(diffMinutes) / 60);
             const diffMins = Math.abs(diffMinutes) % 60;
 
+            const totalExtraMinutes = overtimeMinutes + weekendMinutes + holidayMinutes;
+
             statsDiv.innerHTML = `
-                <div class="stat-card">
+                <div class="stat-card" style="grid-column: span 2;">
                     <h3>${totalDays}</h3>
-                    <p>Giorni Registrati</p>
+                    <p style="margin-bottom: 8px;">Giorni Registrati</p>
+                    <div style="display: flex; justify-content: space-around; font-size: 11px; color: var(--text-tertiary); border-top: 1px solid var(--border-color); padding-top: 8px;">
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; color: var(--accent-color);">${saturdayCount}</div>
+                            <div>Sabati</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; color: var(--accent-color);">${sundayCount}</div>
+                            <div>Domeniche</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; color: var(--accent-color);">${holidayCount}</div>
+                            <div>Festivi</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <h3>${Math.floor(totalTimbratureMinutes / 60)}:${(totalTimbratureMinutes % 60).toString().padStart(2, '0')}</h3>
-                    <p>Ore Timbrature</p>
-                </div>
-                <div class="stat-card">
+                <div class="stat-card" style="grid-column: span 2;">
                     <h3>${Math.floor(totalSegnateMinutes / 60)}:${(totalSegnateMinutes % 60).toString().padStart(2, '0')}</h3>
-                    <p>Ore Segnate</p>
+                    <p style="margin-bottom: 8px;">Ore Segnate</p>
+                    <div style="display: flex; justify-content: space-around; font-size: 11px; color: var(--text-tertiary); border-top: 1px solid var(--border-color); padding-top: 8px;">
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; color: var(--accent-color);">${Math.floor(totalTimbratureMinutes / 60)}:${(totalTimbratureMinutes % 60).toString().padStart(2, '0')}</div>
+                            <div>Timbrature</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; color: var(--accent-color);">${diffSign}${diffHours}:${diffMins.toString().padStart(2, '0')}</div>
+                            <div>Differenza</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <h3>${diffSign}${diffHours}:${diffMins.toString().padStart(2, '0')}</h3>
-                    <p>Differenza</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${projects.size}</h3>
-                    <p>Progetti Unici</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${Math.floor(weekendMinutes / 60)}:${(weekendMinutes % 60).toString().padStart(2, '0')}</h3>
-                    <p>Ore Weekend</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${Math.floor(holidayMinutes / 60)}:${(holidayMinutes % 60).toString().padStart(2, '0')}</h3>
-                    <p>Ore Festivi</p>
+                <div class="stat-card" style="grid-column: span 2;">
+                    <h3>${Math.floor(totalExtraMinutes / 60)}:${(totalExtraMinutes % 60).toString().padStart(2, '0')}</h3>
+                    <p style="margin-bottom: 8px;">Totale Straordinario</p>
+                    <div style="display: flex; justify-content: space-around; font-size: 11px; color: var(--text-tertiary); border-top: 1px solid var(--border-color); padding-top: 8px;">
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; color: var(--accent-color);">${Math.floor(overtimeMinutes / 60)}:${(overtimeMinutes % 60).toString().padStart(2, '0')}</div>
+                            <div>Lun-Ven</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; color: var(--accent-color);">${Math.floor(weekendMinutes / 60)}:${(weekendMinutes % 60).toString().padStart(2, '0')}</div>
+                            <div>Weekend</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: bold; color: var(--accent-color);">${Math.floor(holidayMinutes / 60)}:${(holidayMinutes % 60).toString().padStart(2, '0')}</div>
+                            <div>Festivi</div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -2432,10 +2476,6 @@
                 <div class="stat-card">
                     <h3>${dayCount}</h3>
                     <p>Giorni Lavorati</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${dayCount > 0 ? (totalMinutes / dayCount / 60).toFixed(1) : '0.0'}</h3>
-                    <p>Ore Medie/Giorno</p>
                 </div>
                 <div class="stat-card">
                     <h3>${Math.floor(weekendMinutes / 60)}:${(weekendMinutes % 60).toString().padStart(2, '0')}</h3>
