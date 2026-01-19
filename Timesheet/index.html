@@ -638,6 +638,8 @@
             font-size: 11px;
             color: white;
             margin-bottom: 5px;
+            border-left: 4px solid;
+            border-right: 4px solid;
         }
 
         .note-description {
@@ -3074,8 +3076,27 @@
                 totalMinutes += h * 60 + m;
                 
                 const workTypeObj = workTypes.find(wt => wt.name === note.workType);
-                const color = workTypeObj ? workTypeObj.color : '#667eea';
-                const textColor = getContrastColor(color);
+                let bgColor = '#667eea'; // Default color
+                let borderColor = '#667eea';
+                
+                if (workTypeObj) {
+                    // Border color is always the work type color
+                    borderColor = workTypeObj.color;
+                    
+                    // Background color: use category color if available, otherwise work type color
+                    if (workTypeObj.categoryId) {
+                        const category = categories.find(c => c.id === workTypeObj.categoryId);
+                        if (category) {
+                            bgColor = category.color;
+                        } else {
+                            bgColor = workTypeObj.color;
+                        }
+                    } else {
+                        bgColor = workTypeObj.color;
+                    }
+                }
+                
+                const textColor = getContrastColor(bgColor);
 
                 html += `
                     <div class="note-card">
@@ -3091,7 +3112,7 @@
                             </div>
                         </div>
                         <div>
-                            <span class="note-worktype" style="background-color: ${color}; color: ${textColor};">
+                            <span class="note-worktype" style="background: ${bgColor}; border-left-color: ${borderColor}; border-right-color: ${borderColor}; color: ${textColor};">
                                 ${note.workType}
                             </span>
                         </div>
