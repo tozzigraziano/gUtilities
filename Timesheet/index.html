@@ -470,6 +470,8 @@
             border-radius: 3px;
             cursor: pointer;
             transition: opacity 0.2s;
+            border-left: 4px solid;
+            border-right: 4px solid;
         }
         
         .project-tag:hover {
@@ -673,6 +675,7 @@
             <button class="nav-tab" onclick="switchTab('worktypes')">Tipi di Lavoro</button>
             <button class="nav-tab" onclick="switchTab('daytypes')">Tipi di Giorno</button>
             <button class="nav-tab" onclick="switchTab('holidays')">Festività</button>
+            <button class="nav-tab" onclick="switchTab('settings')">⚙️ Impostazioni</button>
             <button class="nav-tab" onclick="switchTab('export')">Esporta</button>
         </div>
 
@@ -893,6 +896,42 @@
             </div>
         </div>
 
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="section">
+                <h2>Gestione Categorie Tipi di Lavoro</h2>
+                <div class="two-column">
+                    <div>
+                        <div class="form-group">
+                            <label>Nome Categoria</label>
+                            <input type="text" id="categoryName" placeholder="es. Sviluppo">
+                        </div>
+                        <div class="form-group">
+                            <label>Colore</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="color" id="categoryColor" value="#667eea" onchange="updateHexFromPicker('categoryColor', 'categoryHex')">
+                                <input type="text" id="categoryHex" value="#667eea" maxlength="7" placeholder="#667eea" style="width: 90px; font-family: monospace;" oninput="updatePickerFromHex('categoryHex', 'categoryColor')">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="addCategory()">Aggiungi Categoria</button>
+                    </div>
+                    <div>
+                        <h3>Categorie Esistenti</h3>
+                        <table id="categoriesTable">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Colore</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Export Tab -->
         <div id="export" class="tab-content">
             <div class="section">
@@ -1016,6 +1055,12 @@
                 <input type="text" id="editWorkTypeName">
             </div>
             <div class="form-group">
+                <label>Categoria</label>
+                <select id="editWorkTypeCategory">
+                    <option value="">Nessuna categoria</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>Colore</label>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <input type="color" id="editWorkTypeColor" onchange="updateHexFromPicker('editWorkTypeColor', 'editWorkTypeHex')">
@@ -1133,8 +1178,10 @@
         let holidays = [];
         let localHolidays = [];
         let dailyNotes = []; // Daily work notes
+        let categories = []; // Work type categories
         let editingIndex = -1; // Track if we're editing an existing entry
         let editingLocalHolidayId = null; // Track if we're editing a local holiday
+        let editingCategoryId = null; // Track if we're editing a category
         let workEntryCounter = 0; // Counter for work entry forms
         let totalTimestampMinutes = 0; // Track total minutes from timestamps
 
@@ -1341,12 +1388,14 @@
             const savedEntries = localStorage.getItem('timesheetEntries');
             const savedLocalHolidays = localStorage.getItem('localHolidays');
             const savedDailyNotes = localStorage.getItem('dailyNotes');
+            const savedCategories = localStorage.getItem('categories');
 
             workTypes = savedWorkTypes ? JSON.parse(savedWorkTypes) : defaultWorkTypes;
             dayTypes = savedDayTypes ? JSON.parse(savedDayTypes) : defaultDayTypes;
             timesheetEntries = savedEntries ? JSON.parse(savedEntries) : [];
             localHolidays = savedLocalHolidays ? JSON.parse(savedLocalHolidays) : [];
             dailyNotes = savedDailyNotes ? JSON.parse(savedDailyNotes) : [];
+            categories = savedCategories ? JSON.parse(savedCategories) : [];
 
             // Migrazione dati: calcola workHours dai workEntries se non presente
             migrateWorkHours();
@@ -1383,6 +1432,7 @@
             localStorage.setItem('timesheetEntries', JSON.stringify(timesheetEntries));
             localStorage.setItem('localHolidays', JSON.stringify(localHolidays));
             localStorage.setItem('dailyNotes', JSON.stringify(dailyNotes));
+            localStorage.setItem('categories', JSON.stringify(categories));
         }
 
         // Switch tabs
@@ -1398,6 +1448,8 @@
             } else if (tabName === 'notes') {
                 renderNotes();
                 populateNoteWorkTypes();
+            } else if (tabName === 'settings') {
+                renderCategories();
             }
         }
 
@@ -1700,6 +1752,17 @@
             document.getElementById('editWorkTypeColor').value = type.color;
             document.getElementById('editWorkTypeHex').value = type.color.toUpperCase();
             
+            // Populate category select
+            const categorySelect = document.getElementById('editWorkTypeCategory');
+            categorySelect.innerHTML = '<option value="">Nessuna categoria</option>';
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                categorySelect.appendChild(option);
+            });
+            categorySelect.value = type.categoryId || '';
+            
             document.getElementById('editWorkTypeModal').style.display = 'block';
         }
         
@@ -1715,6 +1778,7 @@
             const oldName = type.name;
             const newName = document.getElementById('editWorkTypeName').value.trim();
             const newColor = document.getElementById('editWorkTypeColor').value;
+            const newCategoryId = document.getElementById('editWorkTypeCategory').value;
             
             if (!newName) {
                 return;
@@ -1723,6 +1787,11 @@
             // Update the type
             workTypes[editingWorkTypeIndex].name = newName;
             workTypes[editingWorkTypeIndex].color = newColor;
+            if (newCategoryId) {
+                workTypes[editingWorkTypeIndex].categoryId = parseInt(newCategoryId);
+            } else {
+                delete workTypes[editingWorkTypeIndex].categoryId;
+            }
             
             // Update all entries that use this work type
             timesheetEntries.forEach(entry => {
@@ -1744,18 +1813,66 @@
             const tbody = document.querySelector('#workTypesTable tbody');
             tbody.innerHTML = '';
 
+            // Group work types by category
+            const grouped = {};
+            const uncategorized = [];
+
             workTypes.forEach((type, index) => {
-                const textColor = getContrastColor(type.color);
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td><span class="project-tag" style="background: ${type.color}; color: ${textColor}; cursor: pointer;" onclick="openWorkTypeStatsModal('${type.name}')">${type.name}</span></td>
-                    <td><span style="display: inline-block; width: 30px; height: 20px; background: ${type.color}; border-radius: 3px;"></span></td>
-                    <td class="action-buttons">
-                        <button class="btn btn-secondary" onclick="editWorkType(${index})">Modifica</button>
-                        <button class="btn btn-danger" onclick="deleteWorkType(${index})">Elimina</button>
-                    </td>
-                `;
+                if (type.categoryId) {
+                    const category = categories.find(c => c.id === type.categoryId);
+                    if (category) {
+                        if (!grouped[category.name]) {
+                            grouped[category.name] = { color: category.color, types: [] };
+                        }
+                        grouped[category.name].types.push({ type, index });
+                    } else {
+                        uncategorized.push({ type, index });
+                    }
+                } else {
+                    uncategorized.push({ type, index });
+                }
             });
+
+            // Render categorized work types
+            Object.keys(grouped).sort().forEach(categoryName => {
+                const categoryData = grouped[categoryName];
+                const row = tbody.insertRow();
+                row.innerHTML = `<td colspan="3" style="background: ${categoryData.color}22; font-weight: bold; padding: 8px;"><span style="border-left: 4px solid ${categoryData.color}; padding-left: 8px;">${categoryName}</span></td>`;
+                
+                categoryData.types.forEach(({ type, index }) => {
+                    const textColor = getContrastColor(categoryData.color);
+                    const escapedName = type.name.replace(/'/g, "\\'");
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td><span class="project-tag" style="background: ${categoryData.color}; border-left-color: ${type.color}; border-right-color: ${type.color}; color: ${textColor}; cursor: pointer;" onclick="openWorkTypeStatsModal('${escapedName}')">${type.name}</span></td>
+                        <td><span style="display: inline-block; width: 30px; height: 20px; background: ${type.color}; border-radius: 3px;"></span></td>
+                        <td class="action-buttons">
+                            <button class="btn btn-secondary" onclick="editWorkType(${index})">Modifica</button>
+                            <button class="btn btn-danger" onclick="deleteWorkType(${index})">Elimina</button>
+                        </td>
+                    `;
+                });
+            });
+
+            // Render uncategorized work types
+            if (uncategorized.length > 0) {
+                const row = tbody.insertRow();
+                row.innerHTML = `<td colspan="3" style="background: var(--bg-hover); font-weight: bold; padding: 8px;">Senza Categoria</td>`;
+                
+                uncategorized.forEach(({ type, index }) => {
+                    const textColor = getContrastColor(type.color);
+                    const escapedName = type.name.replace(/'/g, "\\'");
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td><span class="project-tag" style="background: ${type.color}; color: ${textColor}; cursor: pointer;" onclick="openWorkTypeStatsModal('${escapedName}')">${type.name}</span></td>
+                        <td><span style="display: inline-block; width: 30px; height: 20px; background: ${type.color}; border-radius: 3px;"></span></td>
+                        <td class="action-buttons">
+                            <button class="btn btn-secondary" onclick="editWorkType(${index})">Modifica</button>
+                            <button class="btn btn-danger" onclick="deleteWorkType(${index})">Elimina</button>
+                        </td>
+                    `;
+                });
+            }
         }
 
         // Day Types Management
@@ -1843,6 +1960,85 @@
                     <td class="action-buttons">
                         <button class="btn btn-secondary" onclick="editDayType(${index})">Modifica</button>
                         <button class="btn btn-danger" onclick="deleteDayType(${index})">Elimina</button>
+                    </td>
+                `;
+            });
+        }
+
+        // === CATEGORIES MANAGEMENT ===
+        function addCategory() {
+            const name = document.getElementById('categoryName').value.trim();
+            const color = document.getElementById('categoryColor').value;
+
+            if (!name) {
+                alert('Inserisci il nome della categoria');
+                return;
+            }
+
+            if (editingCategoryId) {
+                // Update existing category
+                const index = categories.findIndex(c => c.id === editingCategoryId);
+                if (index !== -1) {
+                    categories[index].name = name;
+                    categories[index].color = color;
+                }
+                editingCategoryId = null;
+            } else {
+                // Add new category
+                categories.push({ 
+                    id: Date.now(), 
+                    name, 
+                    color 
+                });
+            }
+            
+            saveData();
+            renderCategories();
+            renderWorkTypes();
+            
+            document.getElementById('categoryName').value = '';
+            document.getElementById('categoryColor').value = '#667eea';
+            document.getElementById('categoryHex').value = '#667eea';
+        }
+
+        function deleteCategory(id) {
+            if (!confirm('Sei sicuro di voler eliminare questa categoria? I tipi di lavoro associati non verranno eliminati.')) return;
+            
+            // Remove category from work types
+            workTypes.forEach(type => {
+                if (type.categoryId === id) {
+                    delete type.categoryId;
+                }
+            });
+            
+            categories = categories.filter(c => c.id !== id);
+            saveData();
+            renderCategories();
+            renderWorkTypes();
+        }
+
+        function editCategory(id) {
+            const category = categories.find(c => c.id === id);
+            if (!category) return;
+
+            editingCategoryId = id;
+            document.getElementById('categoryName').value = category.name;
+            document.getElementById('categoryColor').value = category.color;
+            document.getElementById('categoryHex').value = category.color.toUpperCase();
+        }
+
+        function renderCategories() {
+            const tbody = document.querySelector('#categoriesTable tbody');
+            tbody.innerHTML = '';
+
+            categories.forEach((category) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${category.name}</td>
+                    <td><span style="display: inline-block; width: 30px; height: 20px; background: ${category.color}; border-radius: 3px;"></span></td>
+                    <td class="action-buttons">
+                        <button class="btn btn-secondary" onclick="editCategory(${category.id})">Modifica</button>
+                        <button class="btn btn-danger" onclick="deleteCategory(${category.id})">Elimina</button>
                     </td>
                 `;
             });
@@ -2031,13 +2227,28 @@
                 const dayNames = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
                 const dayName = dayNames[dateObj.getDay()];
                 
-                // Create project tags with work type color
+                // Create project tags with category color as background and work type color as borders
                 const projectTags = entry.workEntries.map(we => {
                     const workType = workTypes.find(wt => wt.name === we.workType);
-                    const color = workType ? workType.color : 'var(--accent-color)';
-                    const textColor = workType ? getContrastColor(color) : '#FFFFFF';
+                    if (!workType) {
+                        return `<span class="project-tag" style="background: var(--accent-color); color: #FFFFFF;" title="${we.workType} - ${we.hours}" onclick="openProjectStatsModal('${we.workCode}')">${we.workCode}</span>`;
+                    }
+                    
+                    // Get category color or use work type color
+                    let bgColor = workType.color;
+                    let borderColor = workType.color;
+                    
+                    if (workType.categoryId) {
+                        const category = categories.find(c => c.id === workType.categoryId);
+                        if (category) {
+                            bgColor = category.color;
+                            borderColor = workType.color;
+                        }
+                    }
+                    
+                    const textColor = getContrastColor(bgColor);
                     const tooltip = `${we.workType} - ${we.hours}`;
-                    return `<span class="project-tag" style="background: ${color}; color: ${textColor};" title="${tooltip}" onclick="openProjectStatsModal('${we.workCode}')">${we.workCode}</span>`;
+                    return `<span class="project-tag" style="background: ${bgColor}; border-left-color: ${borderColor}; border-right-color: ${borderColor}; color: ${textColor};" title="${tooltip}" onclick="openProjectStatsModal('${we.workCode}')">${we.workCode}</span>`;
                 }).join('');
                 
                 // Applica classi per weekend e festivi
@@ -2961,6 +3172,7 @@
 
         // Load and render on page load
         loadData();
+        renderCategories();
         renderWorkTypes();
         renderDayTypes();
         renderLocalHolidays();
