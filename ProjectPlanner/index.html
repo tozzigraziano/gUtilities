@@ -759,8 +759,14 @@
         }
 
         .status-cancelled {
-            background-color: #333333 !important;
-            color: white;
+            background-color: #9e9e9e !important;
+            color: #4a4a4a !important;
+            opacity: 0.7 !important;
+        }
+        
+        .status-cancelled td {
+            text-decoration: line-through !important;
+            color: #4a4a4a !important;
         }
 
         .resource-allocation {
@@ -1121,7 +1127,8 @@
         }
 
         .gantt-bar.task.status-cancelled {
-            background: #333333 !important; /* nero per "annullata" */
+            background: #9e9e9e !important; /* grigio slavato per "annullata" */
+            opacity: 0.7;
         }
 
         .gantt-bar.task.not-assigned {
@@ -1625,8 +1632,10 @@
         }
         
         .week-task-card.status-cancelled {
-            border-left-color: #333333;
-            opacity: 0.5;
+            border-left-color: #9e9e9e;
+            background: rgba(158, 158, 158, 0.3);
+            opacity: 0.7;
+            text-decoration: line-through;
         }
         
         .week-task-card.status-none {
@@ -1735,7 +1744,9 @@
         }
 
         .resource-assignment.status-cancelled {
-            border-left-color: #333333 !important;
+            border-left-color: #9e9e9e !important;
+            background: rgba(158, 158, 158, 0.3) !important;
+            opacity: 0.7;
         }
         
         .resource-assignment.meeting-item {
@@ -9132,15 +9143,18 @@
                 const notesIndicator = task.notes && task.notes.trim() ? 
                     `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
 
+                // Stile per attività annullate
+                const cancelledStyle = task.status === 'annullata' ? 'style="text-decoration: line-through; color: #666;"' : '';
+                
                 tr.innerHTML = `
-                    <td>${task.name} ${delayIndicator}${flexibleIndicator}${notesIndicator}</td>
-                    <td>${resourcesStr}</td>
-                    <td>${task.startDate || '-'}</td>
-                    <td>${task.endDate || '-'}</td>
-                    <td>${task.duration} giorni</td>
-                    <td>${linksStr}</td>
-                    <td>${task.completion}%</td>
-                    <td>${statusLabels[task.status]}</td>
+                    <td ${cancelledStyle}>${task.name} ${delayIndicator}${flexibleIndicator}${notesIndicator}</td>
+                    <td ${cancelledStyle}>${resourcesStr}</td>
+                    <td ${cancelledStyle}>${task.startDate || '-'}</td>
+                    <td ${cancelledStyle}>${task.endDate || '-'}</td>
+                    <td ${cancelledStyle}>${task.duration} giorni</td>
+                    <td ${cancelledStyle}>${linksStr}</td>
+                    <td ${cancelledStyle}>${task.completion}%</td>
+                    <td ${cancelledStyle}>${statusLabels[task.status] || '-'}</td>
                     <td class="action-buttons">
                         <button onclick="openTaskModal(${task.id})" class="secondary">✏️ Modifica</button>
                         <button onclick="openCopyTaskModal(${task.id}, ${currentProjectId})" class="secondary" title="Copia su altri progetti">📋 Copia</button>
