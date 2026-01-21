@@ -2722,7 +2722,10 @@
 
             <!-- Sezione Punti di Controllo e Attività -->
             <div id="projectDetails" style="display: none;">
-                <button onclick="closeProjectDetails()" class="secondary" style="margin-bottom: 15px;">← Torna ai Progetti</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <button onclick="closeProjectDetails()" class="secondary">← Torna ai Progetti</button>
+                    <button onclick="exportProjectMarkdown()" style="background-color: #ff9800;">📄 Esporta in Markdown</button>
+                </div>
                 <h2>Dettagli Progetto: <span id="currentProjectName"></span></h2>
                 
                 <!-- Punti di Controllo -->
@@ -9644,6 +9647,435 @@
             
             URL.revokeObjectURL(url);
         }
+
+        function exportProjectMarkdown() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) {
+                alert('Nessun progetto selezionato');
+                return;
+            }
+
+            // Calcola statistiche progetto
+            const totalTasks = project.tasks?.length || 0;
+            const completedTasks = project.tasks?.filter(t => t.status === 'completata' || t.completion >= 100).length || 0;
+            const cancelledTasks = project.tasks?.filter(t => t.status === 'annullata').length || 0;
+            const activeTasks = totalTasks - completedTasks - cancelledTasks;
+            const avgCompletion = totalTasks > 0 ? Math.round(project.tasks.reduce((sum, t) => sum + (t.completion || 0), 0) / totalTasks) : 0;
+            
+            // Calcola date automaticamente da attività e milestone
+            let allDates = [];
+            if (project.milestones) {
+                project.milestones.forEach(m => {
+                    if (m.date) allDates.push(new Date(m.date));
+                });
+            }
+            if (project.tasks) {
+                project.tasks.forEach(t => {
+                    if (t.startDate) allDates.push(new Date(t.startDate));
+                    if (t.endDate) allDates.push(new Date(t.endDate));
+                });
+            }
+            
+            let calculatedStartDate = 'Non specificata';
+            let calculatedEndDate = 'Non specificata';
+            let projectDuration = 0;
+            
+            if (allDates.length > 0) {
+                const minDate = new Date(Math.min(...allDates));
+                const maxDate = new Date(Math.max(...allDates));
+                calculatedStartDate = formatDateLocal(minDate);
+                calculatedEndDate = formatDateLocal(maxDate);
+                projectDuration = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1;
+            }
+            
+            // Calcola somma giorni attività
+            let totalTaskDays = 0;
+            if (project.tasks) {
+                project.tasks.forEach(t => {
+                    if (t.duration) totalTaskDays += parseInt(t.duration);
+                });
+            }
+
+            // Genera Markdown
+            let md = `# ${project.name || 'Progetto Senza Nome'}\n\n`;
+            
+            // Front matter per migliore compatibilità con convertitori
+            md += `---\n`;
+            md += `title: "${project.name || 'Progetto Senza Nome'}"\n`;
+            md += `date: ${new Date().toISOString().split('T')[0]}\n`;
+            md += `author: Project Planner\n`;
+            md += `---\n\n`;
+            
+            // Metadati
+            md += `## Informazioni Generali\n\n`;
+            md += `| Campo | Valore |\n`;
+            md += `|-------|--------|\n`;
+            md += `| **Nome Progetto** | ${project.name || 'N/A'} |\n`;
+            md += `| **Codice Progetto** | ${project.code || 'N/A'} |\n`;
+            md += `| **Codice Cliente** | ${project.customerCode || 'N/A'} |\n`;
+            md += `| **Cliente** | ${project.customer || 'Non specificato'} |\n`;
+            md += `| **Data Inizio** | ${calculatedStartDate} |\n`;
+            md += `| **Data Fine** | ${calculatedEndDate} |\n`;
+            md += `| **Durata Progetto** | ${projectDuration > 0 ? projectDuration + ' giorni' : 'N/A'} |\n`;
+            md += `| **Totale Giorni Attività** | ${totalTaskDays} giorni |\n`;
+            md += `| **Completamento Medio** | ${avgCompletion}% |\n`;
+            md += `| **Esportato il** | ${new Date().toLocaleString('it-IT')} |\n\n`;
+            
+            // Statistiche
+            md += `## Statistiche\n\n`;
+            md += `| Tipo | Quantità |\n`;
+            md += `|:-----|:--------:|\n`;
+            md += `| **Attività Totali** | ${totalTasks} |\n`;
+            md += `| **Attività Completate** | ${completedTasks} |\n`;
+            md += `| **Attività Attive** | ${activeTasks} |\n`;
+            md += `| **Attività Annullate** | ${cancelledTasks} |\n\n`;
+            
+            if (totalTasks > 0) {
+                const completionPercentage = Math.round((completedTasks / totalTasks) * 100);
+                md += `**Avanzamento Progetto:** ${completionPercentage}% (${completedTasks}/${totalTasks} attività completate)\n\n`;
+            }
+            
+            // Milestones
+            if (project.milestones && project.milestones.length > 0) {
+                md += `## 📍 Punti di Controllo (${project.milestones.length})\n\n`;
+                project.milestones.forEach((m, index) => {
+                    md += `<details>\n<summary><strong>${index + 1}. ${m.name}</strong> - ${m.date}</summary>\n\n`;
+                    if (m.notes && m.notes.trim()) {
+                        md += `  ${m.notes.replace(/\n/g, '\n  ')}\n\n`;
+                    } else {
+                        md += `  *Nessuna nota*\n\n`;
+                    }
+                    md += `</details>\n\n`;
+                });
+            }
+            
+            // Attività con dettagli completi
+            md += `## 📋 Attività (${totalTasks})\n\n`;
+            if (project.tasks && project.tasks.length > 0) {
+                project.tasks.forEach((task, index) => {
+                    const isCompleted = task.status === 'completata' || task.completion >= 100;
+                    const today = formatDateLocal(new Date());
+                    const isOverdue = !isCompleted && task.endDate && task.endDate < today;
+                    
+                    let resourcesStr = '-';
+                    if (task.resources && task.resources.length > 0) {
+                        resourcesStr = task.resources.map(r => {
+                            const resource = resources.find(res => res.id == r.resourceId);
+                            return resource ? `${resource.firstName} ${resource.lastName} (${r.percentage}%)` : '';
+                        }).filter(s => s).join(', ');
+                    }
+                    
+                    const statusLabels = {
+                        'in-corso': '🔄 In Corso',
+                        'in-ritardo': '⚠️ In Ritardo',
+                        'pausa': '⏸️ In Pausa',
+                        'completata': '✅ Completata',
+                        'annullata': '❌ Annullata'
+                    };
+                    
+                    const statusIcon = statusLabels[task.status] || '-';
+                    let taskName = task.name;
+                    
+                    // Aggiungi strikethrough per attività annullate
+                    if (task.status === 'annullata') {
+                        taskName = `~~${taskName}~~`;
+                    }
+                    
+                    // Aggiungi indicatore overdue
+                    if (isOverdue) {
+                        taskName = `**${taskName}** 🔴`;
+                    }
+                    
+                    // Collegamenti
+                    let linksInfo = [];
+                    if (task.startLinkedTo) {
+                        let [type, id] = task.startLinkedTo.includes(':') ? 
+                            task.startLinkedTo.split(':') : 
+                            task.startLinkedTo.split('-');
+                        if (type === 'start' || type === 'end') type = 'task';
+                        
+                        if (type === 'milestone') {
+                            const milestone = project.milestones?.find(m => m.id == id);
+                            if (milestone) {
+                                const offsetStr = task.startOffset ? ` ${task.startOffset > 0 ? '+' : ''}${task.startOffset}gg` : '';
+                                linksInfo.push(`Inizio: 📍${milestone.name}${offsetStr}`);
+                            }
+                        } else if (type === 'task') {
+                            const linkedTask = project.tasks?.find(t => t.id == id);
+                            if (linkedTask) {
+                                const offsetStr = task.startOffset ? ` ${task.startOffset > 0 ? '+' : ''}${task.startOffset}gg` : '';
+                                linksInfo.push(`Inizio: 📋${linkedTask.name}${offsetStr}`);
+                            }
+                        }
+                    }
+                    
+                    if (task.endLinkedTo) {
+                        let [type, id] = task.endLinkedTo.includes(':') ? 
+                            task.endLinkedTo.split(':') : 
+                            task.endLinkedTo.split('-');
+                        if (type === 'start' || type === 'end') type = 'task';
+                        
+                        if (type === 'milestone') {
+                            const milestone = project.milestones?.find(m => m.id == id);
+                            if (milestone) {
+                                const offsetStr = task.endOffset ? ` ${task.endOffset > 0 ? '+' : ''}${task.endOffset}gg` : '';
+                                linksInfo.push(`Fine: 📍${milestone.name}${offsetStr}`);
+                            }
+                        } else if (type === 'task') {
+                            const linkedTask = project.tasks?.find(t => t.id == id);
+                            if (linkedTask) {
+                                const offsetStr = task.endOffset ? ` ${task.endOffset > 0 ? '+' : ''}${task.endOffset}gg` : '';
+                                linksInfo.push(`Fine: 📋${linkedTask.name}${offsetStr}`);
+                            }
+                        }
+                    }
+                    
+                    md += `<details>\n<summary><strong>${index + 1}. ${taskName}</strong> - ${statusIcon} (${task.completion || 0}%)</summary>\n\n`;
+                    md += `  | Campo | Valore |\n`;
+                    md += `  |-------|--------|\n`;
+                    md += `  | **Nome** | ${task.name} |\n`;
+                    md += `  | **Risorse** | ${resourcesStr} |\n`;
+                    md += `  | **Data Inizio** | ${task.startDate || '-'} |\n`;
+                    md += `  | **Data Fine** | ${task.endDate || '-'} |\n`;
+                    md += `  | **Durata** | ${task.duration || 0} giorni |\n`;
+                    md += `  | **Completamento** | ${task.completion || 0}% |\n`;
+                    md += `  | **Stato** | ${statusIcon} |\n`;
+                    md += `  | **Data Flessibile** | ${task.flexibleDate ? '✓ Sì' : 'No'} |\n`;
+                    
+                    if (linksInfo.length > 0) {
+                        md += `  | **Collegamenti** | ${linksInfo.join(' \\| ')} |\n`;
+                    }
+                    
+                    md += `\n`;
+                    
+                    if (task.notes && task.notes.trim()) {
+                        md += `  #### Note\n\n  ${task.notes.replace(/\n/g, '\n  ')}\n\n`;
+                    }
+                    
+                    md += `</details>\n\n`;
+                });
+            } else {
+                md += `*Nessuna attività presente*\n\n`;
+            }
+            
+            // Gantt in Mermaid
+            if (project.tasks && project.tasks.length > 0 && allDates.length > 0) {
+                md += `## 📊 Diagramma di Gantt\n\n`;
+                md += generateGanttMermaid(project);
+                md += `\n`;
+            }
+            
+            // Info Generali del Progetto
+            md += `## 📝 Informazioni Generali del Progetto\n\n`;
+            if (project.generalInfo && project.generalInfo.trim()) {
+                md += `${project.generalInfo}\n\n`;
+            } else {
+                md += `*Nessuna informazione generale inserita*\n\n`;
+            }
+            
+            // Aggiornamenti
+            md += `## 📋 Aggiornamenti e Note${project.updates && project.updates.length > 0 ? ' (' + project.updates.length + ')' : ''}\n\n`;
+            if (project.updates && project.updates.length > 0) {
+                project.updates.slice().reverse().forEach((update, index) => {
+                    const date = new Date(update.timestamp).toLocaleString('it-IT');
+                    md += `<details>\n<summary><strong>${date}</strong></summary>\n\n`;
+                    md += `  ${update.text.replace(/\n/g, '\n  ')}\n\n`;
+                    if (update.tags && update.tags.length > 0) {
+                        md += `  **Tag:** ${update.tags.join(', ')}\n\n`;
+                    }
+                    md += `</details>\n\n`;
+                });
+            } else {
+                md += `*Nessun aggiornamento inserito*\n\n`;
+            }
+            
+            // Offerte
+            md += `## 💼 Offerte${project.offers && project.offers.length > 0 ? ' (' + project.offers.length + ')' : ''}\n\n`;
+            if (project.offers && project.offers.length > 0) {
+                project.offers.forEach((offer, index) => {
+                    md += `<details>\n<summary><strong>Offerta ${index + 1}: ${offer.title}</strong> - ${offer.status || 'N/A'}</summary>\n\n`;
+                    md += `  | Campo | Valore |\n`;
+                    md += `  |-------|--------|\n`;
+                    md += `  | **Titolo** | ${offer.title} |\n`;
+                    md += `  | **Data** | ${offer.date || '-'} |\n`;
+                    md += `  | **Stima Tempi** | ${offer.estimate || '-'} |\n`;
+                    md += `  | **Valore** | ${offer.value ? offer.value + ' €' : '-'} |\n`;
+                    md += `  | **Stato** | ${offer.status || '-'} |\n\n`;
+                    
+                    if (offer.notes && offer.notes.trim()) {
+                        md += `  #### Note\n\n  ${offer.notes.replace(/\n/g, '\n  ')}\n\n`;
+                    }
+                    md += `</details>\n\n`;
+                });
+            } else {
+                md += `*Nessuna offerta inserita*\n\n`;
+            }
+            
+            // Issue/Problemi
+            md += `## 🐛 Issue e Problemi${project.issues && project.issues.length > 0 ? ' (' + project.issues.length + ')' : ''}\n\n`;
+            if (project.issues && project.issues.length > 0) {
+                project.issues.forEach((issue, index) => {
+                    md += `<details>\n<summary><strong>${index + 1}. ${issue.title}</strong> - ${issue.status || 'N/A'} (${issue.priority || 'N/A'})</summary>\n\n`;
+                    md += `  | Campo | Valore |\n`;
+                    md += `  |-------|--------|\n`;
+                    md += `  | **Priorità** | ${issue.priority || '-'} |\n`;
+                    md += `  | **Stato** | ${issue.status || '-'} |\n`;
+                    md += `  | **Creato il** | ${issue.createdDate ? new Date(issue.createdDate).toLocaleDateString('it-IT') : '-'} |\n`;
+                    md += `  | **Risolto il** | ${issue.resolvedDate ? new Date(issue.resolvedDate).toLocaleDateString('it-IT') : '-'} |\n\n`;
+                    
+                    if (issue.description && issue.description.trim()) {
+                        md += `  #### Descrizione\n\n  ${issue.description.replace(/\n/g, '\n  ')}\n\n`;
+                    }
+                    md += `</details>\n\n`;
+                });
+            } else {
+                md += `*Nessun issue o problema inserito*\n\n`;
+            }
+            
+            // Riunioni del progetto
+            const projectMeetings = project.meetings || [];
+            md += `## 📅 Riunioni${projectMeetings.length > 0 ? ' (' + projectMeetings.length + ')' : ''}\n\n`;
+            if (projectMeetings.length > 0) {
+                projectMeetings.forEach((meeting, index) => {
+                    md += `<details>\n<summary><strong>${index + 1}. ${meeting.subject || 'Riunione'}</strong> - ${meeting.date || 'N/A'}</summary>\n\n`;
+                    md += `  | Campo | Valore |\n`;
+                    md += `  |-------|--------|\n`;
+                    md += `  | **Argomento** | ${meeting.subject || '-'} |\n`;
+                    md += `  | **Data** | ${meeting.date || '-'} |\n`;
+                    md += `  | **Partecipanti** | ${meeting.participants || '-'} |\n\n`;
+                    
+                    if (meeting.topics && meeting.topics.trim()) {
+                        md += `  #### Argomenti Discussi\n\n  ${meeting.topics.replace(/\n/g, '\n  ')}\n\n`;
+                    }
+                    md += `</details>\n\n`;
+                });
+            } else {
+                md += `*Nessuna riunione associata al progetto*\n\n`;
+            }
+            
+            // Riepilogo risorse coinvolte
+            const involvedResources = new Set();
+            const resourceDetails = new Map();
+            if (project.tasks) {
+                project.tasks.forEach(task => {
+                    if (task.resources) {
+                        task.resources.forEach(r => {
+                            const resource = resources.find(res => res.id == r.resourceId);
+                            if (resource) {
+                                const fullName = `${resource.firstName} ${resource.lastName}`;
+                                involvedResources.add(fullName);
+                                if (!resourceDetails.has(fullName)) {
+                                    resourceDetails.set(fullName, []);
+                                }
+                                resourceDetails.get(fullName).push({
+                                    task: task.name,
+                                    percentage: r.percentage
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+            
+            if (involvedResources.size > 0) {
+                md += `## 👥 Risorse Coinvolte (${involvedResources.size})\n\n`;
+                Array.from(involvedResources).sort().forEach(name => {
+                    const tasks = resourceDetails.get(name);
+                    md += `<details>\n<summary><strong>${name}</strong> - ${tasks.length} attività</summary>\n\n`;
+                    md += `  | Attività | Allocazione |\n`;
+                    md += `  |----------|-------------|\n`;
+                    tasks.forEach(t => {
+                        md += `  | ${t.task} | ${t.percentage}% |\n`;
+                    });
+                    md += `\n</details>\n\n`;
+                });
+            }
+            
+            // Footer
+            md += `---\n\n`;
+            md += `*Report generato automaticamente da Project Planner il ${new Date().toLocaleString('it-IT')}*\n`;
+            
+            // Download del file Markdown
+            const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const projectName = (project.name || 'progetto').replace(/[^a-z0-9]/gi, '_');
+            link.download = `${projectName}_report_${formatDateLocal(new Date())}.md`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generateGanttMermaid(project) {
+            let mermaid = '```mermaid\n';
+            mermaid += 'gantt\n';
+            mermaid += `    title ${project.name || 'Progetto'}\n`;
+            mermaid += '    dateFormat YYYY-MM-DD\n';
+            mermaid += '    axisFormat %d/%m/%Y\n\n';
+            
+            // Aggiungi milestones
+            if (project.milestones && project.milestones.length > 0) {
+                mermaid += '    section Milestones\n';
+                project.milestones.forEach(m => {
+                    if (m.date) {
+                        const safeName = m.name.replace(/:/g, ' -').replace(/,/g, '');
+                        mermaid += `    ${safeName} :milestone, ${m.date}, 0d\n`;
+                    }
+                });
+                mermaid += '\n';
+            }
+            
+            // Aggiungi tasks raggruppate per stato
+            const tasksByStatus = {
+                'completata': [],
+                'in-corso': [],
+                'pausa': [],
+                'annullata': [],
+                'altro': []
+            };
+            
+            if (project.tasks) {
+                project.tasks.forEach(task => {
+                    if (task.startDate && task.endDate) {
+                        const status = task.status || 'altro';
+                        if (tasksByStatus[status]) {
+                            tasksByStatus[status].push(task);
+                        } else {
+                            tasksByStatus['altro'].push(task);
+                        }
+                    }
+                });
+            }
+            
+            // Ordina i gruppi in modo logico
+            const statusOrder = [
+                { key: 'in-corso', label: 'In Corso' },
+                { key: 'pausa', label: 'In Pausa' },
+                { key: 'completata', label: 'Completate' },
+                { key: 'annullata', label: 'Annullate' },
+                { key: 'altro', label: 'Altre Attività' }
+            ];
+            
+            statusOrder.forEach(({ key, label }) => {
+                const tasks = tasksByStatus[key];
+                if (tasks.length > 0) {
+                    mermaid += `    section ${label}\n`;
+                    tasks.forEach(task => {
+                        const safeName = task.name.replace(/:/g, ' -').replace(/,/g, '').substring(0, 50);
+                        const statusTag = key === 'completata' ? 'done' : 
+                                         key === 'in-corso' ? 'active' :
+                                         key === 'annullata' ? 'crit' : '';
+                        mermaid += `    ${safeName} :${statusTag}, ${task.startDate}, ${task.endDate}\n`;
+                    });
+                    mermaid += '\n';
+                }
+            });
+            
+            mermaid += '```\n\n';
+            return mermaid;
+        }
+
+
 
         function importData() {
             const fileInput = document.getElementById('importFile');
