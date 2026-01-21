@@ -9741,9 +9741,9 @@
                 project.milestones.forEach((m, index) => {
                     md += `<details>\n<summary><strong>${index + 1}. ${m.name}</strong> - ${m.date}</summary>\n\n`;
                     if (m.notes && m.notes.trim()) {
-                        md += `  ${m.notes.replace(/\n/g, '\n  ')}\n\n`;
+                        md += `> ${m.notes.replace(/\n/g, '\n> ')}\n\n`;
                     } else {
-                        md += `  *Nessuna nota*\n\n`;
+                        md += `> *Nessuna nota*\n\n`;
                     }
                     md += `</details>\n\n`;
                 });
@@ -9831,25 +9831,25 @@
                     }
                     
                     md += `<details>\n<summary><strong>${index + 1}. ${taskName}</strong> - ${statusIcon} (${task.completion || 0}%)</summary>\n\n`;
-                    md += `  | Campo | Valore |\n`;
-                    md += `  |-------|--------|\n`;
-                    md += `  | **Nome** | ${task.name} |\n`;
-                    md += `  | **Risorse** | ${resourcesStr} |\n`;
-                    md += `  | **Data Inizio** | ${task.startDate || '-'} |\n`;
-                    md += `  | **Data Fine** | ${task.endDate || '-'} |\n`;
-                    md += `  | **Durata** | ${task.duration || 0} giorni |\n`;
-                    md += `  | **Completamento** | ${task.completion || 0}% |\n`;
-                    md += `  | **Stato** | ${statusIcon} |\n`;
-                    md += `  | **Data Flessibile** | ${task.flexibleDate ? '✓ Sì' : 'No'} |\n`;
+                    md += `> | Campo | Valore |\n`;
+                    md += `> |-------|--------|\n`;
+                    md += `> | **Nome** | ${task.name} |\n`;
+                    md += `> | **Risorse** | ${resourcesStr} |\n`;
+                    md += `> | **Data Inizio** | ${task.startDate || '-'} |\n`;
+                    md += `> | **Data Fine** | ${task.endDate || '-'} |\n`;
+                    md += `> | **Durata** | ${task.duration || 0} giorni |\n`;
+                    md += `> | **Completamento** | ${task.completion || 0}% |\n`;
+                    md += `> | **Stato** | ${statusIcon} |\n`;
+                    md += `> | **Data Flessibile** | ${task.flexibleDate ? '✓ Sì' : 'No'} |\n`;
                     
                     if (linksInfo.length > 0) {
-                        md += `  | **Collegamenti** | ${linksInfo.join(' \\| ')} |\n`;
+                        md += `> | **Collegamenti** | ${linksInfo.join(' \\| ')} |\n`;
                     }
                     
-                    md += `\n`;
+                    md += `>\n`;
                     
                     if (task.notes && task.notes.trim()) {
-                        md += `  #### Note\n\n  ${task.notes.replace(/\n/g, '\n  ')}\n\n`;
+                        md += `> #### Note\n>\n> ${task.notes.replace(/\n/g, '\n> ')}\n\n`;
                     }
                     
                     md += `</details>\n\n`;
@@ -9879,9 +9879,9 @@
                 project.updates.slice().reverse().forEach((update, index) => {
                     const date = new Date(update.timestamp).toLocaleString('it-IT');
                     md += `<details>\n<summary><strong>${date}</strong></summary>\n\n`;
-                    md += `  ${update.text.replace(/\n/g, '\n  ')}\n\n`;
+                    md += `> ${update.text.replace(/\n/g, '\n> ')}\n\n`;
                     if (update.tags && update.tags.length > 0) {
-                        md += `  **Tag:** ${update.tags.join(', ')}\n\n`;
+                        md += `> **Tag:** ${update.tags.join(', ')}\n\n`;
                     }
                     md += `</details>\n\n`;
                 });
@@ -9894,16 +9894,16 @@
             if (project.offers && project.offers.length > 0) {
                 project.offers.forEach((offer, index) => {
                     md += `<details>\n<summary><strong>Offerta ${index + 1}: ${offer.title}</strong> - ${offer.status || 'N/A'}</summary>\n\n`;
-                    md += `  | Campo | Valore |\n`;
-                    md += `  |-------|--------|\n`;
-                    md += `  | **Titolo** | ${offer.title} |\n`;
-                    md += `  | **Data** | ${offer.date || '-'} |\n`;
-                    md += `  | **Stima Tempi** | ${offer.estimate || '-'} |\n`;
-                    md += `  | **Valore** | ${offer.value ? offer.value + ' €' : '-'} |\n`;
-                    md += `  | **Stato** | ${offer.status || '-'} |\n\n`;
+                    md += `> | Campo | Valore |\n`;
+                    md += `> |-------|--------|\n`;
+                    md += `> | **Titolo** | ${offer.title} |\n`;
+                    md += `> | **Data** | ${offer.date || '-'} |\n`;
+                    md += `> | **Stima Tempi** | ${offer.estimate || '-'} |\n`;
+                    md += `> | **Valore** | ${offer.value ? offer.value + ' €' : '-'} |\n`;
+                    md += `> | **Stato** | ${offer.status || '-'} |\n>\n`;
                     
                     if (offer.notes && offer.notes.trim()) {
-                        md += `  #### Note\n\n  ${offer.notes.replace(/\n/g, '\n  ')}\n\n`;
+                        md += `> #### Note\n>\n> ${offer.notes.replace(/\n/g, '\n> ')}\n\n`;
                     }
                     md += `</details>\n\n`;
                 });
@@ -9916,15 +9916,15 @@
             if (project.issues && project.issues.length > 0) {
                 project.issues.forEach((issue, index) => {
                     md += `<details>\n<summary><strong>${index + 1}. ${issue.title}</strong> - ${issue.status || 'N/A'} (${issue.priority || 'N/A'})</summary>\n\n`;
-                    md += `  | Campo | Valore |\n`;
-                    md += `  |-------|--------|\n`;
-                    md += `  | **Priorità** | ${issue.priority || '-'} |\n`;
-                    md += `  | **Stato** | ${issue.status || '-'} |\n`;
-                    md += `  | **Creato il** | ${issue.createdDate ? new Date(issue.createdDate).toLocaleDateString('it-IT') : '-'} |\n`;
-                    md += `  | **Risolto il** | ${issue.resolvedDate ? new Date(issue.resolvedDate).toLocaleDateString('it-IT') : '-'} |\n\n`;
+                    md += `> | Campo | Valore |\n`;
+                    md += `> |-------|--------|\n`;
+                    md += `> | **Priorità** | ${issue.priority || '-'} |\n`;
+                    md += `> | **Stato** | ${issue.status || '-'} |\n`;
+                    md += `> | **Creato il** | ${issue.createdDate ? new Date(issue.createdDate).toLocaleDateString('it-IT') : '-'} |\n`;
+                    md += `> | **Risolto il** | ${issue.resolvedDate ? new Date(issue.resolvedDate).toLocaleDateString('it-IT') : '-'} |\n>\n`;
                     
                     if (issue.description && issue.description.trim()) {
-                        md += `  #### Descrizione\n\n  ${issue.description.replace(/\n/g, '\n  ')}\n\n`;
+                        md += `> #### Descrizione\n>\n> ${issue.description.replace(/\n/g, '\n> ')}\n\n`;
                     }
                     md += `</details>\n\n`;
                 });
@@ -9938,14 +9938,14 @@
             if (projectMeetings.length > 0) {
                 projectMeetings.forEach((meeting, index) => {
                     md += `<details>\n<summary><strong>${index + 1}. ${meeting.subject || 'Riunione'}</strong> - ${meeting.date || 'N/A'}</summary>\n\n`;
-                    md += `  | Campo | Valore |\n`;
-                    md += `  |-------|--------|\n`;
-                    md += `  | **Argomento** | ${meeting.subject || '-'} |\n`;
-                    md += `  | **Data** | ${meeting.date || '-'} |\n`;
-                    md += `  | **Partecipanti** | ${meeting.participants || '-'} |\n\n`;
+                    md += `> | Campo | Valore |\n`;
+                    md += `> |-------|--------|\n`;
+                    md += `> | **Argomento** | ${meeting.subject || '-'} |\n`;
+                    md += `> | **Data** | ${meeting.date || '-'} |\n`;
+                    md += `> | **Partecipanti** | ${meeting.participants || '-'} |\n>\n`;
                     
                     if (meeting.topics && meeting.topics.trim()) {
-                        md += `  #### Argomenti Discussi\n\n  ${meeting.topics.replace(/\n/g, '\n  ')}\n\n`;
+                        md += `> #### Argomenti Discussi\n>\n> ${meeting.topics.replace(/\n/g, '\n> ')}\n\n`;
                     }
                     md += `</details>\n\n`;
                 });
@@ -9982,10 +9982,10 @@
                 Array.from(involvedResources).sort().forEach(name => {
                     const tasks = resourceDetails.get(name);
                     md += `<details>\n<summary><strong>${name}</strong> - ${tasks.length} attività</summary>\n\n`;
-                    md += `  | Attività | Allocazione |\n`;
-                    md += `  |----------|-------------|\n`;
+                    md += `> | Attività | Allocazione |\n`;
+                    md += `> |----------|-------------|\n`;
                     tasks.forEach(t => {
-                        md += `  | ${t.task} | ${t.percentage}% |\n`;
+                        md += `> | ${t.task} | ${t.percentage}% |\n`;
                     });
                     md += `\n</details>\n\n`;
                 });
