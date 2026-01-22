@@ -9730,7 +9730,13 @@
             // Milestones
             if (project.milestones && project.milestones.length > 0) {
                 md += `## 📍 Punti di Controllo (${project.milestones.length})\n\n`;
-                project.milestones.forEach((m, index) => {
+                // Ordina milestones per data
+                const sortedMilestones = [...project.milestones].sort((a, b) => {
+                    if (!a.date) return 1;
+                    if (!b.date) return -1;
+                    return new Date(a.date) - new Date(b.date);
+                });
+                sortedMilestones.forEach((m, index) => {
                     md += `<details>\n<summary><strong>${index + 1}. ${m.name}</strong> - ${m.date}</summary>\n\n`;
                     if (m.notes && m.notes.trim()) {
                         md += `> ${m.notes.replace(/\n/g, '\n> ')}\n\n`;
@@ -9744,7 +9750,13 @@
             // Attività con dettagli completi
             md += `## 📋 Attività (${totalTasks})\n\n`;
             if (project.tasks && project.tasks.length > 0) {
-                project.tasks.forEach((task, index) => {
+                // Ordina attività per data di inizio
+                const sortedTasks = [...project.tasks].sort((a, b) => {
+                    if (!a.startDate) return 1;
+                    if (!b.startDate) return -1;
+                    return new Date(a.startDate) - new Date(b.startDate);
+                });
+                sortedTasks.forEach((task, index) => {
                     const isCompleted = task.status === 'completata' || task.completion >= 100;
                     const today = formatDateLocal(new Date());
                     const isOverdue = !isCompleted && task.endDate && task.endDate < today;
