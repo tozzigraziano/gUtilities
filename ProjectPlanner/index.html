@@ -10015,7 +10015,8 @@
             mermaid += 'gantt\n';
             mermaid += `    title ${project.name || 'Progetto'}\n`;
             mermaid += '    dateFormat YYYY-MM-DD\n';
-            mermaid += '    axisFormat %d/%m/%Y\n\n';
+            mermaid += '    axisFormat %d/%m\n';
+            mermaid += '    tickInterval 1week\n\n';
             
             // Aggiungi milestones
             if (project.milestones && project.milestones.length > 0) {
@@ -10069,7 +10070,16 @@
                         const statusTag = key === 'completata' ? 'done' : 
                                          key === 'in-corso' ? 'active' :
                                          key === 'annullata' ? 'crit' : '';
-                        mermaid += `    ${safeName} :${statusTag}, ${task.startDate}, ${task.endDate}\n`;
+                        
+                        // Fix per attività di 1 giorno: aggiungi 1 giorno alla data fine
+                        let endDate = task.endDate;
+                        if (task.startDate === task.endDate) {
+                            const end = new Date(task.endDate);
+                            end.setDate(end.getDate() + 1);
+                            endDate = end.toISOString().split('T')[0];
+                        }
+                        
+                        mermaid += `    ${safeName} :${statusTag}, ${task.startDate}, ${endDate}\n`;
                     });
                     mermaid += '\n';
                 }
