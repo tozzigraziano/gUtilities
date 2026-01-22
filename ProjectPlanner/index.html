@@ -9697,23 +9697,15 @@
             }
 
             // Genera Markdown
-            let md = `# ${project.name || 'Progetto Senza Nome'}\n\n`;
-            
-            // Front matter per migliore compatibilità con convertitori
-            md += `---\n`;
-            md += `title: "${project.name || 'Progetto Senza Nome'}"\n`;
-            md += `date: ${new Date().toISOString().split('T')[0]}\n`;
-            md += `author: Project Planner\n`;
-            md += `---\n\n`;
+            let md = `# ${project.description || project.name || 'Progetto Senza Nome'}\n\n`;
             
             // Metadati
             md += `## Informazioni Generali\n\n`;
             md += `| Campo | Valore |\n`;
             md += `|-------|--------|\n`;
-            md += `| **Nome Progetto** | ${project.name || 'N/A'} |\n`;
+            md += `| **Nome Progetto** | ${project.description || project.name || 'N/A'} |\n`;
             md += `| **Codice Progetto** | ${project.code || 'N/A'} |\n`;
-            md += `| **Codice Cliente** | ${project.customerCode || 'N/A'} |\n`;
-            md += `| **Cliente** | ${project.customer || 'Non specificato'} |\n`;
+            md += `| **Cliente** | ${project.client || 'Non specificato'} |\n`;
             md += `| **Data Inizio** | ${calculatedStartDate} |\n`;
             md += `| **Data Fine** | ${calculatedEndDate} |\n`;
             md += `| **Durata Progetto** | ${projectDuration > 0 ? projectDuration + ' giorni' : 'N/A'} |\n`;
