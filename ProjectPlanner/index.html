@@ -4122,6 +4122,10 @@
                         <label for="globalMeetingEndDate">Data Fine Ricorrenza *</label>
                         <input type="date" id="globalMeetingEndDate">
                     </div>
+                    <div class="form-group">
+                        <label for="globalMeetingWeekInterval">Ogni quante settimane *</label>
+                        <input type="number" id="globalMeetingWeekInterval" min="1" value="1" style="width: 80px;">
+                    </div>
                     <div class="form-group" style="flex-direction: column; align-items: stretch;">
                         <label>Giorni della Settimana *</label>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
@@ -7174,6 +7178,7 @@
             // Reset campi ricorrenza
             document.getElementById('globalMeetingRecurring').checked = false;
             document.getElementById('globalMeetingEndDate').value = '';
+            document.getElementById('globalMeetingWeekInterval').value = '1';
             document.querySelectorAll('.recurring-day').forEach(cb => cb.checked = false);
             document.getElementById('recurringFieldsContainer').style.display = 'none';
         }
@@ -7243,31 +7248,50 @@
                 }
                 
                 // Genera le istanze ricorsive
+                const weekInterval = parseInt(document.getElementById('globalMeetingWeekInterval').value) || 1;
                 const seriesId = 'series_' + Date.now();
                 const start = new Date(startDate);
                 const end = new Date(endDate);
-                const current = new Date(start);
                 
-                while (current <= end) {
-                    const dayOfWeek = current.getDay();
-                    if (selectedDays.includes(dayOfWeek)) {
-                        const meeting = {
-                            id: 'meeting_' + Date.now() + '_' + current.getTime(),
-                            date: current.toISOString().split('T')[0],
-                            time,
-                            subject,
-                            tags,
-                            resourceIds,
-                            expectedDuration: expectedDuration ? parseFloat(expectedDuration) : null,
-                            actualDuration: actualDuration ? parseFloat(actualDuration) : null,
-                            description,
-                            minutes,
-                            seriesId,
-                            isRecurring: true
-                        };
-                        meetings.push(meeting);
+                // Trova la prima settimana che contiene la data di inizio
+                const firstWeekStart = new Date(start);
+                firstWeekStart.setDate(start.getDate() - start.getDay()); // Vai alla domenica precedente
+                
+                let weekCount = 0;
+                let currentWeekStart = new Date(firstWeekStart);
+                
+                while (currentWeekStart <= end) {
+                    // Per ogni giorno della settimana corrente
+                    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+                        const current = new Date(currentWeekStart);
+                        current.setDate(currentWeekStart.getDate() + dayOffset);
+                        
+                        // Controlla se il giorno corrente è nell'intervallo e nel giorno selezionato
+                        if (current >= start && current <= end) {
+                            const dayOfWeek = current.getDay();
+                            if (selectedDays.includes(dayOfWeek)) {
+                                const meeting = {
+                                    id: 'meeting_' + Date.now() + '_' + current.getTime(),
+                                    date: current.toISOString().split('T')[0],
+                                    time,
+                                    subject,
+                                    tags,
+                                    resourceIds,
+                                    expectedDuration: expectedDuration ? parseFloat(expectedDuration) : null,
+                                    actualDuration: actualDuration ? parseFloat(actualDuration) : null,
+                                    description,
+                                    minutes,
+                                    seriesId,
+                                    isRecurring: true,
+                                    weekInterval
+                                };
+                                meetings.push(meeting);
+                            }
+                        }
                     }
-                    current.setDate(current.getDate() + 1);
+                    
+                    // Avanza alla prossima settimana secondo l'intervallo
+                    currentWeekStart.setDate(currentWeekStart.getDate() + (7 * weekInterval));
                 }
             } else {
                 // Riunione singola
