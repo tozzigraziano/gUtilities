@@ -3971,6 +3971,56 @@
         </div>
     </div>
 
+    <!-- Modal Split/Duplica Attività -->
+    <div id="splitTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✂️ Spezza/Duplica Attività</h3>
+                <button class="modal-close" onclick="closeSplitTaskModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label style="font-weight: bold;">Attività:</label>
+                    <span id="splitTaskName" style="color: var(--accent-color);"></span>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold;">Date attuali:</label>
+                    <div style="margin-left: 160px;">
+                        <span id="splitTaskCurrentDates" style="color: var(--text-secondary);"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="splitTaskMode">Modalità *</label>
+                    <select id="splitTaskMode" onchange="updateSplitTaskUI()">
+                        <option value="split">Spezza in due attività</option>
+                        <option value="duplicate">Duplica attività</option>
+                    </select>
+                </div>
+                <div id="splitDateGroup" class="form-group">
+                    <label for="splitTaskDate">Data di split *</label>
+                    <input type="date" id="splitTaskDate" onchange="updateSplitPreview()">
+                    <small style="margin-left: 160px; color: var(--text-tertiary); display: block;">
+                        La prima attività terminerà il giorno prima di questa data.<br>
+                        La seconda attività inizierà da questa data.
+                    </small>
+                </div>
+                <div id="splitPreview" style="margin-top: 15px; padding: 15px; background: var(--bg-tertiary); border-radius: 4px; display: none;">
+                    <h4 style="margin-bottom: 10px;">Anteprima:</h4>
+                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 15px; align-items: center;">
+                        <strong>Attività 1:</strong>
+                        <span id="splitPreview1"></span>
+                        <strong>Attività 2:</strong>
+                        <span id="splitPreview2"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeSplitTaskModal()" class="secondary">Annulla</button>
+                <button onclick="executeSplitTask()" id="splitTaskExecuteBtn">✂️ Spezza</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Offerta -->
     <div id="offerModal" class="modal">
         <div class="modal-content">
@@ -5243,6 +5293,234 @@
             // Aggiorna la vista dopo aver chiuso il modal
             if (needsRefresh) {
                 renderTasks();
+            }
+        }
+
+        // === SPLIT/DUPLICA ATTIVITÀ ===
+        let taskToSplit = null;
+
+        function openSplitTaskModal(taskId) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project || !project.tasks) return;
+            
+            const task = project.tasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            taskToSplit = { taskId, projectId: currentProjectId };
+            
+            // Mostra il nome dell'attività
+            document.getElementById('splitTaskName').textContent = task.name;
+            
+            // Mostra le date attuali
+            const startDateStr = task.startDate || 'Non impostata';
+            const endDateStr = task.endDate || 'Non impostata';
+            document.getElementById('splitTaskCurrentDates').textContent = 
+                `Inizio: ${startDateStr} - Fine: ${endDateStr} (${task.duration} giorni)`;
+            
+            // Imposta valori di default
+            document.getElementById('splitTaskMode').value = 'split';
+            document.getElementById('splitTaskDate').value = '';
+            
+            // Se l'attività ha date, suggerisci una data di split a metà
+            if (task.startDate && task.endDate) {
+                const startDate = new Date(task.startDate);
+                const endDate = new Date(task.endDate);
+                const midDate = new Date(startDate.getTime() + (endDate.getTime() - startDate.getTime()) / 2);
+                document.getElementById('splitTaskDate').value = midDate.toISOString().split('T')[0];
+            }
+            
+            updateSplitTaskUI();
+            updateSplitPreview();
+            
+            // Mostra il modal
+            openModal(document.getElementById('splitTaskModal'));
+        }
+
+        function updateSplitTaskUI() {
+            const mode = document.getElementById('splitTaskMode').value;
+            const splitDateGroup = document.getElementById('splitDateGroup');
+            const executeBtn = document.getElementById('splitTaskExecuteBtn');
+            
+            if (mode === 'split') {
+                splitDateGroup.style.display = 'block';
+                executeBtn.textContent = '✂️ Spezza';
+            } else {
+                splitDateGroup.style.display = 'none';
+                executeBtn.textContent = '📋 Duplica';
+            }
+            
+            updateSplitPreview();
+        }
+
+        function updateSplitPreview() {
+            const mode = document.getElementById('splitTaskMode').value;
+            const splitDate = document.getElementById('splitTaskDate').value;
+            const preview = document.getElementById('splitPreview');
+            const preview1 = document.getElementById('splitPreview1');
+            const preview2 = document.getElementById('splitPreview2');
+            
+            if (!taskToSplit) return;
+            
+            const project = projects.find(p => p.id === taskToSplit.projectId);
+            if (!project) return;
+            
+            const task = project.tasks.find(t => t.id === taskToSplit.taskId);
+            if (!task) return;
+            
+            if (mode === 'split' && splitDate && task.startDate && task.endDate) {
+                preview.style.display = 'block';
+                
+                // Calcola la data del giorno prima dello split
+                const splitDateObj = new Date(splitDate);
+                const dayBefore = new Date(splitDateObj);
+                dayBefore.setDate(dayBefore.getDate() - 1);
+                
+                // Formatta le date
+                const task1End = dayBefore.toISOString().split('T')[0];
+                const task2Start = splitDate;
+                
+                // Calcola le durate
+                const startDate = new Date(task.startDate);
+                const endDate = new Date(task.endDate);
+                const duration1 = Math.ceil((dayBefore - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                const duration2 = Math.ceil((endDate - splitDateObj) / (1000 * 60 * 60 * 24)) + 1;
+                
+                preview1.innerHTML = `<strong>${task.name} (Parte 1)</strong><br>
+                    <span style="color: var(--text-secondary);">Dal ${task.startDate} al ${task1End} (${duration1} giorni)</span>`;
+                preview2.innerHTML = `<strong>${task.name} (Parte 2)</strong><br>
+                    <span style="color: var(--text-secondary);">Dal ${task2Start} al ${task.endDate} (${duration2} giorni)</span>`;
+            } else if (mode === 'duplicate') {
+                preview.style.display = 'block';
+                
+                const startDateStr = task.startDate || 'Non impostata';
+                const endDateStr = task.endDate || 'Non impostata';
+                
+                preview1.innerHTML = `<strong>${task.name} (Originale)</strong><br>
+                    <span style="color: var(--text-secondary);">Dal ${startDateStr} al ${endDateStr} (${task.duration} giorni)</span>`;
+                preview2.innerHTML = `<strong>${task.name} (Copia)</strong><br>
+                    <span style="color: var(--text-secondary);">Dal ${startDateStr} al ${endDateStr} (${task.duration} giorni)</span>`;
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        function closeSplitTaskModal() {
+            closeModal(document.getElementById('splitTaskModal'));
+            taskToSplit = null;
+        }
+
+        async function executeSplitTask() {
+            if (!taskToSplit) return;
+            
+            const project = projects.find(p => p.id === taskToSplit.projectId);
+            if (!project || !project.tasks) return;
+            
+            const task = project.tasks.find(t => t.id === taskToSplit.taskId);
+            if (!task) return;
+            
+            const mode = document.getElementById('splitTaskMode').value;
+            
+            if (mode === 'split') {
+                const splitDate = document.getElementById('splitTaskDate').value;
+                
+                if (!splitDate) {
+                    alert('Inserisci una data di split');
+                    return;
+                }
+                
+                if (!task.startDate || !task.endDate) {
+                    alert("L'attività deve avere una data di inizio e fine per essere spezzata");
+                    return;
+                }
+                
+                // Verifica che la data di split sia nel range dell'attività
+                const startDate = new Date(task.startDate);
+                const endDate = new Date(task.endDate);
+                const splitDateObj = new Date(splitDate);
+                
+                if (splitDateObj <= startDate || splitDateObj > endDate) {
+                    alert('La data di split deve essere compresa tra la data di inizio e la data di fine');
+                    return;
+                }
+                
+                // Calcola la data del giorno prima dello split
+                const dayBefore = new Date(splitDateObj);
+                dayBefore.setDate(dayBefore.getDate() - 1);
+                const task1End = dayBefore.toISOString().split('T')[0];
+                
+                // Calcola le durate
+                const duration1 = Math.ceil((dayBefore - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                const duration2 = Math.ceil((endDate - splitDateObj) / (1000 * 60 * 60 * 24)) + 1;
+                
+                // Modifica l'attività originale (prima parte)
+                task.endDate = task1End;
+                task.duration = duration1;
+                task.name = task.name + ' (Parte 1)';
+                
+                // Crea la seconda parte
+                const newTask = {
+                    id: Date.now() + Math.random(),
+                    name: task.name.replace('(Parte 1)', '(Parte 2)'),
+                    startDate: splitDate,
+                    endDate: endDate.toISOString().split('T')[0],
+                    duration: duration2,
+                    completion: task.completion || 0,
+                    status: task.status || '',
+                    saturdayWork: task.saturdayWork || false,
+                    sundayWork: task.sundayWork || false,
+                    holidayWork: task.holidayWork || false,
+                    flexibleDate: task.flexibleDate || false,
+                    notes: task.notes || '',
+                    resources: task.resources ? JSON.parse(JSON.stringify(task.resources)) : [],
+                    checklist: task.checklist ? JSON.parse(JSON.stringify(task.checklist)) : [],
+                    startLinkedTo: '',
+                    endLinkedTo: '',
+                    startOffset: 0,
+                    endOffset: 0
+                };
+                
+                project.tasks.push(newTask);
+                
+            } else {
+                // Modalità duplica
+                const newTask = {
+                    id: Date.now() + Math.random(),
+                    name: task.name + ' (Copia)',
+                    startDate: task.startDate || '',
+                    endDate: task.endDate || '',
+                    duration: task.duration || 1,
+                    completion: 0, // Reset completamento per la copia
+                    status: task.status || '',
+                    saturdayWork: task.saturdayWork || false,
+                    sundayWork: task.sundayWork || false,
+                    holidayWork: task.holidayWork || false,
+                    flexibleDate: task.flexibleDate || false,
+                    notes: task.notes || '',
+                    resources: task.resources ? JSON.parse(JSON.stringify(task.resources)) : [],
+                    checklist: task.checklist ? JSON.parse(JSON.stringify(task.checklist)) : [],
+                    startLinkedTo: '', // Non copiare i collegamenti
+                    endLinkedTo: '',
+                    startOffset: 0,
+                    endOffset: 0
+                };
+                
+                project.tasks.push(newTask);
+            }
+            
+            // Salva nel database
+            await saveToIndexedDBAll();
+            
+            // Chiudi il modal
+            closeSplitTaskModal();
+            
+            // Aggiorna la vista
+            renderTasks();
+            renderGantt();
+            
+            // Aggiorna bacheca se visibile
+            const bachecaTab = document.getElementById('bacheca');
+            if (bachecaTab && bachecaTab.classList.contains('active')) {
+                renderBacheca();
             }
         }
 
@@ -9184,6 +9462,7 @@
                     <td ${cancelledStyle}>${statusLabels[task.status] || '-'}</td>
                     <td class="action-buttons">
                         <button onclick="openTaskModal(${task.id})" class="secondary">✏️ Modifica</button>
+                        <button onclick="openSplitTaskModal(${task.id})" class="secondary" title="Spezza o duplica attività">✂️ Spezza/Duplica</button>
                         <button onclick="openCopyTaskModal(${task.id}, ${currentProjectId})" class="secondary" title="Copia su altri progetti">📋 Copia</button>
                         <button onclick="deleteTask(${task.id})" class="delete">🗑️ Elimina</button>
                     </td>
