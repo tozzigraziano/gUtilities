@@ -5895,6 +5895,7 @@
                         <button onclick="toggleResourceVisibility(${resource.id})" style="padding: 4px 8px; font-size: 18px; cursor: pointer; ${isHidden ? 'opacity: 0.3;' : ''}" title="${isHidden ? 'Mostra in Gantt e Vista Risorse' : 'Nascondi da Gantt e Vista Risorse'}">${isHidden ? '○' : '●'}</button>
                     </td>
                     <td class="action-buttons">
+                        <button onclick="exportResourceMarkdown(${resource.id})" class="secondary" title="Esporta riepilogo attività in Markdown">📄 Esporta MD</button>
                         <button onclick="openResourceModal(${resource.id})" class="secondary">✏️ Modifica</button>
                         <button onclick="deleteResource(${resource.id})" class="delete">🗑️ Elimina</button>
                     </td>
@@ -10311,6 +10312,216 @@
             link.download = `${projectName}_report_${formatDateLocal(new Date())}.md`;
             link.click();
             URL.revokeObjectURL(url);
+        }
+
+        function exportResourceMarkdown(resourceId) {
+            const resource = resources.find(r => r.id === resourceId);
+            if (!resource) {
+                alert('Risorsa non trovata');
+                return;
+            }
+
+            const resourceName = `${resource.firstName} ${resource.lastName}`;
+            
+            // Raccogli tutte le attività assegnate alla risorsa (escludendo quelle completate)
+            const tasksByProject = new Map();
+            
+            projects.forEach(project => {
+                if (!project.tasks) return;
+                
+                const assignedTasks = project.tasks.filter(task => {
+                    // Escludi attività completate o annullate
+                    if (task.status === 'completata' || task.status === 'annullata' || task.completion >= 100) {
+                        return false;
+                    }
+                    
+                    // Verifica se la risorsa è assegnata a questa attività
+                    return task.resources && task.resources.some(r => r.resourceId == resourceId);
+                });
+                
+                if (assignedTasks.length > 0) {
+                    tasksByProject.set(project, assignedTasks);
+                }
+            });
+
+            if (tasksByProject.size === 0) {
+                alert('Nessuna attività non completata assegnata a questa risorsa');
+                return;
+            }
+
+            // Genera Markdown
+            let md = `# Riepilogo Attività - ${resourceName}\n\n`;
+            md += `**Tipo:** ${getResourceTypeLabel(resource.type)}\n\n`;
+            md += `**Generato il:** ${new Date().toLocaleString('it-IT')}\n\n`;
+            md += `---\n\n`;
+            
+            // Calcola statistiche totali
+            let totalTasks = 0;
+            tasksByProject.forEach(tasks => totalTasks += tasks.length);
+            
+            md += `## 📊 Statistiche\n\n`;
+            md += `| Metrica | Valore |\n`;
+            md += `|---------|--------|\n`;
+            md += `| **Progetti Attivi** | ${tasksByProject.size} |\n`;
+            md += `| **Attività Totali** | ${totalTasks} |\n\n`;
+
+            // Assenze
+            if (resource.absences && resource.absences.length > 0) {
+                md += `## 🏖️ Assenze Pianificate\n\n`;
+                resource.absences.forEach(absence => {
+                    const typeLabel = absence.type === 'sick' ? '🤒 Malattia' : '🏖️ Ferie';
+                    const dateStr = absence.start === absence.end ? absence.start : `${absence.start} - ${absence.end}`;
+                    md += `- ${typeLabel}: ${dateStr}\n`;
+                });
+                md += `\n`;
+            }
+
+            md += `## 📋 Attività per Progetto\n\n`;
+            
+            // Ordina progetti per data di inizio più vicina
+            const sortedProjects = Array.from(tasksByProject.entries()).sort((a, b) => {
+                const [projectA, tasksA] = a;
+                const [projectB, tasksB] = b;
+                
+                const getEarliestDate = (tasks) => {
+                    const dates = tasks.map(t => t.startDate).filter(d => d);
+                    if (dates.length === 0) return '9999-99-99';
+                    return dates.sort()[0];
+                };
+                
+                return getEarliestDate(tasksA).localeCompare(getEarliestDate(tasksB));
+            });
+
+            sortedProjects.forEach(([project, tasks]) => {
+                md += `### ${project.client || 'Cliente N/A'} - ${project.code || 'N/A'}\n\n`;
+                if (project.description) {
+                    md += `*${project.description}*\n\n`;
+                }
+                
+                // Ordina attività per data di inizio
+                const sortedTasks = [...tasks].sort((a, b) => {
+                    if (!a.startDate) return 1;
+                    if (!b.startDate) return -1;
+                    return new Date(a.startDate) - new Date(b.startDate);
+                });
+                
+                md += `| Attività | Date | Durata | Completamento | Stato | Allocazione |\n`;
+                md += `|----------|------|--------|---------------|-------|-------------|\n`;
+                
+                sortedTasks.forEach(task => {
+                    const statusLabels = {
+                        'in-corso': '🔄 In Corso',
+                        'in-ritardo': '⚠️ In Ritardo',
+                        'pausa': '⏸️ Pausa',
+                        'completata': '✅ Completata',
+                        'annullata': '❌ Annullata'
+                    };
+                    
+                    const statusIcon = statusLabels[task.status] || '-';
+                    const startDate = task.startDate || '-';
+                    const endDate = task.endDate || '-';
+                    const dateRange = `${startDate} → ${endDate}`;
+                    
+                    // Trova la percentuale di allocazione per questa risorsa
+                    const resourceAlloc = task.resources.find(r => r.resourceId == resourceId);
+                    const allocation = resourceAlloc ? `${resourceAlloc.percentage}%` : '-';
+                    
+                    // Indicatore di ritardo
+                    const today = formatDateLocal(new Date());
+                    const isOverdue = task.endDate && task.endDate < today;
+                    const taskName = isOverdue ? `**${task.name}** 🔴` : task.name;
+                    
+                    md += `| ${taskName} | ${dateRange} | ${task.duration} gg | ${task.completion}% | ${statusIcon} | ${allocation} |\n`;
+                });
+                
+                md += `\n`;
+                
+                // Genera Gantt per questo progetto
+                md += generateGanttForResourceProject(project, tasks, resource);
+                md += `\n`;
+            });
+
+            // Footer
+            md += `---\n\n`;
+            md += `*Report generato automaticamente da Project Planner il ${new Date().toLocaleString('it-IT')}*\n`;
+            
+            // Download del file Markdown
+            const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const fileName = `${resource.firstName}_${resource.lastName}_${formatDateLocal(new Date())}.md`.replace(/[^a-z0-9._-]/gi, '_');
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function getResourceTypeLabel(type) {
+            const typeLabels = {
+                'programmatore-robot': 'Programmatore Robot',
+                'programmatore-plc': 'Programmatore PLC',
+                'programmatore-visione': 'Programmatore Visione',
+                'meccanico': 'Meccanico',
+                'elettricista': 'Elettricista',
+                'project-manager': 'Project Manager',
+                'esterno': 'Esterno',
+                'responsabile': 'Responsabile'
+            };
+            return type ? typeLabels[type] || type : '-';
+        }
+
+        function generateGanttForResourceProject(project, tasks, resource) {
+            let gantt = `#### Diagramma Gantt - ${project.code || 'Progetto'}\n\n`;
+            gantt += '```mermaid\n';
+            gantt += 'gantt\n';
+            gantt += `    title ${project.code || 'Progetto'} - ${resource.firstName} ${resource.lastName}\n`;
+            gantt += '    dateFormat YYYY-MM-DD\n';
+            gantt += '    axisFormat %d/%m\n';
+            gantt += '    tickInterval 1week\n\n';
+            
+            // Aggiungi milestones se ci sono
+            if (project.milestones && project.milestones.length > 0) {
+                gantt += '    section Milestones\n';
+                project.milestones.forEach(m => {
+                    if (m.date) {
+                        const safeName = m.name.replace(/:/g, ' -').replace(/,/g, '').substring(0, 50);
+                        gantt += `    ${safeName} :milestone, ${m.date}, 0d\n`;
+                    }
+                });
+                gantt += '\n';
+            }
+            
+            // Aggiungi le attività della risorsa
+            gantt += '    section Attività\n';
+            
+            // Ordina attività per data di inizio
+            const sortedTasks = [...tasks].sort((a, b) => {
+                if (!a.startDate) return 1;
+                if (!b.startDate) return -1;
+                return new Date(a.startDate) - new Date(b.startDate);
+            });
+            
+            sortedTasks.forEach(task => {
+                if (task.startDate && task.endDate) {
+                    const safeName = task.name.replace(/:/g, ' -').replace(/,/g, '').substring(0, 50);
+                    
+                    // Imposta lo stato del task nel Gantt
+                    let taskState = 'active';
+                    if (task.status === 'completata' || task.completion >= 100) {
+                        taskState = 'done';
+                    } else if (task.status === 'annullata') {
+                        taskState = 'crit';
+                    } else if (task.status === 'in-ritardo') {
+                        taskState = 'crit';
+                    }
+                    
+                    gantt += `    ${safeName} :${taskState}, ${task.startDate}, ${task.endDate}\n`;
+                }
+            });
+            
+            gantt += '```\n\n';
+            
+            return gantt;
         }
 
         function generateGanttMermaid(project) {
