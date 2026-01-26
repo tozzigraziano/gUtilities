@@ -1205,7 +1205,8 @@
         }
 
         .gantt-day.absence,
-        .gantt-day.absence-sick {
+        .gantt-day.absence-sick,
+        .gantt-day.absence-planned-intervention {
             background: repeating-linear-gradient(
                 45deg,
                 #d32f2f,
@@ -1217,7 +1218,8 @@
         }
 
         [data-theme="dark"] .gantt-day.absence,
-        [data-theme="dark"] .gantt-day.absence-sick {
+        [data-theme="dark"] .gantt-day.absence-sick,
+        [data-theme="dark"] .gantt-day.absence-planned-intervention {
             background: repeating-linear-gradient(
                 45deg,
                 #b71c1c,
@@ -1240,6 +1242,17 @@
         
         .gantt-day.absence-sick::after {
             content: '🤒';
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            z-index: 5;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+        }
+        
+        .gantt-day.absence-planned-intervention::after {
+            content: '🏥';
             position: absolute;
             top: 2px;
             left: 50%;
@@ -1314,7 +1327,8 @@
         }
         
         .resource-daily-bar.on-absence,
-        .resource-daily-bar.on-absence-sick {
+        .resource-daily-bar.on-absence-sick,
+        .resource-daily-bar.on-absence-planned-intervention {
             background: repeating-linear-gradient(
                 45deg,
                 #d32f2f,
@@ -1326,7 +1340,8 @@
         }
         
         [data-theme="dark"] .resource-daily-bar.on-absence,
-        [data-theme="dark"] .resource-daily-bar.on-absence-sick {
+        [data-theme="dark"] .resource-daily-bar.on-absence-sick,
+        [data-theme="dark"] .resource-daily-bar.on-absence-planned-intervention {
             background: repeating-linear-gradient(
                 45deg,
                 #b71c1c,
@@ -1350,6 +1365,18 @@
         
         .resource-daily-bar.on-absence-sick::after {
             content: '🤒';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
+        }
+        
+        .resource-daily-bar.on-absence-planned-intervention::after {
+            content: '🏥';
             position: absolute;
             top: 50%;
             left: 50%;
@@ -1429,7 +1456,8 @@
         
         /* Le assenze hanno priorità sul giorno corrente */
         .resource-daily-bar.current-day.on-absence,
-        .resource-daily-bar.current-day.on-absence-sick {
+        .resource-daily-bar.current-day.on-absence-sick,
+        .resource-daily-bar.current-day.on-absence-planned-intervention {
             background: repeating-linear-gradient(
                 45deg,
                 #d32f2f,
@@ -1442,7 +1470,8 @@
         }
         
         [data-theme="dark"] .resource-daily-bar.current-day.on-absence,
-        [data-theme="dark"] .resource-daily-bar.current-day.on-absence-sick {
+        [data-theme="dark"] .resource-daily-bar.current-day.on-absence-sick,
+        [data-theme="dark"] .resource-daily-bar.current-day.on-absence-planned-intervention {
             background: repeating-linear-gradient(
                 45deg,
                 #b71c1c,
@@ -1465,7 +1494,8 @@
         
         /* Nascondi la freccia "oggi" quando c'è un'assenza (per non sovrapporre l'icona) */
         .resource-daily-bar.current-day.on-absence::after,
-        .resource-daily-bar.current-day.on-absence-sick::after {
+        .resource-daily-bar.current-day.on-absence-sick::after,
+        .resource-daily-bar.current-day.on-absence-planned-intervention::after {
             content: '';
         }
         
@@ -1484,6 +1514,18 @@
         
         .resource-daily-bar.current-day.on-absence-sick::before {
             content: '🤒';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
+        }
+        
+        .resource-daily-bar.current-day.on-absence-planned-intervention::before {
+            content: '🏥';
             position: absolute;
             top: 50%;
             left: 50%;
@@ -3084,8 +3126,9 @@
                                 <ul>
                                     <li>🏖️ <strong>Ferie</strong>: Assenze pianificate per riposo</li>
                                     <li>🤒 <strong>Malattia</strong>: Assenze per motivi di salute</li>
+                                    <li>🏥 <strong>Intervento Pianificato</strong>: Interventi medici programmati</li>
                                 </ul>
-                                Le assenze vengono mostrate in rosso nel Gantt e nella Vista Risorse. Le malattie sono identificate dall'icona 🤒 per distinguerle dalle ferie 🏖️.
+                                Le assenze vengono mostrate in rosso nel Gantt e nella Vista Risorse. Le diverse causali sono identificate da icone specifiche: 🏖️ per le ferie, 🤒 per le malattie, 🏥 per gli interventi pianificati.
                             </li>
                             <li><strong>Modifica/Elimina:</strong> Usa i pulsanti ✏️ ed 🗑️ per gestire le risorse esistenti</li>
                         </ul>
@@ -3395,6 +3438,10 @@
                         <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
                         <span>🤒 Malattia</span>
                     </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🏥 Intervento Pianificato</span>
+                    </div>
                 </div>
             </div>
 
@@ -3519,6 +3566,10 @@
                     <div class="legend-item">
                         <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
                         <span>🤒 Malattia</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🏥 Intervento Pianificato</span>
                     </div>
                 </div>
             </div>
@@ -5541,6 +5592,7 @@
                 <select class="absence-type">
                     <option value="vacation">Ferie</option>
                     <option value="sick">Malattia</option>
+                    <option value="planned_intervention">Intervento Pianificato</option>
                 </select>
                 <input type="date" class="absence-start">
                 <span>-</span>
@@ -5787,6 +5839,7 @@
                         <select class="absence-type">
                             <option value="vacation" ${absenceType === 'vacation' ? 'selected' : ''}>Ferie</option>
                             <option value="sick" ${absenceType === 'sick' ? 'selected' : ''}>Malattia</option>
+                            <option value="planned_intervention" ${absenceType === 'planned_intervention' ? 'selected' : ''}>Intervento Pianificato</option>
                         </select>
                         <input type="date" class="absence-start" value="${absence.start}">
                         <span>-</span>
@@ -5811,6 +5864,7 @@
                     <select class="absence-type">
                         <option value="vacation">Ferie</option>
                         <option value="sick">Malattia</option>
+                        <option value="planned_intervention">Intervento Pianificato</option>
                     </select>
                     <input type="date" class="absence-start">
                     <span>-</span>
@@ -5848,6 +5902,7 @@
                     <select class="absence-type">
                         <option value="vacation">Ferie</option>
                         <option value="sick">Malattia</option>
+                        <option value="planned_intervention">Intervento Pianificato</option>
                     </select>
                     <input type="date" class="absence-start">
                     <span>-</span>
@@ -5864,7 +5919,7 @@
             resources.forEach((resource, index) => {
                 const tr = document.createElement('tr');
                 const absencesStr = resource.absences.map(a => {
-                    const typeLabel = a.type === 'sick' ? '🤒 Malattia' : '🏖️ Ferie';
+                    const typeLabel = a.type === 'sick' ? '🤒 Malattia' : (a.type === 'planned_intervention' ? '🏥 Intervento Pianificato' : '🏖️ Ferie');
                     const dateStr = a.start === a.end ? a.start : `${a.start} - ${a.end}`;
                     return `${typeLabel}: ${dateStr}`;
                 }).join(', ') || 'Nessuna';
@@ -10369,7 +10424,7 @@
             if (resource.absences && resource.absences.length > 0) {
                 md += `## 🏖️ Assenze Pianificate\n\n`;
                 resource.absences.forEach(absence => {
-                    const typeLabel = absence.type === 'sick' ? '🤒 Malattia' : '🏖️ Ferie';
+                    const typeLabel = absence.type === 'sick' ? '🤒 Malattia' : (absence.type === 'planned_intervention' ? '🏥 Intervento Pianificato' : '🏖️ Ferie');
                     const dateStr = absence.start === absence.end ? absence.start : `${absence.start} - ${absence.end}`;
                     md += `- ${typeLabel}: ${dateStr}\n`;
                 });
@@ -11720,6 +11775,8 @@
                         if (dayDate.getTime() >= absenceStart.getTime() && dayDate.getTime() <= absenceEnd.getTime()) {
                             if (absence.type === 'sick') {
                                 dayDiv.classList.add('absence-sick');
+                            } else if (absence.type === 'planned_intervention') {
+                                dayDiv.classList.add('absence-planned-intervention');
                             } else {
                                 dayDiv.classList.add('absence');
                             }
@@ -13441,6 +13498,8 @@
                 if (isAbsent) {
                     if (absenceType === 'sick') {
                         dailyBar.classList.add('on-absence-sick');
+                    } else if (absenceType === 'planned_intervention') {
+                        dailyBar.classList.add('on-absence-planned-intervention');
                     } else {
                         dailyBar.classList.add('on-absence');
                     }
@@ -13476,7 +13535,7 @@
                 tooltip.className = 'resource-daily-bar-tooltip';
                 let tooltipText = `${dateStr}: ${load.toFixed(0)}%`;
                 if (isAbsent) {
-                    const absenceLabel = absenceType === 'sick' ? 'MALATTIA' : 'FERIE';
+                    const absenceLabel = absenceType === 'sick' ? 'MALATTIA' : (absenceType === 'planned_intervention' ? 'INTERVENTO PIANIFICATO' : 'FERIE');
                     tooltipText += ` ⚠️ ${absenceLabel}`;
                 } else if (isHoliday) {
                     tooltipText += ' 🎉 FESTIVO';
