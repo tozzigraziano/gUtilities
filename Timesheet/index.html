@@ -2246,8 +2246,10 @@
                 // Create project tags with category color as background and work type color as borders
                 const projectTags = entry.workEntries.map(we => {
                     const workType = workTypes.find(wt => wt.name === we.workType);
+                    const tagText = we.version ? `${we.workCode} ${we.version}` : we.workCode;
+                    
                     if (!workType) {
-                        return `<span class="project-tag" style="background: var(--accent-color); color: #FFFFFF;" title="${we.workType} - ${we.hours}" onclick="openProjectStatsModal('${we.workCode}')">${we.workCode}</span>`;
+                        return `<span class="project-tag" style="background: var(--accent-color); color: #FFFFFF;" title="${we.workType} - ${we.hours}" onclick="openProjectStatsModal('${we.workCode}')">${tagText}</span>`;
                     }
                     
                     // Get category color or use work type color
@@ -2263,8 +2265,8 @@
                     }
                     
                     const textColor = getContrastColor(bgColor);
-                    const tooltip = `${we.workType} - ${we.hours}`;
-                    return `<span class="project-tag" style="background: ${bgColor}; border-left-color: ${borderColor}; border-right-color: ${borderColor}; color: ${textColor};" title="${tooltip}" onclick="openProjectStatsModal('${we.workCode}')">${we.workCode}</span>`;
+                    const tooltip = `${we.workType} - ${we.hours}${we.version ? ' - ' + we.version : ''}`;
+                    return `<span class="project-tag" style="background: ${bgColor}; border-left-color: ${borderColor}; border-right-color: ${borderColor}; color: ${textColor};" title="${tooltip}" onclick="openProjectStatsModal('${we.workCode}')">${tagText}</span>`;
                 }).join('');
                 
                 // Applica classi per weekend e festivi
@@ -2662,7 +2664,7 @@
             });
             
             // Popola la combobox versioni
-            versionSelect.innerHTML = '<option value="">(Tutto)</option>';
+            versionSelect.innerHTML = '<option value="">(Tutto)</option><option value="__base__">(Base)</option>';
             Array.from(versions).sort().forEach(version => {
                 const option = document.createElement('option');
                 option.value = version;
@@ -2705,7 +2707,17 @@
                 entry.workEntries.forEach(we => {
                     // Verifica progetto e versione
                     const matchesProject = we.workCode === projectCode;
-                    const matchesVersion = !selectedVersion || we.version === selectedVersion;
+                    let matchesVersion;
+                    if (!selectedVersion) {
+                        // (Tutto) - mostra tutto
+                        matchesVersion = true;
+                    } else if (selectedVersion === '__base__') {
+                        // (Base) - mostra solo senza versione
+                        matchesVersion = !we.version || we.version.trim() === '';
+                    } else {
+                        // Versione specifica
+                        matchesVersion = we.version === selectedVersion;
+                    }
                     
                     if (matchesProject && matchesVersion) {
                         entryHasProject = true;
