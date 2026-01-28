@@ -998,8 +998,14 @@
             
             <div class="form-group">
                 <label>Seleziona Progetto</label>
-                <select id="projectSelect" onchange="updateProjectStats()">
+                <select id="projectSelect" onchange="updateProjectVersions()">
                     <option value="">-- Seleziona un progetto --</option>
+                </select>
+            </div>
+            <div class="form-group" id="versionSelectGroup" style="display: none;">
+                <label>Seleziona Versione</label>
+                <select id="versionSelect" onchange="updateProjectStats()">
+                    <option value="">(Tutto)</option>
                 </select>
             </div>
             
@@ -1676,6 +1682,7 @@
                     const id = workEntryCounter - 1;
                     document.getElementById(`workType-${id}`).value = we.workType;
                     document.getElementById(`workCode-${id}`).value = we.workCode;
+                    document.getElementById(`workVersion-${id}`).value = we.version || '';
                     document.getElementById(`workDesc-${id}`).value = we.description;
                     document.getElementById(`workHours-${id}`).value = we.hours;
                 });
@@ -2099,6 +2106,11 @@
                     <input type="text" id="workCode-${workEntryCounter}" list="projectSuggestions" placeholder="es. PRJ-001">
                 </div>
                 <div class="form-group">
+                    <label>Versione (opzionale)</label>
+                    <input type="text" id="workVersion-${workEntryCounter}" placeholder="es. M001" pattern="[A-Z][0-9]{3}" maxlength="4" style="text-transform: uppercase;">
+                    <small style="font-size: 11px; color: var(--text-tertiary);">Formato: Lettera + 3 cifre (es. M001, M002)</small>
+                </div>
+                <div class="form-group">
                     <label>Descrizione</label>
                     <textarea id="workDesc-${workEntryCounter}" rows="2" placeholder="Descrizione dell'attività svolta"></textarea>
                 </div>
@@ -2153,6 +2165,7 @@
                 const id = div.id.split('-')[2];
                 const workType = document.getElementById(`workType-${id}`).value;
                 const workCode = document.getElementById(`workCode-${id}`).value;
+                const workVersion = document.getElementById(`workVersion-${id}`).value.trim().toUpperCase();
                 const workDesc = document.getElementById(`workDesc-${id}`).value;
                 const workHours = document.getElementById(`workHours-${id}`).value;
 
@@ -2160,6 +2173,7 @@
                     workEntries.push({
                         workType,
                         workCode,
+                        version: workVersion,
                         description: workDesc,
                         hours: workHours
                     });
@@ -2309,6 +2323,7 @@
                         <tr>
                             <th>Tipo</th>
                             <th>Codice</th>
+                            <th>Versione</th>
                             <th>Ore</th>
                             <th>Descrizione</th>
                         </tr>
@@ -2318,6 +2333,7 @@
                             <tr>
                                 <td>${we.workType}</td>
                                 <td>${we.workCode}</td>
+                                <td>${we.version || '-'}</td>
                                 <td>${we.hours}</td>
                                 <td>${we.description}</td>
                             </tr>
@@ -2611,9 +2627,10 @@
             // Se è stato passato un progetto, selezionalo e mostra le statistiche
             if (projectCode) {
                 select.value = projectCode;
-                updateProjectStats();
+                updateProjectVersions();
             } else {
                 document.getElementById('projectStatsContent').style.display = 'none';
+                document.getElementById('versionSelectGroup').style.display = 'none';
             }
             
             modal.style.display = 'block';
@@ -2623,8 +2640,51 @@
             document.getElementById('projectStatsModal').style.display = 'none';
         }
         
+        function updateProjectVersions() {
+            const projectCode = document.getElementById('projectSelect').value;
+            const versionSelectGroup = document.getElementById('versionSelectGroup');
+            const versionSelect = document.getElementById('versionSelect');
+            
+            if (!projectCode) {
+                document.getElementById('projectStatsContent').style.display = 'none';
+                versionSelectGroup.style.display = 'none';
+                return;
+            }
+            
+            // Raccogli tutte le versioni per il progetto selezionato
+            const versions = new Set();
+            timesheetEntries.forEach(entry => {
+                entry.workEntries.forEach(we => {
+                    if (we.workCode === projectCode && we.version) {
+                        versions.add(we.version);
+                    }
+                });
+            });
+            
+            // Popola la combobox versioni
+            versionSelect.innerHTML = '<option value="">(Tutto)</option>';
+            Array.from(versions).sort().forEach(version => {
+                const option = document.createElement('option');
+                option.value = version;
+                option.textContent = version;
+                versionSelect.appendChild(option);
+            });
+            
+            // Mostra/nascondi il selettore versioni
+            if (versions.size > 0) {
+                versionSelectGroup.style.display = 'block';
+            } else {
+                versionSelectGroup.style.display = 'none';
+            }
+            
+            // Aggiorna le statistiche
+            updateProjectStats();
+        }
+        
         function updateProjectStats() {
             const projectCode = document.getElementById('projectSelect').value;
+            const selectedVersion = document.getElementById('versionSelect').value;
+            
             if (!projectCode) {
                 document.getElementById('projectStatsContent').style.display = 'none';
                 return;
@@ -2643,7 +2703,11 @@
                 let entryMinutes = 0;
                 
                 entry.workEntries.forEach(we => {
-                    if (we.workCode === projectCode) {
+                    // Verifica progetto e versione
+                    const matchesProject = we.workCode === projectCode;
+                    const matchesVersion = !selectedVersion || we.version === selectedVersion;
+                    
+                    if (matchesProject && matchesVersion) {
                         entryHasProject = true;
                         const [h, m] = we.hours.split(':').map(Number);
                         const minutes = h * 60 + m;
@@ -2677,10 +2741,11 @@
             
             // Show main stats
             const mainStatsDiv = document.getElementById('projectMainStats');
+            const projectTitle = selectedVersion ? `${projectCode} - ${selectedVersion}` : projectCode;
             mainStatsDiv.innerHTML = `
                 <div class="stat-card">
-                    <h3>${projectCode}</h3>
-                    <p>Progetto</p>
+                    <h3>${projectTitle}</h3>
+                    <p>Progetto${selectedVersion ? ' - Versione' : ''}</p>
                 </div>
                 <div class="stat-card">
                     <h3>${Math.floor(totalMinutes / 60)}:${(totalMinutes % 60).toString().padStart(2, '0')}</h3>
