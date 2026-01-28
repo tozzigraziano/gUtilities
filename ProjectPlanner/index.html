@@ -10431,8 +10431,6 @@
                 md += `\n`;
             }
 
-            md += `## 📋 Attività per Progetto\n\n`;
-            
             // Ordina progetti per data di inizio più vicina
             const sortedProjects = Array.from(tasksByProject.entries()).sort((a, b) => {
                 const [projectA, tasksA] = a;
@@ -10446,6 +10444,32 @@
                 
                 return getEarliestDate(tasksA).localeCompare(getEarliestDate(tasksB));
             });
+
+            // Calcola date globali per sincronizzare tutti i Gantt
+            let globalMinDate = null;
+            let globalMaxDate = null;
+            sortedProjects.forEach(([project, tasks]) => {
+                tasks.forEach(task => {
+                    if (task.startDate && task.endDate) {
+                        const start = new Date(task.startDate);
+                        const end = new Date(task.endDate);
+                        
+                        if (!globalMinDate || start < globalMinDate) {
+                            globalMinDate = start;
+                        }
+                        if (!globalMaxDate || end > globalMaxDate) {
+                            globalMaxDate = end;
+                        }
+                    }
+                });
+            });
+
+            // Genera Gantt generale di overview con tutti i progetti
+            md += `## 📅 Timeline Progetti\n\n`;
+            md += generateOverviewGanttForResource(sortedProjects, resource, globalMinDate, globalMaxDate);
+            md += `\n`;
+
+            md += `## 📋 Attività per Progetto\n\n`;
 
             sortedProjects.forEach(([project, tasks]) => {
                 md += `### ${project.client || 'Cliente N/A'} - ${project.code || 'N/A'}\n\n`;
@@ -10492,7 +10516,7 @@
                 md += `\n`;
                 
                 // Genera Gantt per questo progetto
-                md += generateGanttForResourceProject(project, tasks, resource);
+                md += generateGanttForResourceProject(project, tasks, resource, globalMinDate, globalMaxDate);
                 md += `\n`;
             });
 
@@ -10525,7 +10549,7 @@
             return type ? typeLabels[type] || type : '-';
         }
 
-        function generateGanttForResourceProject(project, tasks, resource) {
+        function generateGanttForResourceProject(project, tasks, resource, globalMinDate, globalMaxDate) {
             let gantt = `#### Diagramma Gantt - ${project.code || 'Progetto'}\n\n`;
             gantt += '```mermaid\n';
             gantt += 'gantt\n';
@@ -10534,16 +10558,12 @@
             gantt += '    axisFormat %d/%m\n';
             gantt += '    tickInterval 1week\n\n';
             
-            // Aggiungi milestones se ci sono
-            if (project.milestones && project.milestones.length > 0) {
-                gantt += '    section Milestones\n';
-                project.milestones.forEach(m => {
-                    if (m.date) {
-                        const safeName = m.name.replace(/:/g, ' -').replace(/,/g, '').substring(0, 50);
-                        gantt += `    ${safeName} :milestone, ${m.date}, 0d\n`;
-                    }
-                });
-                gantt += '\n';
+            // Aggiungi task invisibile per sincronizzare le date con il Gantt di overview
+            if (globalMinDate && globalMaxDate) {
+                const minDate = globalMinDate.toISOString().split('T')[0];
+                const maxDate = globalMaxDate.toISOString().split('T')[0];
+                gantt += `    section Periodo\n`;
+                gantt += `    . :done, ${minDate}, ${maxDate}\n\n`;
             }
             
             // Aggiungi le attività della risorsa
@@ -10570,8 +10590,89 @@
                         taskState = 'crit';
                     }
                     
-                    gantt += `    ${safeName} :${taskState}, ${task.startDate}, ${task.endDate}\n`;
+                    // Fix per attività di 1 giorno: aggiungi 1 giorno alla data fine
+                    let endDate = task.endDate;
+                    if (task.startDate === task.endDate) {
+                        const end = new Date(task.endDate);
+                        end.setDate(end.getDate() + 1);
+                        endDate = end.toISOString().split('T')[0];
+                    }
+                    
+                    gantt += `    ${safeName} :${taskState}, ${task.startDate}, ${endDate}\n`;
                 }
+            });
+            
+            gantt += '```\n\n';
+            
+            return gantt;
+        }
+
+        function generateOverviewGanttForResource(sortedProjects, resource, globalMinDate, globalMaxDate) {
+            let gantt = `#### Diagramma Gantt - Overview Progetti\n\n`;
+            gantt += '```mermaid\n';
+            gantt += 'gantt\n';
+            gantt += `    title Overview Progetti - ${resource.firstName} ${resource.lastName}\n`;
+            gantt += '    dateFormat YYYY-MM-DD\n';
+            gantt += '    axisFormat %d/%m\n';
+            gantt += '    tickInterval 1week\n\n';
+            
+            // Aggiungi task invisibile per definire il range temporale completo
+            if (globalMinDate && globalMaxDate) {
+                const minDate = globalMinDate.toISOString().split('T')[0];
+                const maxDate = globalMaxDate.toISOString().split('T')[0];
+                gantt += `    section Periodo\n`;
+                gantt += `    . :done, ${minDate}, ${maxDate}\n\n`;
+            }
+            
+            // Aggiungi i progetti come sezioni
+            sortedProjects.forEach(([project, tasks]) => {
+                // Filtra solo i progetti non completati
+                if (project.status === 'completato' || project.status === 'annullato') {
+                    return;
+                }
+                
+                // Filtra le attività con date valide
+                const validTasks = tasks.filter(t => t.startDate && t.endDate);
+                
+                if (validTasks.length === 0) return;
+                
+                // Nome sicuro per Mermaid
+                const projectName = `${project.client || 'Cliente'} - ${project.code || 'N/A'}`;
+                const safeName = projectName.replace(/:/g, ' -').replace(/,/g, '').substring(0, 60);
+                
+                gantt += `    section ${safeName}\n`;
+                
+                // Ordina attività per data di inizio
+                const sortedTasks = [...validTasks].sort((a, b) => {
+                    return new Date(a.startDate) - new Date(b.startDate);
+                });
+                
+                // Aggiungi ogni attività come task separato nella stessa sezione
+                sortedTasks.forEach(task => {
+                    // Trova la percentuale di allocazione per questa risorsa
+                    const resourceAlloc = task.resources.find(r => r.resourceId == resource.id);
+                    const allocation = resourceAlloc ? `${resourceAlloc.percentage}%` : '-%';
+                    
+                    // Determina lo stato del task
+                    let taskState = 'active';
+                    if (task.status === 'completata' || task.completion >= 100) {
+                        taskState = 'done';
+                    } else if (task.status === 'annullata') {
+                        taskState = 'crit';
+                    } else if (task.status === 'in-ritardo') {
+                        taskState = 'crit';
+                    }
+                    
+                    // Fix per attività di 1 giorno: aggiungi 1 giorno alla data fine
+                    let endDate = task.endDate;
+                    if (task.startDate === task.endDate) {
+                        const end = new Date(task.endDate);
+                        end.setDate(end.getDate() + 1);
+                        endDate = end.toISOString().split('T')[0];
+                    }
+                    
+                    gantt += `    ${allocation} :${taskState}, ${task.startDate}, ${endDate}\n`;
+                });
             });
             
             gantt += '```\n\n';
