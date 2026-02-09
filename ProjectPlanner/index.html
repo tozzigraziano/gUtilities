@@ -139,6 +139,11 @@
             border-bottom-color: #ff6b6b;
         }
 
+        .bacheca-column.da-avviare h3 {
+            color: #e67e22;
+            border-bottom-color: #e67e22;
+        }
+
         .bacheca-column.in-corso h3 {
             color: #5b8db8;
             border-bottom-color: #5b8db8;
@@ -9212,9 +9217,24 @@
                 });
             });
 
+            // Identifica le attività che dovrebbero essere in corso ma non lo sono
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            function shouldBeInProgress(task) {
+                if (!task.startDate) return false;
+                const startDate = new Date(task.startDate);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = task.endDate ? new Date(task.endDate) : null;
+                if (endDate) endDate.setHours(0, 0, 0, 0);
+                // La data di inizio è passata (o oggi) e, se c'è una data di fine, non è ancora passata
+                return startDate <= today && (!endDate || endDate >= today);
+            }
+
             // Raggruppa per stato
             const columns = [
                 { id: 'in-ritardo', title: '🚨 In Ritardo', status: 'in-ritardo' },
+                { id: 'da-avviare', title: '⚠️ Da Avviare', status: 'da-avviare' },
                 { id: 'in-corso', title: '🔄 In Corso', status: 'in-corso' },
                 { id: 'pausa', title: '⏸️ In Pausa', status: 'pausa' },
                 { id: 'non-assegnata', title: '📌 Non Assegnate', status: 'nessuno' },
@@ -9226,11 +9246,18 @@
                 columnDiv.className = `bacheca-column ${column.id}`;
                 
                 const tasksInColumn = allTasks.filter(item => {
+                    if (column.status === 'da-avviare') {
+                        // Attività che dovrebbero essere in corso ma hanno status nessuno/vuoto
+                        return (item.task.status === 'nessuno' || item.task.status === '' || !item.task.status) &&
+                               shouldBeInProgress(item.task);
+                    }
                     if (column.status === 'nessuno') {
-                        // Non assegnata: status nessuno O senza risorse
-                        return item.task.status === 'nessuno' || 
+                        // Non assegnata: status nessuno O senza risorse, MA escludi quelle già in "da-avviare"
+                        const isUnstarted = item.task.status === 'nessuno' || 
+                               item.task.status === '' || !item.task.status ||
                                !item.task.resources || 
                                item.task.resources.length === 0;
+                        return isUnstarted && !shouldBeInProgress(item.task);
                     }
                     return item.task.status === column.status;
                 });
