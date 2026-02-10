@@ -1048,6 +1048,36 @@
                         <div id="chartLegend" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 800px;"></div>
                     </div>
                 </div>
+                
+                <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                    <button class="btn btn-info" onclick="showProjectHoursDetails()">📋 Dettagli Ore</button>
+                    <button class="btn btn-success" onclick="exportProjectToCSV()">💾 Esporta in CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for project hours details -->
+    <div id="projectHoursDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close" onclick="closeProjectHoursDetailsModal()">&times;</span>
+            <h2>📋 Dettagli Ore Progetto</h2>
+            <div id="projectHoursDetailsTitle" style="text-align: center; margin-bottom: 15px; font-size: 16px; font-weight: bold;"></div>
+            <div style="max-height: 600px; overflow-y: auto;">
+                <table id="projectHoursDetailsTable">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Giorno</th>
+                            <th>Tipo Giorno</th>
+                            <th>Tipo Lavoro</th>
+                            <th>Versione</th>
+                            <th>Ore</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -2887,6 +2917,145 @@
                 legendItem.appendChild(label);
                 legendDiv.appendChild(legendItem);
             });
+        }
+
+        // === PROJECT HOURS DETAILS ===
+        function showProjectHoursDetails() {
+            const projectCode = document.getElementById('projectSelect').value;
+            const selectedVersion = document.getElementById('versionSelect').value;
+            
+            if (!projectCode) return;
+            
+            const modal = document.getElementById('projectHoursDetailsModal');
+            const titleDiv = document.getElementById('projectHoursDetailsTitle');
+            const tbody = document.getElementById('projectHoursDetailsTable').querySelector('tbody');
+            
+            // Set title
+            const projectTitle = selectedVersion ? `${projectCode} - ${selectedVersion}` : projectCode;
+            titleDiv.textContent = projectTitle;
+            
+            // Collect all entries for the project
+            const projectEntries = [];
+            timesheetEntries.forEach(entry => {
+                entry.workEntries.forEach(we => {
+                    const matchesProject = we.workCode === projectCode;
+                    let matchesVersion;
+                    if (!selectedVersion) {
+                        matchesVersion = true;
+                    } else if (selectedVersion === '__base__') {
+                        matchesVersion = !we.version || we.version.trim() === '';
+                    } else {
+                        matchesVersion = we.version === selectedVersion;
+                    }
+                    
+                    if (matchesProject && matchesVersion) {
+                        projectEntries.push({
+                            date: entry.date,
+                            dayType: entry.dayType,
+                            workType: we.workType,
+                            version: we.version || '',
+                            hours: we.hours,
+                            notes: we.notes || ''
+                        });
+                    }
+                });
+            });
+            
+            // Sort by date (descending)
+            projectEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Populate table
+            tbody.innerHTML = '';
+            projectEntries.forEach(entry => {
+                const row = tbody.insertRow();
+                const date = new Date(entry.date);
+                const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+                
+                row.innerHTML = `
+                    <td>${date.toLocaleDateString('it-IT')}</td>
+                    <td>${dayNames[date.getDay()]}</td>
+                    <td>${entry.dayType}</td>
+                    <td>${entry.workType}</td>
+                    <td>${entry.version}</td>
+                    <td>${entry.hours}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${entry.notes}">${entry.notes}</td>
+                `;
+            });
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeProjectHoursDetailsModal() {
+            document.getElementById('projectHoursDetailsModal').style.display = 'none';
+        }
+        
+        function exportProjectToCSV() {
+            const projectCode = document.getElementById('projectSelect').value;
+            const selectedVersion = document.getElementById('versionSelect').value;
+            
+            if (!projectCode) {
+                alert('Seleziona un progetto prima di esportare');
+                return;
+            }
+            
+            // Collect all entries for the project
+            const projectEntries = [];
+            timesheetEntries.forEach(entry => {
+                entry.workEntries.forEach(we => {
+                    const matchesProject = we.workCode === projectCode;
+                    let matchesVersion;
+                    if (!selectedVersion) {
+                        matchesVersion = true;
+                    } else if (selectedVersion === '__base__') {
+                        matchesVersion = !we.version || we.version.trim() === '';
+                    } else {
+                        matchesVersion = we.version === selectedVersion;
+                    }
+                    
+                    if (matchesProject && matchesVersion) {
+                        const date = new Date(entry.date);
+                        const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+                        
+                        projectEntries.push({
+                            date: date.toLocaleDateString('it-IT'),
+                            day: dayNames[date.getDay()],
+                            dayType: entry.dayType,
+                            workType: we.workType,
+                            version: we.version || '',
+                            hours: we.hours,
+                            notes: (we.notes || '').replace(/"/g, '""') // Escape quotes for CSV
+                        });
+                    }
+                });
+            });
+            
+            // Sort by date
+            projectEntries.sort((a, b) => {
+                const dateA = a.date.split('/').reverse().join('');
+                const dateB = b.date.split('/').reverse().join('');
+                return dateB.localeCompare(dateA);
+            });
+            
+            // Create CSV content
+            const projectTitle = selectedVersion ? `${projectCode}_${selectedVersion}` : projectCode;
+            let csvContent = '\ufeff'; // UTF-8 BOM for Excel
+            csvContent += 'Data,Giorno,Tipo Giorno,Tipo Lavoro,Versione,Ore,Note\n';
+            
+            projectEntries.forEach(entry => {
+                csvContent += `"${entry.date}","${entry.day}","${entry.dayType}","${entry.workType}","${entry.version}","${entry.hours}","${entry.notes}"\n`;
+            });
+            
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${projectTitle}_ore.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // Initialize on load
