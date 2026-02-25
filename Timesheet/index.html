@@ -974,8 +974,8 @@
                 <select id="entryDayType"></select>
             </div>
             <div class="form-group">
-                <label>Timbrature (formato: E HH:MM - U HH:MM oppure 08:30-12:30, 14:00-18:00)</label>
-                <input type="text" id="entryTimestamps" placeholder="E 07:09 - U 12:32 - E 13:44 - U 17:13" oninput="calculateTimestampTotal()">
+                <label>Timbrature (formato: <code>E 07:09 - U 12:32 - E 13:44 - U 17:13</code> &nbsp;|&nbsp; <code>08:30-12:30, 14:00-18:00</code> &nbsp;|&nbsp; testo copiato dal sistema di timbrature)</label>
+                <textarea id="entryTimestamps" rows="3" placeholder="E 07:09 - U 12:32 - E 13:44 - U 17:13" oninput="calculateTimestampTotal()" style="resize: vertical;"></textarea>
                 <div id="timestampTotal" class="timestamp-total" style="display: none;"></div>
             </div>
             <h3>Lavori Svolti</h3>
@@ -1244,9 +1244,39 @@
         // === TIMESTAMP PARSING AND CALCULATION ===
         function parseTimestamps(input) {
             const timestamps = [];
-            
-            // Check if format is "E HH:MM - U HH:MM" (Entrata/Uscita)
-            if (input.includes('E ') && input.includes('U ')) {
+
+            // Check if format is the new badge-system format:
+            // "dd/mm/yyyy\tHH:MM\tE/U\t" (one record per line, tab-separated, possibly reverse-chronological)
+            const newBadgeFormatRegex = /\d{2}\/\d{2}\/\d{4}\t\d{2}:\d{2}\t[EU]/;
+            if (newBadgeFormatRegex.test(input)) {
+                let entries = [];
+                let exits = [];
+
+                const lines = input.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                lines.forEach(line => {
+                    const parts = line.split('\t');
+                    if (parts.length >= 3) {
+                        const time = parts[1].trim();
+                        const type = parts[2].trim();
+                        if (type === 'E') {
+                            entries.push(time);
+                        } else if (type === 'U') {
+                            exits.push(time);
+                        }
+                    }
+                });
+
+                // Sort chronologically (records may arrive in reverse order)
+                entries.sort();
+                exits.sort();
+
+                // Pair entries with exits
+                const maxPairs = Math.min(entries.length, exits.length);
+                for (let i = 0; i < maxPairs; i++) {
+                    timestamps.push({ start: entries[i], end: exits[i] });
+                }
+            // Check if format is "E HH:MM - U HH:MM" (Entrata/Uscita inline)
+            } else if (input.includes('E ') && input.includes('U ')) {
                 const parts = input.split('-').map(p => p.trim());
                 let entries = [];
                 let exits = [];
@@ -1335,14 +1365,29 @@
             });
             
             // Update all work hour displays
+            const totalH = Math.floor(totalWorkMinutes / 60);
+            const totalM = totalWorkMinutes % 60;
+            const remainingMinutes = totalTimestampMinutes - totalWorkMinutes;
+            const remainingH = Math.floor(Math.abs(remainingMinutes) / 60);
+            const remainingM = Math.abs(remainingMinutes) % 60;
+            const remainingStr = `${remainingH}:${remainingM.toString().padStart(2, '0')}`;
+
             workDivs.forEach(div => {
                 const id = div.id.split('-')[2];
                 const totalSpan = document.getElementById(`workHoursTotal-${id}`);
                 if (totalSpan) {
-                    const hours = Math.floor(totalWorkMinutes / 60);
-                    const minutes = totalWorkMinutes % 60;
-                    totalSpan.textContent = `Totale lavori: ${hours}:${minutes.toString().padStart(2, '0')}`;
-                    
+                    let html = `<span>Totale lavori: ${totalH}:${totalM.toString().padStart(2, '0')}</span>`;
+                    if (totalTimestampMinutes > 0) {
+                        if (remainingMinutes > 0) {
+                            html += ` &nbsp;|&nbsp; <span style="color: var(--warning-color);">Rimanenti: ${remainingStr}</span>`;
+                        } else if (remainingMinutes < 0) {
+                            html += ` &nbsp;|&nbsp; <span style="color: var(--danger-color);">Eccedenza: ${remainingStr}</span>`;
+                        } else {
+                            html += ` &nbsp;|&nbsp; <span style="color: var(--success-color);">Ore complete ✓</span>`;
+                        }
+                    }
+                    totalSpan.innerHTML = html;
+
                     if (totalTimestampMinutes > 0 && totalWorkMinutes > totalTimestampMinutes) {
                         totalSpan.classList.add('hours-warning');
                     } else {
@@ -2137,8 +2182,8 @@
                 </div>
                 <div class="form-group">
                     <label>Versione (opzionale)</label>
-                    <input type="text" id="workVersion-${workEntryCounter}" placeholder="es. M001" pattern="[A-Z][0-9]{3}" maxlength="4" style="text-transform: uppercase;">
-                    <small style="font-size: 11px; color: var(--text-tertiary);">Formato: Lettera + 3 cifre (es. M001, M002)</small>
+                    <input type="text" id="workVersion-${workEntryCounter}" placeholder="es. M001 o testo libero">
+                    <small style="font-size: 11px; color: var(--text-tertiary);">Formato standard: Lettera + 3 cifre (es. M001) &mdash; oppure testo personalizzato</small>
                 </div>
                 <div class="form-group">
                     <label>Descrizione</label>
@@ -2195,7 +2240,7 @@
                 const id = div.id.split('-')[2];
                 const workType = document.getElementById(`workType-${id}`).value;
                 const workCode = document.getElementById(`workCode-${id}`).value;
-                const workVersion = document.getElementById(`workVersion-${id}`).value.trim().toUpperCase();
+                const workVersion = document.getElementById(`workVersion-${id}`).value.trim();
                 const workDesc = document.getElementById(`workDesc-${id}`).value;
                 const workHours = document.getElementById(`workHours-${id}`).value;
 
