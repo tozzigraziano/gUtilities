@@ -2875,7 +2875,7 @@
             <!-- Sezione Punti di Controllo e Attività -->
             <div id="projectDetails" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <button onclick="closeProjectDetails()" class="secondary">← Torna ai Progetti</button>
+                    <button onclick="closeProjectDetails(true)" class="secondary">← Torna ai Progetti</button>
                     <button onclick="exportProjectMarkdown()" style="background-color: #ff9800;">📄 Esporta in Markdown</button>
                 </div>
                 <h2>Dettagli Progetto: <span id="currentProjectName"></span></h2>
@@ -4706,6 +4706,13 @@
             return `${year}-${month}-${day}`;
         }
 
+        // Helper: restituisce tutti i clienti unici da progetti e stabilimenti
+        function getAllUniqueClients() {
+            const fromProjects = projects.map(p => p.client).filter(c => c);
+            const fromPlants = plants.map(p => p.client).filter(c => c);
+            return [...new Set([...fromProjects, ...fromPlants])].sort();
+        }
+
         // === MODAL HELPERS ===
         function openModal(modalElement) {
             if (modalElement) {
@@ -4720,6 +4727,41 @@
                 document.body.classList.remove('modal-open');
             }
         }
+
+        // === CHIUSURA MODAL CON ESC ===
+        const modalCloseMap = {
+            resourceModal: closeResourceModal,
+            localHolidayModal: closeLocalHolidayModal,
+            projectModal: closeProjectModal,
+            milestoneModal: closeMilestoneModal,
+            taskModal: closeTaskModal,
+            plantModal: closePlantModal,
+            templateModal: closeTemplateModal,
+            templateMilestoneModal: closeTemplateMilestoneModal,
+            templateTaskModal: closeTemplateTaskModal,
+            copyTaskModal: closeCopyTaskModal,
+            updateModal: closeUpdateModal,
+            splitTaskModal: closeSplitTaskModal,
+            offerModal: closeOfferModal,
+            issueModal: closeIssueModal,
+            meetingModal: closeMeetingModal,
+            globalMeetingModal: closeGlobalMeetingModal
+        };
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const activeModal = document.querySelector('.modal.active');
+                if (activeModal) {
+                    e.preventDefault();
+                    const closeFn = modalCloseMap[activeModal.id];
+                    if (closeFn) {
+                        closeFn();
+                    } else {
+                        closeModal(activeModal);
+                    }
+                }
+            }
+        });
 
         // === MARKDOWN SUPPORT ===
         function createMarkdownEditor(textareaId, containerId = null, startInPreview = false) {
@@ -5054,11 +5096,10 @@
                 });
             }
             
-            // Popola suggerimenti clienti
+            // Popola suggerimenti clienti (da progetti e stabilimenti)
             const clientDatalist = document.getElementById('clientSuggestions');
             clientDatalist.innerHTML = '';
-            const uniqueClients = [...new Set(projects.map(p => p.client).filter(c => c))];
-            uniqueClients.sort().forEach(client => {
+            getAllUniqueClients().forEach(client => {
                 const option = document.createElement('option');
                 option.value = client;
                 clientDatalist.appendChild(option);
@@ -6652,7 +6693,10 @@
             document.getElementById('projectTemplateSelect').value = '';
         }
 
+        let projectListScrollPosition = 0;
+
         function openProjectDetails(id) {
+            projectListScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
             currentProjectId = id;
             const project = projects.find(p => p.id === id);
             if (!project) return;
@@ -6684,13 +6728,16 @@
             }, 0);
         }
 
-        function closeProjectDetails() {
+        function closeProjectDetails(restoreScroll = false) {
             document.getElementById('projectDetails').style.display = 'none';
             document.querySelector('#projects > .action-bar').style.display = 'block';
             document.querySelector('#projects > h3').style.display = 'block';
             document.querySelector('#projectsTable').style.display = 'table';
             currentProjectId = null;
             renderProjects();
+            setTimeout(() => {
+                window.scrollTo({ top: restoreScroll ? projectListScrollPosition : 0, behavior: 'instant' });
+            }, 0);
         }
 
         // ========================================
@@ -9752,6 +9799,12 @@
                     rowClass = 'status-not-assigned';
                 }
                 tr.className = rowClass;
+                tr.style.cursor = 'pointer';
+                tr.onclick = function(e) {
+                    if (!e.target.closest('.action-buttons')) {
+                        openTaskModal(task.id);
+                    }
+                };
 
                 // Get resource names
                 let resourcesStr = '-';
@@ -14927,11 +14980,10 @@
             const modal = document.getElementById('plantModal');
             const title = document.getElementById('plantModalTitle');
             
-            // Popola suggerimenti clienti dai progetti esistenti
+            // Popola suggerimenti clienti (da progetti e stabilimenti)
             const clientSuggestions = document.getElementById('plantClientSuggestions');
             clientSuggestions.innerHTML = '';
-            const uniqueClients = [...new Set(projects.map(p => p.client).filter(c => c))];
-            uniqueClients.forEach(client => {
+            getAllUniqueClients().forEach(client => {
                 const option = document.createElement('option');
                 option.value = client;
                 clientSuggestions.appendChild(option);
@@ -15318,7 +15370,7 @@
                 if (project.tasks) {
                     project.tasks.forEach(task => {
                         if (!task.startDate || !task.endDate) return;
-                        if (task.status === 'annullata' || task.status === 'completata') return;
+                        if (task.status === 'annullata' || task.status === 'completata' || task.status === 'pausa') return;
                         if (!task.resources) return;
                         
                         const res = task.resources.find(r => r.resourceId == resource.id);
@@ -15359,20 +15411,16 @@
             return flexibleTasks.filter(suggestion => {
                 const taskLocation = suggestion.task.locationType || 'sede';
                 
-                // Remoto: sempre visibile ovunque
-                if (taskLocation === 'remoto') return true;
-                
                 if (resourceLocation.type === 'cliente' && resourceLocation.plantIds.length > 0) {
                     // Risorsa è presso cliente: mostra solo attività per gli stessi stabilimenti
                     if (taskLocation === 'cliente' && suggestion.task.plantId) {
                         return resourceLocation.plantIds.includes(Number(suggestion.task.plantId));
                     }
-                    // Non mostrare attività in sede quando si è presso il cliente
+                    // Non mostrare attività in sede o da remoto quando si è presso il cliente
                     return false;
                 } else {
-                    // Risorsa è in sede (nessuna attività o attività in sede)
-                    // Mostra solo attività in sede
-                    return taskLocation === 'sede';
+                    // Risorsa è in sede: mostra attività in sede e da remoto
+                    return taskLocation === 'sede' || taskLocation === 'remoto';
                 }
             });
         }
