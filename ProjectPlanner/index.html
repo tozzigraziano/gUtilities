@@ -2569,6 +2569,106 @@
             margin-top: 5px;
             font-style: italic;
         }
+
+        /* Location Type Badges */
+        .location-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .location-badge.sede {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        .location-badge.cliente {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+        .location-badge.remoto {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        [data-theme="dark"] .location-badge.sede {
+            background-color: #1a3a5c;
+            color: #90caf9;
+        }
+        [data-theme="dark"] .location-badge.cliente {
+            background-color: #4a2800;
+            color: #ffb74d;
+        }
+        [data-theme="dark"] .location-badge.remoto {
+            background-color: #1b3a1b;
+            color: #a5d6a7;
+        }
+
+        /* Plants Table */
+        #plantsTable {
+            table-layout: fixed;
+        }
+        #plantsTable th:nth-child(1) { width: 18%; }
+        #plantsTable th:nth-child(2) { width: 15%; }
+        #plantsTable th:nth-child(3) { width: 22%; }
+        #plantsTable th:nth-child(4) { width: 12%; }
+        #plantsTable th:nth-child(5) { width: 8%; }
+        #plantsTable th:nth-child(6) { width: 10%; }
+        #plantsTable th:nth-child(7) { width: 15%; }
+
+        /* Map Container */
+        #mapContainer {
+            width: 100%;
+            height: calc(100vh - 200px);
+            min-height: 400px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .map-legend {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 12px;
+        }
+
+        .map-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .map-legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Plant selector in task modal */
+        .location-plant-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .location-plant-row select {
+            width: 200px;
+        }
+
+        .plant-info-badge {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            padding: 2px 8px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -2591,6 +2691,8 @@
             <button class="tab" onclick="switchTab('resourceView')">Vista Risorse</button>
             <button class="tab" onclick="switchTab('warnings')">⚠️ Avvisi</button>
             <button class="tab" onclick="switchTab('taskReview')">🔍 Revisione Attività</button>
+            <button class="tab" onclick="switchTab('plants')">🏭 Stabilimenti</button>
+            <button class="tab" onclick="switchTab('activityMap')">🗺️ Mappa Attività</button>
             <button class="tab" onclick="switchTab('help')">❓ Guida</button>
             <button class="tab" onclick="switchTab('data')">Import/Export</button>
         </div>
@@ -3135,11 +3237,61 @@
                         <th>Carico</th>
                         <th>Durata</th>
                         <th>Tipo</th>
+                        <th>Sede</th>
                         <th>Azioni</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             </table>
+        </div>
+
+        <!-- TAB STABILIMENTI -->
+        <div id="plants" class="tab-content">
+            <h2>🏭 Gestione Stabilimenti</h2>
+            <p style="margin-bottom: 10px; color: var(--text-tertiary);">Gestisci gli stabilimenti dei clienti dove si svolgono le attività. Gli stabilimenti vengono suggeriti automaticamente nella creazione delle attività.</p>
+            
+            <div class="action-bar">
+                <button onclick="openPlantModal()">➕ Nuovo Stabilimento</button>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="plantSearchFilter" placeholder="🔍 Cerca stabilimento per nome, cliente, città..." style="width: 400px;" oninput="renderPlants()">
+            </div>
+
+            <table id="plantsTable">
+                <thead>
+                    <tr>
+                        <th>Nome Stabilimento</th>
+                        <th>Cliente</th>
+                        <th>Indirizzo</th>
+                        <th>Città</th>
+                        <th>Provincia</th>
+                        <th>Coordinate</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB MAPPA ATTIVITÀ -->
+        <div id="activityMap" class="tab-content">
+            <h2>🗺️ Mappa Attività presso Cliente</h2>
+            <p style="margin-bottom: 10px; color: var(--text-tertiary);">Visualizzazione delle attività a data flessibile presso cliente, raggruppate per stabilimento e zona geografica.</p>
+            
+            <div class="map-legend">
+                <div class="map-legend-item"><span class="map-legend-dot" style="background: #e65100;"></span> Attività flessibili presso cliente</div>
+                <div class="map-legend-item"><span class="map-legend-dot" style="background: #1565c0;"></span> Stabilimento senza attività flessibili</div>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+                <button onclick="renderActivityMap()">🔄 Aggiorna Mappa</button>
+                <label style="margin-left: 15px; width: auto;">
+                    <input type="checkbox" id="mapShowAllPlants" checked onchange="renderActivityMap()"> Mostra tutti gli stabilimenti
+                </label>
+            </div>
+            
+            <div id="mapContainer"></div>
         </div>
 
         <!-- TAB GUIDA -->
@@ -3858,6 +4010,20 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>Luogo:</label>
+                        <div class="location-plant-row">
+                            <select id="taskLocationType" onchange="togglePlantSelector()" style="width: 180px;">
+                                <option value="sede">🏢 In Sede</option>
+                                <option value="cliente">🏭 Presso Cliente</option>
+                                <option value="remoto">🏠 Da Remoto</option>
+                            </select>
+                            <select id="taskPlantId" style="width: 250px; display: none;">
+                                <option value="">-- Seleziona Stabilimento --</option>
+                            </select>
+                            <span id="taskPlantInfo" class="plant-info-badge" style="display: none;"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label>Risorse Assegnate:</label>
                         <div class="resource-allocation" id="taskResources">
                             <!-- Le risorse verranno aggiunte dinamicamente -->
@@ -3883,6 +4049,53 @@
                 <button id="taskDeleteBtn" onclick="deleteTaskFromModal()" class="delete" style="display:none;">🗑️ Elimina</button>
                 <button onclick="sendTaskEmail()" class="secondary">📧 Invia Email</button>
                 <button onclick="saveTask()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Stabilimento -->
+    <div id="plantModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="plantModalTitle">Nuovo Stabilimento</h3>
+                <button class="modal-close" onclick="closePlantModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
+                    <label>Nome Stabilimento:</label>
+                    <input type="text" id="plantName" placeholder="Es. Stabilimento Nord, Sede Milano...">
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
+                    <label>Cliente:</label>
+                    <input type="text" id="plantClient" placeholder="Nome del cliente" list="plantClientSuggestions">
+                    <datalist id="plantClientSuggestions"></datalist>
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
+                    <label>Indirizzo:</label>
+                    <input type="text" id="plantAddress" placeholder="Via, numero civico...">
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
+                    <label>Città:</label>
+                    <input type="text" id="plantCity" placeholder="Città">
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
+                    <label>Provincia:</label>
+                    <input type="text" id="plantProvince" placeholder="Es. MI, TO, RM..." style="width: 80px;">
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
+                    <label>Latitudine:</label>
+                    <input type="number" id="plantLat" step="any" placeholder="Es. 45.4642" style="width: 150px;">
+                    <label style="width: auto; margin-left: 10px;">Longitudine:</label>
+                    <input type="number" id="plantLng" step="any" placeholder="Es. 9.1900" style="width: 150px;">
+                </div>
+                <div class="form-group" style="display:flex; align-items:flex-start; gap:15px;">
+                    <label>Note:</label>
+                    <textarea id="plantNotes" rows="3" placeholder="Note aggiuntive sullo stabilimento..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closePlantModal()" class="secondary">Annulla</button>
+                <button onclick="savePlant()">💾 Salva</button>
             </div>
         </div>
     </div>
@@ -4469,6 +4682,7 @@
         let projects = [];
         let templates = [];
         let meetings = []; // Riunioni globali
+        let plants = []; // Stabilimenti clienti
         let currentProjectId = null;
         let currentTemplateId = null;
         let editingResourceId = null;
@@ -4684,6 +4898,14 @@
             // Mostra la vista iniziale con l'elenco progetti quando si apre la tab Progetti
             if (tabName === 'projects') {
                 closeProjectDetails();
+            }
+            // Renderizza gli Stabilimenti quando si apre la tab
+            if (tabName === 'plants') {
+                renderPlants();
+            }
+            // Renderizza la Mappa quando si apre la tab
+            if (tabName === 'activityMap') {
+                renderActivityMap();
             }
         }
 
@@ -4943,6 +5165,15 @@
                         document.getElementById('taskEndDate').value = task.endDate;
                         document.getElementById('taskFlexibleDate').checked = task.flexibleDate || false;
                         
+                        // Imposta location type e stabilimento
+                        updatePlantSelect();
+                        document.getElementById('taskLocationType').value = task.locationType || 'sede';
+                        togglePlantSelector();
+                        if (task.plantId) {
+                            document.getElementById('taskPlantId').value = task.plantId;
+                            updatePlantInfoBadge();
+                        }
+                        
                         // Gestisci stato campi in base a data flessibile
                         if (task.flexibleDate) {
                             toggleFlexibleDate();
@@ -5041,6 +5272,7 @@
                 document.getElementById('taskProjectBanner').style.display = 'none';
                 document.getElementById('taskDeleteBtn').style.display = 'none';
                 clearTaskForm();
+                updatePlantSelect();
             }
             
             updateResourceSelects();
@@ -5115,6 +5347,18 @@
                 'annullata': 'Annullata'
             }[status] || 'Da Fare';
             
+            // Ottieni info location
+            const locationType = document.getElementById('taskLocationType')?.value || '';
+            const plantId = document.getElementById('taskPlantId')?.value || '';
+            let locationText = '';
+            if (locationType === 'sede') locationText = 'In Sede';
+            else if (locationType === 'cliente') {
+                const plant = plants.find(p => p.id == plantId);
+                locationText = 'Presso Cliente' + (plant ? ` - ${plant.name} (${plant.city})` : '');
+            }
+            else if (locationType === 'remoto') locationText = 'Da Remoto';
+            else locationText = 'Non specificata';
+            
             // Prepara il subject e il body dell'email
             const subject = `Attività: ${taskName} - ${projectName}`;
             const body = `Dettagli Attività\n` +
@@ -5126,6 +5370,7 @@
                         `  - Fine: ${endDate || 'Non definita'}\n` +
                         `  - Durata: ${duration} giorni lavorativi\n` +
                         `  - Data Flessibile: ${flexibleDate ? 'Sì' : 'No'}\n\n` +
+                        `Sede: ${locationText}\n` +
                         `Stato: ${statusText}\n` +
                         `Completamento: ${completion}%\n\n` +
                         `Risorse Assegnate:\n${resourcesText}\n` +
@@ -8619,6 +8864,8 @@
             const startOffset = parseInt(document.getElementById('taskStartOffset').value) || 0;
             const endOffset = parseInt(document.getElementById('taskEndOffset').value) || 0;
             let flexibleDate = document.getElementById('taskFlexibleDate').checked;
+            const locationType = document.getElementById('taskLocationType').value || 'sede';
+            const plantId = locationType === 'cliente' ? (document.getElementById('taskPlantId').value || null) : null;
             
             // Se completion passa da 0 a > 0, rimuovi automaticamente data flessibile e calcola le date
             if (completion > 0 && flexibleDate) {
@@ -8679,7 +8926,9 @@
                 notes,
                 resources: assignedResources,
                 flexibleDate: flexibleDate || false,
-                checklist: checklistItems
+                checklist: checklistItems,
+                locationType: locationType || 'sede',
+                plantId: plantId ? Number(plantId) : null
             };
 
             if (editingTaskId) {
@@ -9205,6 +9454,12 @@
             document.getElementById('taskEndOffset').value = '0';
             document.getElementById('taskFlexibleDate').checked = false;
             
+            // Reset location fields
+            document.getElementById('taskLocationType').value = 'sede';
+            document.getElementById('taskPlantId').value = '';
+            document.getElementById('taskPlantId').style.display = 'none';
+            document.getElementById('taskPlantInfo').style.display = 'none';
+            
             // Nascondi indicatore assenze
             document.getElementById('absenceWarningContainer').style.display = 'none';
             
@@ -9428,6 +9683,7 @@
                         <span>🏁 ${task.endDate || '-'}</span>
                     </div>
                     <div class="bacheca-card-resources">👤 ${resourcesStr}</div>
+                    <div>${getLocationBadgeHtml(task)}</div>
                     <div class="bacheca-progress-bar">
                         ${progressBarHTML}
                     </div>
@@ -10075,7 +10331,8 @@
                 localHolidays,
                 projects,
                 templates,
-                meetings
+                meetings,
+                plants
             };
 
             const dataStr = JSON.stringify(data, null, 2);
@@ -10867,6 +11124,7 @@
                     projects = data.projects || [];
                     templates = data.templates || [];
                     meetings = data.meetings || [];
+                    plants = data.plants || [];
                     
                     saveToIndexedDBAll();
                     calculateHolidays();
@@ -10940,6 +11198,13 @@
                         });
                     }
                     
+                    if (data.plants) {
+                        data.plants.forEach(p => {
+                            p.id = Date.now() + Math.random();
+                            plants.push(p);
+                        });
+                    }
+                    
                     saveToIndexedDBAll();
                     calculateHolidays();
                     renderResources();
@@ -10970,6 +11235,7 @@
                 await saveToIndexedDB('projects', projects);
                 await saveToIndexedDB('templates', templates);
                 await saveToIndexedDB('meetings', meetings);
+                await saveToIndexedDB('plants', plants);
             } catch (error) {
                 console.error('Errore salvataggio IndexedDB:', error);
             }
@@ -10995,6 +11261,7 @@
                 projects = await loadFromIndexedDB('projects');
                 templates = await loadFromIndexedDB('templates');
                 meetings = await loadFromIndexedDB('meetings');
+                plants = await loadFromIndexedDB('plants');
                 
                 // Carica holidays (calcolato, non salvato)
                 const savedHolidays = localStorage.getItem('projectPlanner_holidays');
@@ -12809,6 +13076,7 @@
                     <td>${loadStr}</td>
                     <td>${task.duration} giorni</td>
                     <td>${typeIndicator}</td>
+                    <td>${getLocationBadgeHtml(task)}</td>
                     <td class="action-buttons">
                         <button onclick="openTaskFromReview(${task.id}, ${project.id})" class="secondary" title="Modifica attività">✏️</button>
                     </td>
@@ -14002,6 +14270,7 @@
                                         <span title="Completamento">C:${assignment.task.completion}%</span>
                                         <span style="margin-left: 4px;" title="Carico">L:${assignment.percentage}%</span>
                                     </div>
+                                    ${getLocationBadgeHtml(assignment.task)}
                                 `;
                             } else {
                                 // Vista settimana: formato normale
@@ -14012,6 +14281,7 @@
                                         <span>Carico: ${assignment.percentage}%</span>
                                         <span style="margin-left: 8px;">Compl: ${assignment.task.completion}%</span>
                                     </div>
+                                    ${getLocationBadgeHtml(assignment.task)}
                                 `;
                             }
                             
@@ -14024,12 +14294,22 @@
                             dayColumn.appendChild(taskCard);
                         });
                         
-                        // Aggiungi suggerimenti se carico < 100% per questo specifico giorno
+                        // Aggiungi suggerimenti: filtra in base alla localizzazione della risorsa
                         // Solo per giorni da oggi in avanti, non in assenza, non weekend e non festivi
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         
-                        if (checkDate >= today && !isAbsent && !isSaturday && !isSunday && !isHoliday && dailyLoad < 100 && flexibleTasks.length > 0) {
+                        // Determina dove si trova la risorsa in questo giorno
+                        const resourceLocation = getResourceLocationForDay(resource, dateStr);
+                        
+                        // Filtra suggerimenti per localizzazione
+                        const locationFilteredTasks = filterFlexibleTasksByLocation(flexibleTasks, resourceLocation);
+                        
+                        // Se risorsa è presso cliente, mostra suggerimenti anche se carico >= 100%
+                        const showSuggestions = checkDate >= today && !isAbsent && !isSaturday && !isSunday && !isHoliday && locationFilteredTasks.length > 0 &&
+                            (dailyLoad < 100 || (resourceLocation.type === 'cliente' && resourceLocation.plantIds.length > 0));
+                        
+                        if (showSuggestions) {
                             // Aggiungi separatore visivo
                             if (dayAssignments.length > 0) {
                                 const separator = document.createElement('div');
@@ -14039,7 +14319,7 @@
                             }
                             
                             // Aggiungi suggerimenti per questo giorno
-                            flexibleTasks.forEach(suggestion => {
+                            locationFilteredTasks.forEach(suggestion => {
                                 // Verifica se l'attività causerebbe sovrapposizioni
                                 const wouldOverlap = checkFlexibleTaskOverlap(
                                     currentDate,
@@ -14079,6 +14359,7 @@
                                             <span title="Durata">D:${suggestion.task.duration}gg</span>
                                             <span style="margin-left: 4px;" title="Carico">L:${suggestion.percentage}%</span>
                                         </div>
+                                        ${getLocationBadgeHtml(suggestion.task)}
                                         ${wouldOverlap ? '<div style="font-size: 7px; color: var(--danger-color); font-weight: bold;">⚠️</div>' : ''}
                                         ${unassignedText ? '<div style="font-size: 7px; color: var(--accent-color); font-weight: bold;">👤</div>' : ''}
                                     `;
@@ -14091,6 +14372,7 @@
                                         <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 3px;" title="${suggestion.project.description}">${suggestion.project.description}</div>
                                         <div style="font-size: 10px; margin-top: 2px;">
                                             <span>Durata: ${suggestion.task.duration}gg</span>
+                                            ${getLocationBadgeHtml(suggestion.task)}
                                         </div>
                                         <div style="font-size: 10px;">
                                             <span>Carico: ${suggestion.percentage}%</span>
@@ -14230,7 +14512,7 @@
                         assignInfo.style.fontSize = '13px';
                         assignInfo.style.padding = '8px 10px';
                         assignInfo.style.display = 'grid';
-                        assignInfo.style.gridTemplateColumns = '200px 100px 1fr 120px 110px 150px';
+                        assignInfo.style.gridTemplateColumns = '200px 100px 1fr 120px 110px auto 150px';
                         assignInfo.style.gap = '15px';
                         assignInfo.style.alignItems = 'center';
                         assignInfo.innerHTML = `
@@ -14239,6 +14521,7 @@
                             <span style="font-weight: bold;">${assignment.task.name}${notesIndicator}</span>
                             <span>Compl: <strong>${assignment.task.completion}%</strong></span>
                             <span>Carico: <strong style="color: ${assignment.percentage > 100 ? 'var(--danger-color)' : 'var(--primary-color)'};">${assignment.percentage}%</strong></span>
+                            <span>${getLocationBadgeHtml(assignment.task)}</span>
                             <span style="color: var(--danger-color); font-weight: bold;">${hasConflict ? '⚠️ SOVRAPPOSIZIONE' : ''}</span>
                         `;
                         assignDiv.appendChild(assignInfo);
@@ -14285,18 +14568,22 @@
             
             // Aggiungi suggerimenti per attività con data flessibile se carico < 100%
             // Solo per viste NON a colonne (nelle viste settimana/mese sono già mostrati nelle colonne)
-            if (!isColumnView && overload.maxLoad < 100) {
+            // Calcola la posizione della risorsa per filtraggio location
+            let nonColCheckDate;
+            if (period === 'day') {
+                const dayValue = document.getElementById('resourceViewSpecificDay')?.value;
+                nonColCheckDate = dayValue ? new Date(dayValue) : new Date();
+            } else {
+                nonColCheckDate = new Date();
+            }
+            nonColCheckDate.setHours(0, 0, 0, 0);
+            const nonColDateStr = formatDateLocal(nonColCheckDate);
+            const resourceLocationNonCol = getResourceLocationForDay(resource, nonColDateStr);
+            
+            if (!isColumnView && (overload.maxLoad < 100 || (resourceLocationNonCol.type === 'cliente' && resourceLocationNonCol.plantIds.length > 0))) {
                 // Verifica se il giorno selezionato è valido (non weekend, non festivo, non assenza)
-                // Per vista day usa il giorno selezionato, altrimenti usa oggi
-                let checkDate;
-                if (period === 'day') {
-                    const dayValue = document.getElementById('resourceViewSpecificDay')?.value;
-                    checkDate = dayValue ? new Date(dayValue) : new Date();
-                } else {
-                    checkDate = new Date();
-                }
-                checkDate.setHours(0, 0, 0, 0);
-                const dateStr = formatDateLocal(checkDate);
+                const checkDate = nonColCheckDate;
+                const dateStr = nonColDateStr;
                 
                 // Verifica se la risorsa è in assenza nel giorno selezionato
                 const isAbsentOnDate = resource.absences && resource.absences.some(absence => {
@@ -14347,12 +14634,15 @@
                     });
                 }
                 
-                if (flexibleTasks.length > 0) {
+                // Filtra per location della risorsa
+                const locationFilteredTasksNonCol = filterFlexibleTasksByLocation(flexibleTasks, resourceLocationNonCol);
+                
+                if (locationFilteredTasksNonCol.length > 0) {
                     const suggestionsDiv = document.createElement('div');
                     suggestionsDiv.className = 'resource-suggestions';
                     suggestionsDiv.innerHTML = '<div style="font-weight: bold; margin-bottom: 8px; color: var(--info-color);">💡 Attività Proposte (Data Flessibile):</div>';
                     
-                    flexibleTasks.forEach(suggestion => {
+                    locationFilteredTasksNonCol.forEach(suggestion => {
                         const suggestionCard = document.createElement('div');
                         suggestionCard.className = 'resource-assignment flexible-suggestion';
                         // Aggiungi classe se attività non assegnata
@@ -14373,7 +14663,7 @@
                         suggestionInfo.style.fontSize = '13px';
                         suggestionInfo.style.padding = '8px 10px';
                         suggestionInfo.style.display = 'grid';
-                        suggestionInfo.style.gridTemplateColumns = '200px 100px 1fr 120px 110px';
+                        suggestionInfo.style.gridTemplateColumns = '200px 100px 1fr 120px 110px auto';
                         suggestionInfo.style.gap = '15px';
                         suggestionInfo.style.alignItems = 'center';
                         suggestionInfo.innerHTML = `
@@ -14382,6 +14672,7 @@
                             <span style="font-weight: bold;">${suggestion.task.name}${notesIndicator}${unassignedBadge}<br><span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal;">${suggestion.project.description}</span></span>
                             <span>Durata: <strong>${suggestion.task.duration} gg</strong></span>
                             <span>Carico: <strong>${suggestion.percentage}%</strong></span>
+                            <span>${getLocationBadgeHtml(suggestion.task)}</span>
                         `;
                         suggestionCard.appendChild(suggestionInfo);
                         
@@ -14623,6 +14914,449 @@
                 const endDate = new Date();
                 endDate.setDate(endDate.getDate() + 30);
                 endDateInput.value = formatDateLocal(endDate);
+            }
+        }
+
+        // === GESTIONE STABILIMENTI ===
+        let editingPlantId = null;
+
+        function openPlantModal(id = null) {
+            editingPlantId = id;
+            const modal = document.getElementById('plantModal');
+            const title = document.getElementById('plantModalTitle');
+            
+            // Popola suggerimenti clienti dai progetti esistenti
+            const clientSuggestions = document.getElementById('plantClientSuggestions');
+            clientSuggestions.innerHTML = '';
+            const uniqueClients = [...new Set(projects.map(p => p.client).filter(c => c))];
+            uniqueClients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client;
+                clientSuggestions.appendChild(option);
+            });
+            
+            if (id) {
+                title.textContent = 'Modifica Stabilimento';
+                const plant = plants.find(p => p.id === id);
+                if (plant) {
+                    document.getElementById('plantName').value = plant.name || '';
+                    document.getElementById('plantClient').value = plant.client || '';
+                    document.getElementById('plantAddress').value = plant.address || '';
+                    document.getElementById('plantCity').value = plant.city || '';
+                    document.getElementById('plantProvince').value = plant.province || '';
+                    document.getElementById('plantLat').value = plant.lat || '';
+                    document.getElementById('plantLng').value = plant.lng || '';
+                    document.getElementById('plantNotes').value = plant.notes || '';
+                }
+            } else {
+                title.textContent = 'Nuovo Stabilimento';
+                clearPlantForm();
+            }
+            
+            openModal(modal);
+        }
+
+        function closePlantModal() {
+            closeModal(document.getElementById('plantModal'));
+            clearPlantForm();
+        }
+
+        function clearPlantForm() {
+            editingPlantId = null;
+            document.getElementById('plantName').value = '';
+            document.getElementById('plantClient').value = '';
+            document.getElementById('plantAddress').value = '';
+            document.getElementById('plantCity').value = '';
+            document.getElementById('plantProvince').value = '';
+            document.getElementById('plantLat').value = '';
+            document.getElementById('plantLng').value = '';
+            document.getElementById('plantNotes').value = '';
+        }
+
+        function savePlant() {
+            const name = document.getElementById('plantName').value.trim();
+            const client = document.getElementById('plantClient').value.trim();
+            
+            if (!name) {
+                alert('Il nome dello stabilimento è obbligatorio');
+                return;
+            }
+
+            const plant = {
+                id: editingPlantId || Date.now(),
+                name,
+                client,
+                address: document.getElementById('plantAddress').value.trim(),
+                city: document.getElementById('plantCity').value.trim(),
+                province: document.getElementById('plantProvince').value.trim().toUpperCase(),
+                lat: parseFloat(document.getElementById('plantLat').value) || null,
+                lng: parseFloat(document.getElementById('plantLng').value) || null,
+                notes: document.getElementById('plantNotes').value.trim()
+            };
+
+            if (editingPlantId) {
+                const index = plants.findIndex(p => p.id === editingPlantId);
+                if (index !== -1) plants[index] = plant;
+            } else {
+                plants.push(plant);
+            }
+
+            saveToIndexedDBAll();
+            renderPlants();
+            closePlantModal();
+        }
+
+        function deletePlant(id) {
+            if (!confirm('Sei sicuro di voler eliminare questo stabilimento?')) return;
+            plants = plants.filter(p => p.id !== id);
+            saveToIndexedDBAll();
+            renderPlants();
+        }
+
+        function renderPlants() {
+            const tbody = document.querySelector('#plantsTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            const searchFilter = (document.getElementById('plantSearchFilter')?.value || '').toLowerCase();
+            
+            const filteredPlants = plants.filter(p => {
+                if (!searchFilter) return true;
+                return (p.name || '').toLowerCase().includes(searchFilter) ||
+                       (p.client || '').toLowerCase().includes(searchFilter) ||
+                       (p.city || '').toLowerCase().includes(searchFilter) ||
+                       (p.address || '').toLowerCase().includes(searchFilter) ||
+                       (p.province || '').toLowerCase().includes(searchFilter);
+            });
+
+            if (filteredPlants.length === 0) {
+                const row = tbody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 7;
+                cell.textContent = 'Nessuno stabilimento trovato.';
+                cell.style.textAlign = 'center';
+                cell.style.fontStyle = 'italic';
+                cell.style.padding = '20px';
+                return;
+            }
+
+            filteredPlants.forEach(plant => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td><strong>${plant.name}</strong></td>
+                    <td>${plant.client || '-'}</td>
+                    <td>${plant.address || '-'}</td>
+                    <td>${plant.city || '-'}</td>
+                    <td>${plant.province || '-'}</td>
+                    <td>${(plant.lat && plant.lng) ? `${plant.lat.toFixed(4)}, ${plant.lng.toFixed(4)}` : '-'}</td>
+                    <td class="action-buttons">
+                        <button onclick="openPlantModal(${plant.id})">✏️</button>
+                        <button class="delete" onclick="deletePlant(${plant.id})">🗑️</button>
+                    </td>
+                `;
+            });
+        }
+
+        // === LOCATION / PLANT HELPERS ===
+        function togglePlantSelector() {
+            const locationType = document.getElementById('taskLocationType').value;
+            const plantSelect = document.getElementById('taskPlantId');
+            const plantInfo = document.getElementById('taskPlantInfo');
+            
+            if (locationType === 'cliente') {
+                plantSelect.style.display = '';
+                updatePlantSelect();
+            } else {
+                plantSelect.style.display = 'none';
+                plantSelect.value = '';
+                plantInfo.style.display = 'none';
+            }
+        }
+
+        function updatePlantSelect() {
+            const select = document.getElementById('taskPlantId');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Seleziona Stabilimento --</option>';
+            
+            // Raggruppa per cliente
+            const byClient = {};
+            plants.forEach(p => {
+                const client = p.client || 'Senza Cliente';
+                if (!byClient[client]) byClient[client] = [];
+                byClient[client].push(p);
+            });
+            
+            Object.keys(byClient).sort().forEach(client => {
+                const group = document.createElement('optgroup');
+                group.label = client;
+                byClient[client].forEach(plant => {
+                    const option = document.createElement('option');
+                    option.value = plant.id;
+                    option.textContent = `${plant.name}${plant.city ? ' - ' + plant.city : ''}`;
+                    group.appendChild(option);
+                });
+                select.appendChild(group);
+            });
+            
+            if (currentValue) select.value = currentValue;
+            
+            // Aggiungi handler per mostrare info
+            select.onchange = updatePlantInfoBadge;
+        }
+
+        function updatePlantInfoBadge() {
+            const plantId = document.getElementById('taskPlantId').value;
+            const infoBadge = document.getElementById('taskPlantInfo');
+            
+            if (plantId) {
+                const plant = plants.find(p => p.id == plantId);
+                if (plant) {
+                    let info = '';
+                    if (plant.address) info += plant.address;
+                    if (plant.city) info += (info ? ', ' : '') + plant.city;
+                    if (plant.province) info += ` (${plant.province})`;
+                    infoBadge.textContent = info || '';
+                    infoBadge.style.display = info ? '' : 'none';
+                } else {
+                    infoBadge.style.display = 'none';
+                }
+            } else {
+                infoBadge.style.display = 'none';
+            }
+        }
+
+        function getLocationBadgeHtml(task) {
+            const type = task.locationType || 'sede';
+            const labels = { sede: '🏢 Sede', cliente: '🏭 Cliente', remoto: '🏠 Remoto' };
+            let label = labels[type] || labels.sede;
+            
+            if (type === 'cliente' && task.plantId) {
+                const plant = plants.find(p => p.id == task.plantId);
+                if (plant) {
+                    label += ` - ${plant.name}`;
+                }
+            }
+            
+            return `<span class="location-badge ${type}">${label}</span>`;
+        }
+
+        // === LOGICA SUGGERIMENTI PER LOCALIZZAZIONE ===
+        function getResourceLocationForDay(resource, dateStr) {
+            // Determina dove si trova la risorsa in un dato giorno
+            // Ritorna: { type: 'sede'|'cliente'|'remoto', plantIds: [...] }
+            const plantIds = new Set();
+            let hasClientTask = false;
+            let hasAnyTask = false;
+            
+            projects.forEach(project => {
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (!task.startDate || !task.endDate) return;
+                        if (task.status === 'annullata' || task.status === 'completata') return;
+                        if (!task.resources) return;
+                        
+                        const res = task.resources.find(r => r.resourceId == resource.id);
+                        if (!res) return;
+                        
+                        const taskStart = new Date(task.startDate);
+                        const taskEnd = new Date(task.endDate);
+                        const checkDate = new Date(dateStr);
+                        taskStart.setHours(0, 0, 0, 0);
+                        taskEnd.setHours(23, 59, 59, 999);
+                        checkDate.setHours(12, 0, 0, 0);
+                        
+                        if (checkDate >= taskStart && checkDate <= taskEnd) {
+                            // Verifica se è giorno lavorativo per questa task
+                            if (isWorkingDay(checkDate, task)) {
+                                hasAnyTask = true;
+                                if (task.locationType === 'cliente') {
+                                    hasClientTask = true;
+                                    if (task.plantId) {
+                                        plantIds.add(Number(task.plantId));
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+            
+            if (hasClientTask) {
+                return { type: 'cliente', plantIds: [...plantIds] };
+            }
+            // Se non ha task o solo task in sede/remoto
+            return { type: hasAnyTask ? 'sede' : 'sede', plantIds: [] };
+        }
+
+        function filterFlexibleTasksByLocation(flexibleTasks, resourceLocation) {
+            // Filtra i suggerimenti in base alla localizzazione della risorsa
+            return flexibleTasks.filter(suggestion => {
+                const taskLocation = suggestion.task.locationType || 'sede';
+                
+                // Remoto: sempre visibile ovunque
+                if (taskLocation === 'remoto') return true;
+                
+                if (resourceLocation.type === 'cliente' && resourceLocation.plantIds.length > 0) {
+                    // Risorsa è presso cliente: mostra solo attività per gli stessi stabilimenti
+                    if (taskLocation === 'cliente' && suggestion.task.plantId) {
+                        return resourceLocation.plantIds.includes(Number(suggestion.task.plantId));
+                    }
+                    // Non mostrare attività in sede quando si è presso il cliente
+                    return false;
+                } else {
+                    // Risorsa è in sede (nessuna attività o attività in sede)
+                    // Mostra solo attività in sede
+                    return taskLocation === 'sede';
+                }
+            });
+        }
+
+        // === MAPPA ATTIVITÀ ===
+        let activityMapInstance = null;
+
+        function renderActivityMap() {
+            const container = document.getElementById('mapContainer');
+            if (!container) return;
+
+            // Raccogli attività flessibili presso cliente con stabilimento
+            const flexibleClientTasks = [];
+            projects.forEach(project => {
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa' && task.status !== 'annullata') {
+                            if (task.locationType === 'cliente' && task.plantId) {
+                                const plant = plants.find(p => p.id == task.plantId);
+                                if (plant) {
+                                    flexibleClientTasks.push({ project, task, plant });
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Raggruppa per stabilimento
+            const byPlant = {};
+            flexibleClientTasks.forEach(item => {
+                const key = item.plant.id;
+                if (!byPlant[key]) {
+                    byPlant[key] = { plant: item.plant, tasks: [] };
+                }
+                byPlant[key].tasks.push(item);
+            });
+
+            const showAll = document.getElementById('mapShowAllPlants')?.checked || false;
+
+            // Se Leaflet non è caricato, caricalo dinamicamente
+            if (!window.L) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                document.head.appendChild(link);
+
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                script.onload = () => initMap(byPlant, showAll);
+                document.head.appendChild(script);
+            } else {
+                initMap(byPlant, showAll);
+            }
+        }
+
+        function initMap(byPlant, showAll) {
+            const container = document.getElementById('mapContainer');
+            
+            // Distruggi mappa esistente
+            if (activityMapInstance) {
+                activityMapInstance.remove();
+                activityMapInstance = null;
+            }
+
+            // Centro Italia di default
+            activityMapInstance = L.map('mapContainer').setView([42.5, 12.5], 6);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(activityMapInstance);
+
+            const bounds = [];
+
+            // Aggiungi marker per stabilimenti con attività flessibili
+            Object.values(byPlant).forEach(group => {
+                const plant = group.plant;
+                if (!plant.lat || !plant.lng) return;
+
+                const taskList = group.tasks.map(item => {
+                    const res = item.task.resources?.map(r => {
+                        const resource = resources.find(rs => rs.id == r.resourceId);
+                        return resource ? `${resource.firstName} ${resource.lastName}` : 'Non assegnata';
+                    }).join(', ') || 'Non assegnata';
+                    
+                    return `<li><strong>${item.task.name}</strong><br>
+                            <small>${item.project.client} - ${item.project.code}</small><br>
+                            <small>Durata: ${item.task.duration}gg | Risorse: ${res}</small></li>`;
+                }).join('');
+
+                const popupContent = `
+                    <div style="max-width: 300px; max-height: 250px; overflow-y: auto;">
+                        <strong style="font-size: 14px;">🏭 ${plant.name}</strong><br>
+                        <small>${plant.client || ''} - ${plant.city || ''} ${plant.province ? '(' + plant.province + ')' : ''}</small>
+                        <hr style="margin: 5px 0;">
+                        <strong>${group.tasks.length} attività flessibili:</strong>
+                        <ul style="padding-left: 15px; margin: 5px 0;">${taskList}</ul>
+                    </div>
+                `;
+
+                const marker = L.marker([plant.lat, plant.lng])
+                    .addTo(activityMapInstance)
+                    .bindPopup(popupContent);
+
+                // Marker arancione per attività flessibili
+                marker.setIcon(L.divIcon({
+                    className: '',
+                    html: `<div style="background: #e65100; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">${group.tasks.length}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                }));
+
+                bounds.push([plant.lat, plant.lng]);
+            });
+
+            // Aggiungi anche stabilimenti senza attività flessibili se richiesto
+            if (showAll) {
+                plants.forEach(plant => {
+                    if (!plant.lat || !plant.lng) return;
+                    if (byPlant[plant.id]) return; // Già aggiunto sopra
+
+                    const marker = L.marker([plant.lat, plant.lng])
+                        .addTo(activityMapInstance)
+                        .bindPopup(`<strong>🏭 ${plant.name}</strong><br><small>${plant.client || ''} - ${plant.city || ''} ${plant.province ? '(' + plant.province + ')' : ''}</small><br><em>Nessuna attività flessibile</em>`);
+
+                    marker.setIcon(L.divIcon({
+                        className: '',
+                        html: `<div style="background: #1565c0; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: [18, 18],
+                        iconAnchor: [9, 9]
+                    }));
+
+                    bounds.push([plant.lat, plant.lng]);
+                });
+            }
+
+            // Fit bounds se ci sono marker
+            if (bounds.length > 0) {
+                activityMapInstance.fitBounds(bounds, { padding: [30, 30] });
+            }
+
+            // Se non ci sono stabilimenti con coordinate
+            if (bounds.length === 0) {
+                const noData = document.createElement('div');
+                noData.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background: var(--bg-secondary); padding: 20px; border-radius: 8px; text-align: center;';
+                noData.innerHTML = '<p style="font-size: 16px;">📍 Nessuno stabilimento con coordinate disponibile.</p><p style="font-size: 12px; color: var(--text-tertiary);">Aggiungi latitudine e longitudine agli stabilimenti per visualizzarli sulla mappa.</p>';
+                container.style.position = 'relative';
+                container.appendChild(noData);
             }
         }
     </script>
