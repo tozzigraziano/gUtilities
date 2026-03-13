@@ -2135,6 +2135,11 @@
             color: white;
         }
 
+        .warnings-summary-card.total {
+            background: linear-gradient(135deg, #757575 0%, #546e7a 100%);
+            color: white;
+        }
+
         .warnings-summary-number {
             font-size: 32px;
             font-weight: bold;
@@ -3037,6 +3042,28 @@
             
             <div class="action-bar">
                 <button onclick="renderWarnings()">🔄 Aggiorna Avvisi</button>
+                <button onclick="toggleWarningFiltersPanel()" class="secondary">⚙️ Configura Tipi</button>
+            </div>
+
+            <div id="warningFiltersPanel" style="display:none; margin-bottom:14px; padding:12px 16px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:6px;">
+                <strong style="display:block; margin-bottom:10px;">Tipi di avvisi abilitati:</strong>
+                <table style="border-collapse:collapse; width:100%;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border-color); color:var(--text-tertiary); font-size:0.85em;">
+                            <th style="text-align:left; padding:4px 10px;">Abilitato</th>
+                            <th style="text-align:left; padding:4px 10px;">Tipo avviso</th>
+                            <th style="text-align:left; padding:4px 10px;">Categoria</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_sovraccarico" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">🔴 Sovraccarico risorse</td><td style="padding:5px 10px; color:#ee5a52;">Critico</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_ritardo" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">⏰ Attività in ritardo</td><td style="padding:5px 10px; color:#ee5a52;">Critico / Avviso</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_assenze" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">📅 Assenze durante attività</td><td style="padding:5px 10px; color:#fb8c00;">Avviso</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_nessuna_risorsa" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">👤 Nessuna risorsa assegnata</td><td style="padding:5px 10px; color:#fb8c00;">Avviso</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_progetto_vuoto" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">📋 Progetto senza attività</td><td style="padding:5px 10px; color:#1e88e5;">Informativo</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_pausa" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">⏸️ Attività in pausa</td><td style="padding:5px 10px; color:#1e88e5;">Informativo</td></tr>
+                    </tbody>
+                </table>
             </div>
 
             <div id="warningsContainer">
@@ -3745,6 +3772,10 @@
             </div>
             <div class="modal-body modal-body-two-columns">
                 <div class="modal-main-column">
+                    <div id="taskProjectBanner" style="display:none; margin-bottom:12px; padding:8px 12px; background-color:var(--accent-color-light); border-left:4px solid var(--accent-color); border-radius:4px; font-size:0.9em;">
+                        <strong>📁 Progetto:</strong> <span id="taskProjectClient"></span> &nbsp;|&nbsp; <span id="taskProjectCode" style="font-family:monospace;"></span>
+                        <span id="taskProjectDescriptionWrap"> &nbsp;|&nbsp; <span id="taskProjectDescription" style="color:var(--text-tertiary);"></span></span>
+                    </div>
                     <div class="form-group">
                         <label>Nome Attività:</label>
                         <input type="text" id="taskName" placeholder="Nome dell'attività">
@@ -3849,6 +3880,7 @@
             </div>
             <div class="modal-footer">
                 <button onclick="closeTaskModal()" class="secondary">Annulla</button>
+                <button id="taskDeleteBtn" onclick="deleteTaskFromModal()" class="delete" style="display:none;">🗑️ Elimina</button>
                 <button onclick="sendTaskEmail()" class="secondary">📧 Invia Email</button>
                 <button onclick="saveTask()">💾 Salva</button>
             </div>
@@ -4879,8 +4911,23 @@
             
             if (id) {
                 title.textContent = 'Modifica Attività';
+                document.getElementById('taskDeleteBtn').style.display = '';
                 const project = projects.find(p => p.id === currentProjectId);
                 if (project) {
+                    // Mostra banner progetto
+                    const banner = document.getElementById('taskProjectBanner');
+                    document.getElementById('taskProjectClient').textContent = project.client || '';
+                    document.getElementById('taskProjectCode').textContent = project.code || '';
+                    const descWrap = document.getElementById('taskProjectDescriptionWrap');
+                    const descEl = document.getElementById('taskProjectDescription');
+                    if (project.description) {
+                        descEl.textContent = project.description;
+                        descWrap.style.display = '';
+                    } else {
+                        descWrap.style.display = 'none';
+                    }
+                    banner.style.display = 'block';
+
                     const task = project.tasks.find(t => t.id === id);
                     console.log('Task found:', task ? JSON.stringify(task) : 'NOT FOUND');
                     if (task) {
@@ -4991,6 +5038,8 @@
                 }
             } else {
                 title.textContent = 'Nuova Attività';
+                document.getElementById('taskProjectBanner').style.display = 'none';
+                document.getElementById('taskDeleteBtn').style.display = 'none';
                 clearTaskForm();
             }
             
@@ -8748,6 +8797,13 @@
             }
         }
 
+        function deleteTaskFromModal() {
+            if (editingTaskId === null) return;
+            const taskId = editingTaskId;
+            closeTaskModal();
+            deleteTask(taskId);
+        }
+
         function updateTaskLinkSelects(excludeTaskId = null) {
             const project = projects.find(p => p.id === currentProjectId);
             if (!project) return;
@@ -12252,11 +12308,44 @@
         }
 
         // === PAGINA AVVISI ===
+        const WARNING_FILTER_IDS = ['sovraccarico','ritardo','assenze','nessuna_risorsa','progetto_vuoto','pausa'];
+
+        function loadWarningFilters() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('warningFilters') || '{}');
+                WARNING_FILTER_IDS.forEach(id => {
+                    const el = document.getElementById('wf_' + id);
+                    if (el) el.checked = saved[id] !== false; // default: enabled
+                });
+            } catch(e) {}
+        }
+
+        function saveWarningFilters() {
+            const state = {};
+            WARNING_FILTER_IDS.forEach(id => {
+                const el = document.getElementById('wf_' + id);
+                if (el) state[id] = el.checked;
+            });
+            localStorage.setItem('warningFilters', JSON.stringify(state));
+            renderWarnings();
+        }
+
+        function toggleWarningFiltersPanel() {
+            const panel = document.getElementById('warningFiltersPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function isWarningTypeEnabled(type) {
+            const el = document.getElementById('wf_' + type);
+            return el ? el.checked : true;
+        }
+
         function renderWarnings() {
+            loadWarningFilters();
             const container = document.getElementById('warningsContainer');
             if (!container) return;
             
-            const warnings = collectAllWarnings();
+            const warnings = collectAllWarnings().filter(w => isWarningTypeEnabled(w.type));
             
             // Riepilogo
             const summary = document.createElement('div');
@@ -12279,7 +12368,7 @@
                     <div class="warnings-summary-number">${infoCount}</div>
                     <div class="warnings-summary-label">Informativi</div>
                 </div>
-                <div class="warnings-summary-card ${warnings.length === 0 ? 'success' : 'info'}">
+                <div class="warnings-summary-card ${warnings.length === 0 ? 'success' : 'total'}">
                     <div class="warnings-summary-number">${warnings.length}</div>
                     <div class="warnings-summary-label">Totali</div>
                 </div>
@@ -12412,6 +12501,7 @@
                         });
                         
                         warnings.push({
+                            type: 'sovraccarico',
                             severity: 'critical',
                             icon: '🔴',
                             title: `Sovraccarico ${resource.firstName} ${resource.lastName}`,
@@ -12433,17 +12523,18 @@
             projects.forEach(project => {
                 if (project.tasks) {
                     project.tasks.forEach(task => {
-                        if (task.endDate && task.endDate < today && task.completion < 100 && task.status !== 'completata' && task.status !== 'annullata') {
+                        if (task.endDate && task.endDate < today && task.completion < 100 && task.status !== 'completata' && task.status !== 'annullata' && task.status !== 'pausa') {
                             const daysLate = Math.floor((new Date() - new Date(task.endDate)) / (1000 * 60 * 60 * 24));
                             warnings.push({
+                                type: 'ritardo',
                                 severity: task.completion === 0 ? 'critical' : 'warning',
                                 icon: '⏰',
                                 title: `Attività in ritardo: ${task.name}`,
-                                description: `Progetto: ${project.client} - Scaduta ${daysLate} giorni fa (${task.endDate}). Completamento: ${task.completion}%`,
+                                description: `Progetto: ${project.client} (${project.code}) - Scaduta ${daysLate} giorni fa (${task.endDate}). Completamento: ${task.completion}%`,
                                 action: 'Aggiornare la data o il completamento',
                                 onClick: () => {
-                                    currentProjectId = project.id;
                                     switchTab('projects');
+                                    currentProjectId = project.id;
                                     openTaskModal(task.id);
                                 }
                             });
@@ -12485,14 +12576,15 @@
                             
                             if (hasAbsences && absenceDays.length > 0) {
                                 warnings.push({
+                                    type: 'assenze',
                                     severity: 'warning',
                                     icon: '📅',
                                     title: `Assenze durante attività: ${task.name}`,
-                                    description: `Progetto: ${project.client} - ${absenceDays.length} giorni con risorse assenti tra ${task.startDate} e ${task.endDate}`,
+                                    description: `Progetto: ${project.client} (${project.code}) - ${absenceDays.length} giorni con risorse assenti tra ${task.startDate} e ${task.endDate}`,
                                     action: 'Verificare e ripianificare se necessario',
                                     onClick: () => {
-                                        currentProjectId = project.id;
                                         switchTab('projects');
+                                        currentProjectId = project.id;
                                         openTaskModal(task.id);
                                     }
                                 });
@@ -12508,14 +12600,15 @@
                     project.tasks.forEach(task => {
                         if ((!task.resources || task.resources.length === 0) && !task.flexibleDate && task.startDate && task.completion < 100 && task.status !== 'completata' && task.status !== 'annullata') {
                             warnings.push({
+                                type: 'nessuna_risorsa',
                                 severity: 'warning',
                                 icon: '👤',
                                 title: `Nessuna risorsa assegnata: ${task.name}`,
-                                description: `Progetto: ${project.client} - Attività pianificata dal ${task.startDate} senza risorse`,
+                                description: `Progetto: ${project.client} (${project.code}) - Attività pianificata dal ${task.startDate} senza risorse`,
                                 action: 'Assegnare una o più risorse',
                                 onClick: () => {
-                                    currentProjectId = project.id;
                                     switchTab('projects');
+                                    currentProjectId = project.id;
                                     openTaskModal(task.id);
                                 }
                             });
@@ -12528,10 +12621,11 @@
             projects.forEach(project => {
                 if (!project.tasks || project.tasks.length === 0) {
                     warnings.push({
+                        type: 'progetto_vuoto',
                         severity: 'info',
                         icon: '📋',
-                        title: `Progetto vuoto: ${project.client}`,
-                        description: `Il progetto "${project.code}" non ha attività definite`,
+                        title: `Progetto vuoto: ${project.client} (${project.code})`,
+                        description: `Il progetto "${project.client} - ${project.code}" non ha attività definite`,
                         action: 'Aggiungere attività o template',
                         onClick: () => {
                             currentProjectId = project.id;
@@ -12547,14 +12641,15 @@
                     project.tasks.forEach(task => {
                         if (task.status === 'pausa') {
                             warnings.push({
+                                type: 'pausa',
                                 severity: 'info',
                                 icon: '⏸️',
                                 title: `Attività in pausa: ${task.name}`,
-                                description: `Progetto: ${project.client} - Completamento: ${task.completion}%. ${task.startDate && task.endDate ? `Periodo: ${task.startDate} - ${task.endDate}` : 'Date non definite'}`,
+                                description: `Progetto: ${project.client} (${project.code}) - Completamento: ${task.completion}%. ${task.startDate && task.endDate ? `Periodo: ${task.startDate} - ${task.endDate}` : 'Date non definite'}`,
                                 action: 'Riattivare o aggiornare lo stato',
                                 onClick: () => {
-                                    currentProjectId = project.id;
                                     switchTab('projects');
+                                    currentProjectId = project.id;
                                     openTaskModal(task.id);
                                 }
                             });
