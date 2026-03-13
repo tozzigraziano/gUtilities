@@ -2610,11 +2610,9 @@
         }
         #plantsTable th:nth-child(1) { width: 18%; }
         #plantsTable th:nth-child(2) { width: 15%; }
-        #plantsTable th:nth-child(3) { width: 22%; }
+        #plantsTable th:nth-child(3) { width: 35%; }
         #plantsTable th:nth-child(4) { width: 12%; }
-        #plantsTable th:nth-child(5) { width: 8%; }
-        #plantsTable th:nth-child(6) { width: 10%; }
-        #plantsTable th:nth-child(7) { width: 15%; }
+        #plantsTable th:nth-child(5) { width: 20%; }
 
         /* Map Container */
         #mapContainer {
@@ -3255,7 +3253,7 @@
             </div>
 
             <div style="margin-bottom: 10px;">
-                <input type="text" id="plantSearchFilter" placeholder="🔍 Cerca stabilimento per nome, cliente, città..." style="width: 400px;" oninput="renderPlants()">
+                <input type="text" id="plantSearchFilter" placeholder="🔍 Cerca stabilimento per nome, cliente, indirizzo..." style="width: 400px;" oninput="renderPlants()">
             </div>
 
             <table id="plantsTable">
@@ -3264,8 +3262,6 @@
                         <th>Nome Stabilimento</th>
                         <th>Cliente</th>
                         <th>Indirizzo</th>
-                        <th>Città</th>
-                        <th>Provincia</th>
                         <th>Coordinate</th>
                         <th>Azioni</th>
                     </tr>
@@ -3282,12 +3278,16 @@
             <div class="map-legend">
                 <div class="map-legend-item"><span class="map-legend-dot" style="background: #e65100;"></span> Attività flessibili presso cliente</div>
                 <div class="map-legend-item"><span class="map-legend-dot" style="background: #1565c0;"></span> Stabilimento senza attività flessibili</div>
+                <div class="map-legend-item"><span class="map-legend-dot" style="background: #4CAF50;"></span> Attività attive presso cliente</div>
             </div>
             
             <div style="margin-bottom: 10px;">
                 <button onclick="renderActivityMap()">🔄 Aggiorna Mappa</button>
                 <label style="margin-left: 15px; width: auto;">
                     <input type="checkbox" id="mapShowAllPlants" checked onchange="renderActivityMap()"> Mostra tutti gli stabilimenti
+                </label>
+                <label style="margin-left: 15px; width: auto;">
+                    <input type="checkbox" id="mapShowActiveTasks" onchange="renderActivityMap()"> Mostra attività attive presso cliente
                 </label>
             </div>
             
@@ -4072,21 +4072,20 @@
                 </div>
                 <div class="form-group" style="display:flex; align-items:center; gap:15px;">
                     <label>Indirizzo:</label>
-                    <input type="text" id="plantAddress" placeholder="Via, numero civico...">
+                    <input type="text" id="plantAddress" placeholder="Indirizzo completo (via, città, nazione...)">
                 </div>
-                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
-                    <label>Città:</label>
-                    <input type="text" id="plantCity" placeholder="Città">
+                <input type="hidden" id="plantLat">
+                <input type="hidden" id="plantLng">
+                <div class="form-group" style="display:flex; align-items:center; gap:15px; flex-wrap: wrap;">
+                    <button type="button" onclick="geocodePlantAddress()" class="secondary" style="white-space: nowrap;">📍 Geocodifica Indirizzo</button>
+                    <span id="geocodeStatus" style="font-size: 12px; color: var(--text-secondary); margin-left: 5px;"></span>
                 </div>
-                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
-                    <label>Provincia:</label>
-                    <input type="text" id="plantProvince" placeholder="Es. MI, TO, RM..." style="width: 80px;">
-                </div>
-                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
-                    <label>Latitudine:</label>
-                    <input type="number" id="plantLat" step="any" placeholder="Es. 45.4642" style="width: 150px;">
-                    <label style="width: auto; margin-left: 10px;">Longitudine:</label>
-                    <input type="number" id="plantLng" step="any" placeholder="Es. 9.1900" style="width: 150px;">
+                <div class="form-group" style="display:flex; align-items:flex-start; gap:15px;">
+                    <label style="padding-top: 4px;">Mappa:</label>
+                    <div style="flex: 1;">
+                        <div id="plantModalMap" style="height: 280px; border-radius: 8px; border: 1px solid var(--border-color); z-index: 1;"></div>
+                        <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">Trascina il marker per regolare la posizione. Clicca sulla mappa per spostarlo.</div>
+                    </div>
                 </div>
                 <div class="form-group" style="display:flex; align-items:flex-start; gap:15px;">
                     <label>Note:</label>
@@ -4546,7 +4545,7 @@
     <script>
         // === INDEXEDDB SETUP ===
         const DB_NAME = 'ProjectPlannerDB';
-        const DB_VERSION = 2;
+        const DB_VERSION = 3;
         let db = null;
 
         // Inizializza IndexedDB
@@ -4581,6 +4580,9 @@
                     }
                     if (!db.objectStoreNames.contains('meetings')) {
                         db.createObjectStore('meetings', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('plants')) {
+                        db.createObjectStore('plants', { keyPath: 'id' });
                     }
                 };
             });
@@ -5354,7 +5356,7 @@
             if (locationType === 'sede') locationText = 'In Sede';
             else if (locationType === 'cliente') {
                 const plant = plants.find(p => p.id == plantId);
-                locationText = 'Presso Cliente' + (plant ? ` - ${plant.name} (${plant.city})` : '');
+                locationText = 'Presso Cliente' + (plant ? ` - ${plant.name} (${plant.address || ''})` : '');
             }
             else if (locationType === 'remoto') locationText = 'Da Remoto';
             else locationText = 'Non specificata';
@@ -14941,9 +14943,7 @@
                 if (plant) {
                     document.getElementById('plantName').value = plant.name || '';
                     document.getElementById('plantClient').value = plant.client || '';
-                    document.getElementById('plantAddress').value = plant.address || '';
-                    document.getElementById('plantCity').value = plant.city || '';
-                    document.getElementById('plantProvince').value = plant.province || '';
+                    document.getElementById('plantAddress').value = plant.address || (plant.city ? [plant.city, plant.province].filter(Boolean).join(', ') : '');
                     document.getElementById('plantLat').value = plant.lat || '';
                     document.getElementById('plantLng').value = plant.lng || '';
                     document.getElementById('plantNotes').value = plant.notes || '';
@@ -14954,9 +14954,21 @@
             }
             
             openModal(modal);
+            
+            // Init map after modal is visible (needs visible container for Leaflet)
+            setTimeout(() => {
+                const lat = parseFloat(document.getElementById('plantLat').value) || null;
+                const lng = parseFloat(document.getElementById('plantLng').value) || null;
+                initPlantModalMap(lat, lng);
+            }, 200);
         }
 
         function closePlantModal() {
+            if (plantModalMapInstance) {
+                plantModalMapInstance.remove();
+                plantModalMapInstance = null;
+                plantModalMarker = null;
+            }
             closeModal(document.getElementById('plantModal'));
             clearPlantForm();
         }
@@ -14966,11 +14978,178 @@
             document.getElementById('plantName').value = '';
             document.getElementById('plantClient').value = '';
             document.getElementById('plantAddress').value = '';
-            document.getElementById('plantCity').value = '';
-            document.getElementById('plantProvince').value = '';
             document.getElementById('plantLat').value = '';
             document.getElementById('plantLng').value = '';
             document.getElementById('plantNotes').value = '';
+            document.getElementById('geocodeStatus').textContent = '';
+        }
+
+        let plantModalMapInstance = null;
+        let plantModalMarker = null;
+
+        function initPlantModalMap(lat, lng) {
+            const container = document.getElementById('plantModalMap');
+            if (!container) return;
+            
+            // Load Leaflet dynamically if not yet available
+            if (!window.L) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                document.head.appendChild(link);
+
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                script.onload = () => initPlantModalMap(lat, lng);
+                document.head.appendChild(script);
+                return;
+            }
+            
+            // Destroy previous instance
+            if (plantModalMapInstance) {
+                plantModalMapInstance.remove();
+                plantModalMapInstance = null;
+                plantModalMarker = null;
+            }
+            
+            const defaultLat = lat || 42.5;
+            const defaultLng = lng || 12.5;
+            const defaultZoom = (lat && lng) ? 15 : 6;
+            
+            plantModalMapInstance = L.map('plantModalMap').setView([defaultLat, defaultLng], defaultZoom);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19
+            }).addTo(plantModalMapInstance);
+            
+            if (lat && lng) {
+                plantModalMarker = L.marker([lat, lng], { draggable: true }).addTo(plantModalMapInstance);
+                plantModalMarker.on('dragend', function() {
+                    const pos = plantModalMarker.getLatLng();
+                    document.getElementById('plantLat').value = pos.lat.toFixed(6);
+                    document.getElementById('plantLng').value = pos.lng.toFixed(6);
+                    reverseGeocodePlant(pos.lat, pos.lng);
+                });
+            }
+            
+            plantModalMapInstance.on('click', function(e) {
+                const pos = e.latlng;
+                document.getElementById('plantLat').value = pos.lat.toFixed(6);
+                document.getElementById('plantLng').value = pos.lng.toFixed(6);
+                reverseGeocodePlant(pos.lat, pos.lng);
+                if (plantModalMarker) {
+                    plantModalMarker.setLatLng(pos);
+                } else {
+                    plantModalMarker = L.marker([pos.lat, pos.lng], { draggable: true }).addTo(plantModalMapInstance);
+                    plantModalMarker.on('dragend', function() {
+                        const p = plantModalMarker.getLatLng();
+                        document.getElementById('plantLat').value = p.lat.toFixed(6);
+                        document.getElementById('plantLng').value = p.lng.toFixed(6);
+                        reverseGeocodePlant(p.lat, p.lng);
+                    });
+                }
+            });
+        }
+
+        async function reverseGeocodePlant(lat, lng) {
+            const statusEl = document.getElementById('geocodeStatus');
+            statusEl.textContent = '⏳ Aggiornamento indirizzo...';
+            statusEl.style.color = 'var(--text-secondary)';
+            try {
+                const url = 'https://nominatim.openstreetmap.org/reverse?' + new URLSearchParams({
+                    lat: lat,
+                    lon: lng,
+                    format: 'json',
+                    addressdetails: '1'
+                });
+                const response = await fetch(url, { headers: { 'Accept-Language': 'it' } });
+                if (!response.ok) throw new Error('Errore');
+                const result = await response.json();
+                if (result && result.address) {
+                    const addr = result.address;
+                    const road = addr.road || '';
+                    const houseNumber = addr.house_number || '';
+                    const city = addr.city || addr.town || addr.village || addr.municipality || '';
+                    const province = addr.county || addr.state || '';
+                    const country = addr.country || '';
+                    const fullAddress = [road, houseNumber ? houseNumber : null, city, province, country].filter(Boolean).join(', ');
+                    if (fullAddress) document.getElementById('plantAddress').value = fullAddress;
+                    statusEl.textContent = '✅ Indirizzo aggiornato';
+                    statusEl.style.color = '#4CAF50';
+                } else {
+                    statusEl.textContent = '⚠️ Indirizzo non trovato';
+                    statusEl.style.color = '#FF9800';
+                }
+            } catch (e) {
+                statusEl.textContent = '❌ Errore di rete';
+                statusEl.style.color = '#f44336';
+            }
+            setTimeout(() => { statusEl.textContent = ''; }, 4000);
+        }
+
+        function updatePlantModalMap() {
+            const lat = parseFloat(document.getElementById('plantLat').value);
+            const lng = parseFloat(document.getElementById('plantLng').value);
+            if (!isNaN(lat) && !isNaN(lng) && plantModalMapInstance) {
+                plantModalMapInstance.setView([lat, lng], 15);
+                if (plantModalMarker) {
+                    plantModalMarker.setLatLng([lat, lng]);
+                } else {
+                    plantModalMarker = L.marker([lat, lng], { draggable: true }).addTo(plantModalMapInstance);
+                    plantModalMarker.on('dragend', function() {
+                        const p = plantModalMarker.getLatLng();
+                        document.getElementById('plantLat').value = p.lat.toFixed(6);
+                        document.getElementById('plantLng').value = p.lng.toFixed(6);
+                    });
+                }
+            }
+        }
+
+        async function geocodePlantAddress() {
+            const address = document.getElementById('plantAddress').value.trim();
+            const statusEl = document.getElementById('geocodeStatus');
+            
+            if (!address) {
+                alert('Inserisci un indirizzo per geocodificare.');
+                return;
+            }
+            
+            const query = address;
+            statusEl.textContent = '⏳ Ricerca in corso...';
+            statusEl.style.color = 'var(--text-secondary)';
+            
+            try {
+                const url = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
+                    q: query,
+                    format: 'json',
+                    limit: '1',
+                    addressdetails: '1'
+                });
+                const response = await fetch(url, {
+                    headers: { 'Accept-Language': 'it' }
+                });
+                if (!response.ok) throw new Error('Errore nella richiesta');
+                const results = await response.json();
+                
+                if (results.length > 0) {
+                    const result = results[0];
+                    document.getElementById('plantLat').value = parseFloat(result.lat).toFixed(6);
+                    document.getElementById('plantLng').value = parseFloat(result.lon).toFixed(6);
+                    
+                    statusEl.textContent = '✅ Coordinate trovate';
+                    statusEl.style.color = '#4CAF50';
+                    updatePlantModalMap();
+                } else {
+                    statusEl.textContent = '❌ Nessun risultato trovato';
+                    statusEl.style.color = '#f44336';
+                }
+            } catch (e) {
+                statusEl.textContent = '❌ Errore di rete';
+                statusEl.style.color = '#f44336';
+            }
+            
+            // Clear status after a few seconds
+            setTimeout(() => { statusEl.textContent = ''; }, 5000);
         }
 
         function savePlant() {
@@ -14987,8 +15166,6 @@
                 name,
                 client,
                 address: document.getElementById('plantAddress').value.trim(),
-                city: document.getElementById('plantCity').value.trim(),
-                province: document.getElementById('plantProvince').value.trim().toUpperCase(),
                 lat: parseFloat(document.getElementById('plantLat').value) || null,
                 lng: parseFloat(document.getElementById('plantLng').value) || null,
                 notes: document.getElementById('plantNotes').value.trim()
@@ -15024,15 +15201,13 @@
                 if (!searchFilter) return true;
                 return (p.name || '').toLowerCase().includes(searchFilter) ||
                        (p.client || '').toLowerCase().includes(searchFilter) ||
-                       (p.city || '').toLowerCase().includes(searchFilter) ||
-                       (p.address || '').toLowerCase().includes(searchFilter) ||
-                       (p.province || '').toLowerCase().includes(searchFilter);
+                       (p.address || '').toLowerCase().includes(searchFilter);
             });
 
             if (filteredPlants.length === 0) {
                 const row = tbody.insertRow();
                 const cell = row.insertCell();
-                cell.colSpan = 7;
+                cell.colSpan = 5;
                 cell.textContent = 'Nessuno stabilimento trovato.';
                 cell.style.textAlign = 'center';
                 cell.style.fontStyle = 'italic';
@@ -15046,8 +15221,6 @@
                     <td><strong>${plant.name}</strong></td>
                     <td>${plant.client || '-'}</td>
                     <td>${plant.address || '-'}</td>
-                    <td>${plant.city || '-'}</td>
-                    <td>${plant.province || '-'}</td>
                     <td>${(plant.lat && plant.lng) ? `${plant.lat.toFixed(4)}, ${plant.lng.toFixed(4)}` : '-'}</td>
                     <td class="action-buttons">
                         <button onclick="openPlantModal(${plant.id})">✏️</button>
@@ -15079,24 +15252,19 @@
             const currentValue = select.value;
             select.innerHTML = '<option value="">-- Seleziona Stabilimento --</option>';
             
-            // Raggruppa per cliente
-            const byClient = {};
-            plants.forEach(p => {
-                const client = p.client || 'Senza Cliente';
-                if (!byClient[client]) byClient[client] = [];
-                byClient[client].push(p);
-            });
+            // Filtra stabilimenti per il cliente del progetto corrente
+            const project = projects.find(p => p.id === currentProjectId);
+            const projectClient = project ? (project.client || '').toLowerCase().trim() : '';
             
-            Object.keys(byClient).sort().forEach(client => {
-                const group = document.createElement('optgroup');
-                group.label = client;
-                byClient[client].forEach(plant => {
-                    const option = document.createElement('option');
-                    option.value = plant.id;
-                    option.textContent = `${plant.name}${plant.city ? ' - ' + plant.city : ''}`;
-                    group.appendChild(option);
-                });
-                select.appendChild(group);
+            const filteredPlants = projectClient
+                ? plants.filter(p => (p.client || '').toLowerCase().trim() === projectClient)
+                : plants;
+            
+            filteredPlants.forEach(plant => {
+                const option = document.createElement('option');
+                option.value = plant.id;
+                option.textContent = `${plant.name}${plant.address ? ' - ' + plant.address : ''}`;
+                select.appendChild(option);
             });
             
             if (currentValue) select.value = currentValue;
@@ -15112,10 +15280,7 @@
             if (plantId) {
                 const plant = plants.find(p => p.id == plantId);
                 if (plant) {
-                    let info = '';
-                    if (plant.address) info += plant.address;
-                    if (plant.city) info += (info ? ', ' : '') + plant.city;
-                    if (plant.province) info += ` (${plant.province})`;
+                    let info = plant.address || '';
                     infoBadge.textContent = info || '';
                     infoBadge.style.display = info ? '' : 'none';
                 } else {
@@ -15302,7 +15467,7 @@
                 const popupContent = `
                     <div style="max-width: 300px; max-height: 250px; overflow-y: auto;">
                         <strong style="font-size: 14px;">🏭 ${plant.name}</strong><br>
-                        <small>${plant.client || ''} - ${plant.city || ''} ${plant.province ? '(' + plant.province + ')' : ''}</small>
+                        <small>${plant.client || ''} - ${plant.address || ''}</small>
                         <hr style="margin: 5px 0;">
                         <strong>${group.tasks.length} attività flessibili:</strong>
                         <ul style="padding-left: 15px; margin: 5px 0;">${taskList}</ul>
@@ -15332,13 +15497,79 @@
 
                     const marker = L.marker([plant.lat, plant.lng])
                         .addTo(activityMapInstance)
-                        .bindPopup(`<strong>🏭 ${plant.name}</strong><br><small>${plant.client || ''} - ${plant.city || ''} ${plant.province ? '(' + plant.province + ')' : ''}</small><br><em>Nessuna attività flessibile</em>`);
+                        .bindPopup(`<strong>🏭 ${plant.name}</strong><br><small>${plant.client || ''} - ${plant.address || ''}</small><br><em>Nessuna attività flessibile</em>`);
 
                     marker.setIcon(L.divIcon({
                         className: '',
                         html: `<div style="background: #1565c0; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
                         iconSize: [18, 18],
                         iconAnchor: [9, 9]
+                    }));
+
+                    bounds.push([plant.lat, plant.lng]);
+                });
+            }
+
+            // Aggiungi marker per tutte le attività attive presso cliente (non completate, non annullate)
+            const showActiveTasks = document.getElementById('mapShowActiveTasks')?.checked || false;
+            if (showActiveTasks) {
+                const activeByPlant = {};
+                projects.forEach(project => {
+                    if (project.tasks) {
+                        project.tasks.forEach(task => {
+                            if (task.locationType === 'cliente' && task.plantId &&
+                                task.status !== 'completata' && task.status !== 'annullata' &&
+                                task.completion < 100 &&
+                                !task.flexibleDate) {
+                                const plant = plants.find(p => p.id == task.plantId);
+                                if (plant && plant.lat && plant.lng) {
+                                    const key = plant.id;
+                                    if (!activeByPlant[key]) {
+                                        activeByPlant[key] = { plant, tasks: [] };
+                                    }
+                                    activeByPlant[key].tasks.push({ project, task });
+                                }
+                            }
+                        });
+                    }
+                });
+
+                Object.values(activeByPlant).forEach(group => {
+                    const plant = group.plant;
+                    // Salta se già c'è un marker flessibile per questo stabilimento
+                    if (byPlant[plant.id]) return;
+
+                    const taskList = group.tasks.map(item => {
+                        const res = item.task.resources?.map(r => {
+                            const resource = resources.find(rs => rs.id == r.resourceId);
+                            return resource ? `${resource.firstName} ${resource.lastName}` : 'Non assegnata';
+                        }).join(', ') || 'Non assegnata';
+                        const statusLabel = item.task.status === 'pausa' ? ' ⏸️' : '';
+                        const dates = item.task.startDate && item.task.endDate ? `${item.task.startDate} → ${item.task.endDate}` : (item.task.startDate || 'Date n.d.');
+                        return `<li><strong>${item.task.name}${statusLabel}</strong><br>
+                                <small>${item.project.client} - ${item.project.code}</small><br>
+                                <small>${dates} | ${item.task.duration}gg | ${item.task.completion}% | Risorse: ${res}</small></li>`;
+                    }).join('');
+
+                    const popupContent = `
+                        <div style="max-width: 300px; max-height: 250px; overflow-y: auto;">
+                            <strong style="font-size: 14px;">🏭 ${plant.name}</strong><br>
+                            <small>${plant.client || ''} - ${plant.address || ''}</small>
+                            <hr style="margin: 5px 0;">
+                            <strong>${group.tasks.length} attività attive:</strong>
+                            <ul style="padding-left: 15px; margin: 5px 0;">${taskList}</ul>
+                        </div>
+                    `;
+
+                    const marker = L.marker([plant.lat, plant.lng])
+                        .addTo(activityMapInstance)
+                        .bindPopup(popupContent);
+
+                    marker.setIcon(L.divIcon({
+                        className: '',
+                        html: `<div style="background: #4CAF50; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">${group.tasks.length}</div>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
                     }));
 
                     bounds.push([plant.lat, plant.lng]);
