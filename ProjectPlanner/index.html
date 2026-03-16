@@ -5273,8 +5273,6 @@
                                 endOffsetField.disabled = false;
                             }
                             
-                            // Calcola e mostra le date risultanti
-                            updateLinkedDates();
                         }
 
                         const container = document.getElementById('taskResources');
@@ -5298,6 +5296,11 @@
                         } else {
                             console.log('No resources to load, adding empty row');
                             addTaskResourceRow();
+                        }
+                        
+                        // Calcola e mostra le date risultanti (dopo il caricamento risorse)
+                        if (!task.flexibleDate) {
+                            updateLinkedDates();
                         }
                         
                         // Mostra indicatore assenze se presenti
