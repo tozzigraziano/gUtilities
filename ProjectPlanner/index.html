@@ -3190,6 +3190,7 @@
                         <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_ritardo" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">⏰ Attività in ritardo</td><td style="padding:5px 10px; color:#ee5a52;">Critico / Avviso</td></tr>
                         <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_assenze" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">📅 Assenze durante attività</td><td style="padding:5px 10px; color:#fb8c00;">Avviso</td></tr>
                         <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_nessuna_risorsa" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">👤 Nessuna risorsa assegnata</td><td style="padding:5px 10px; color:#fb8c00;">Avviso</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_senza_date" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">📅 Attività senza date</td><td style="padding:5px 10px; color:#fb8c00;">Avviso</td></tr>
                         <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_progetto_vuoto" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">📋 Progetto senza attività</td><td style="padding:5px 10px; color:#1e88e5;">Informativo</td></tr>
                         <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_pausa" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">⏸️ Attività in pausa</td><td style="padding:5px 10px; color:#1e88e5;">Informativo</td></tr>
                     </tbody>
@@ -5707,8 +5708,23 @@
                     flexibleDate: sourceTask.flexibleDate || false,
                     notes: sourceTask.notes || '',
                     resources: copyResources ? (sourceTask.resources ? [...sourceTask.resources] : []) : [],
-                    checklist: sourceTask.checklist ? JSON.parse(JSON.stringify(sourceTask.checklist)) : []
+                    checklist: sourceTask.checklist ? JSON.parse(JSON.stringify(sourceTask.checklist)) : [],
+                    locationType: sourceTask.locationType || 'sede',
+                    plantId: ''
                 };
+                
+                // Gestisci stabilimento in base al cliente
+                const sourceClient = (sourceProject.client || '').toLowerCase().trim();
+                const targetClient = (targetProject.client || '').toLowerCase().trim();
+                if (sourceClient === targetClient) {
+                    // Stesso cliente: copia anche lo stabilimento
+                    newTask.plantId = sourceTask.plantId || '';
+                } else {
+                    // Cliente diverso: copia il luogo solo se non richiede stabilimento
+                    if (sourceTask.locationType === 'cliente') {
+                        newTask.locationType = 'sede';
+                    }
+                }
                 
                 targetProject.tasks.push(newTask);
             });
@@ -12733,7 +12749,7 @@
         }
 
         // === PAGINA AVVISI ===
-        const WARNING_FILTER_IDS = ['sovraccarico','ritardo','assenze','nessuna_risorsa','progetto_vuoto','pausa'];
+        const WARNING_FILTER_IDS = ['sovraccarico','ritardo','assenze','nessuna_risorsa','senza_date','progetto_vuoto','pausa'];
 
         function loadWarningFilters() {
             try {
@@ -13042,7 +13058,30 @@
                 }
             });
             
-            // 5. Progetti senza attività
+            // 5. Attività senza date assegnate
+            projects.forEach(project => {
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (!task.flexibleDate && (!task.startDate || !task.endDate) && task.status !== 'completata' && task.status !== 'annullata') {
+                            warnings.push({
+                                type: 'senza_date',
+                                severity: 'warning',
+                                icon: '📅',
+                                title: `Attività senza date: ${task.name}`,
+                                description: `Progetto: ${project.client} (${project.code}) - L'attività non ha ${!task.startDate && !task.endDate ? 'date di inizio e fine' : !task.startDate ? 'data di inizio' : 'data di fine'} assegnate`,
+                                action: 'Assegnare le date all\'attività',
+                                onClick: () => {
+                                    switchTab('projects');
+                                    currentProjectId = project.id;
+                                    openTaskModal(task.id);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // 6. Progetti senza attività
             projects.forEach(project => {
                 if (!project.tasks || project.tasks.length === 0) {
                     warnings.push({
