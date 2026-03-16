@@ -1897,6 +1897,33 @@
             }
         }
 
+        @keyframes meeting-in-progress {
+            0%, 100% {
+                background-color: #fff3cd;
+            }
+            50% {
+                background-color: #ffe08a;
+            }
+        }
+
+        [data-theme="dark"] .meeting-in-progress {
+            animation: meeting-in-progress-dark 2s ease-in-out infinite;
+        }
+
+        @keyframes meeting-in-progress-dark {
+            0%, 100% {
+                background-color: #4a4a2a;
+            }
+            50% {
+                background-color: #5a5a1a;
+            }
+        }
+
+        .meeting-in-progress {
+            animation: meeting-in-progress 2s ease-in-out infinite;
+            font-weight: 600;
+        }
+
         /* Stili per pagina avvisi */
         .warnings-category {
             margin-bottom: 20px;
@@ -4463,7 +4490,9 @@
                 </div>
                 <div class="form-group">
                     <label for="globalMeetingTime">Ora</label>
-                    <input type="time" id="globalMeetingTime">
+                    <select id="globalMeetingTime">
+                        <option value="">--</option>
+                    </select>
                 </div>
                 <div class="form-group" style="align-items: center;">
                     <label style="margin: 0;">
@@ -4522,12 +4551,12 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="globalMeetingExpectedDuration">Durata Prevista (ore)</label>
-                    <input type="number" id="globalMeetingExpectedDuration" min="0" step="0.25" placeholder="es: 1.5">
+                    <label for="globalMeetingExpectedDuration">Durata Prevista</label>
+                    <input type="time" id="globalMeetingExpectedDuration" step="300">
                 </div>
                 <div class="form-group">
-                    <label for="globalMeetingActualDuration">Durata Reale (ore)</label>
-                    <input type="number" id="globalMeetingActualDuration" min="0" step="0.25" placeholder="es: 2">
+                    <label for="globalMeetingActualDuration">Durata Reale</label>
+                    <input type="time" id="globalMeetingActualDuration" step="300">
                 </div>
                 <div class="form-group" style="flex-direction: column; align-items: stretch;">
                     <label for="globalMeetingDescription">Descrizione</label>
@@ -4893,6 +4922,10 @@
                 renderProjects();
                 renderTemplates();
                 updateResourceSelects();
+                
+                // Popola select ora riunione con step 5 minuti
+                populateTimeSelect('globalMeetingTime');
+                
                 updateProjectSelects();
                 updateTemplateSelects();
                 updateApplyTemplateSelect();
@@ -7718,8 +7751,13 @@
             const now = new Date();
             let nextMeetingId = null;
             for (let meeting of filteredMeetings) {
-                const meetingDate = new Date(meeting.date + (meeting.time ? 'T' + meeting.time : 'T00:00'));
-                if (meetingDate >= now) {
+                const meetingStart = new Date(meeting.date + (meeting.time ? 'T' + meeting.time : 'T00:00'));
+                let meetingEnd = new Date(meetingStart);
+                if (meeting.expectedDuration) {
+                    const durationMinutes = parseDurationToMinutes(meeting.expectedDuration);
+                    meetingEnd = new Date(meetingStart.getTime() + durationMinutes * 60000);
+                }
+                if (meetingEnd >= now) {
                     nextMeetingId = meeting.id;
                     break;
                 }
@@ -7729,13 +7767,22 @@
                 const row = tbody.insertRow();
                 const date = new Date(meeting.date);
                 const meetingDateTime = new Date(meeting.date + (meeting.time ? 'T' + meeting.time : 'T00:00'));
-                const isPast = meetingDateTime < now;
+                // Calcola la fine teorica della riunione (inizio + durata prevista)
+                let meetingEndDateTime = new Date(meetingDateTime);
+                if (meeting.expectedDuration) {
+                    const durationMinutes = parseDurationToMinutes(meeting.expectedDuration);
+                    meetingEndDateTime = new Date(meetingDateTime.getTime() + durationMinutes * 60000);
+                }
+                const isPast = meetingEndDateTime < now;
+                const isInProgress = meetingDateTime <= now && meetingEndDateTime >= now;
                 const isNext = meeting.id === nextMeetingId;
                 
                 row.style.cursor = 'pointer';
                 
-                // Stili per riunioni passate e prossima
-                if (isPast) {
+                // Stili per riunioni passate, in corso e prossima
+                if (isInProgress) {
+                    row.classList.add('meeting-in-progress');
+                } else if (isPast) {
                     row.style.opacity = '0.5';
                 } else if (isNext) {
                     row.style.backgroundColor = 'var(--accent-color-light)';
@@ -7760,8 +7807,8 @@
                     <td>${escapeHtml(meeting.subject)}</td>
                     <td>${escapeHtml(meeting.tags || '')}</td>
                     <td>${resourceNames || '-'}</td>
-                    <td>${meeting.expectedDuration ? meeting.expectedDuration + 'h' : '-'}</td>
-                    <td>${meeting.actualDuration ? meeting.actualDuration + 'h' : '-'}</td>
+                    <td>${meeting.expectedDuration ? meeting.expectedDuration : '-'}</td>
+                    <td>${meeting.actualDuration ? meeting.actualDuration : '-'}</td>
                     <td>
                         <button onclick="event.stopPropagation(); editGlobalMeeting('${meeting.id}')" title="Modifica" style="padding: 4px 8px; font-size: 12px;">✏️</button>
                         <button onclick="event.stopPropagation(); deleteGlobalMeeting('${meeting.id}')" title="Elimina" class="delete" style="padding: 4px 8px; font-size: 12px;">🗑️</button>
@@ -7990,8 +8037,8 @@
                     subject,
                     tags,
                     resourceIds,
-                    expectedDuration: expectedDuration ? parseFloat(expectedDuration) : null,
-                    actualDuration: actualDuration ? parseFloat(actualDuration) : null,
+                    expectedDuration: expectedDuration || null,
+                    actualDuration: actualDuration || null,
                     description,
                     minutes
                 };
@@ -8054,6 +8101,24 @@
             });
         }
         
+        // Popola un <select> con opzioni orario ogni 5 minuti (00:00 - 23:55)
+        function populateTimeSelect(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">--</option>';
+            for (let h = 0; h < 24; h++) {
+                for (let m = 0; m < 60; m += 5) {
+                    const val = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.textContent = val;
+                    select.appendChild(opt);
+                }
+            }
+            if (currentValue) select.value = currentValue;
+        }
+        
         // Helper function per ottenere il nome di una risorsa
         function getResourceName(resourceId) {
             const resource = resources.find(r => r.id == resourceId);
@@ -8067,6 +8132,23 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Converte ore decimali (es. 1.5) in formato "hh:mm" (es. "01:30")
+        function hoursToHHMM(hours) {
+            const h = Math.floor(hours);
+            const m = Math.round((hours - h) * 60);
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+
+        // Converte una durata (formato "hh:mm" o ore decimali legacy) in minuti
+        function parseDurationToMinutes(duration) {
+            if (typeof duration === 'number') return duration * 60;
+            if (typeof duration === 'string' && duration.includes(':')) {
+                const [h, m] = duration.split(':').map(Number);
+                return h * 60 + m;
+            }
+            return parseFloat(duration) * 60 || 0;
         }
 
         function renderProjects() {
@@ -11322,6 +11404,21 @@
                 projects = await loadFromIndexedDB('projects');
                 templates = await loadFromIndexedDB('templates');
                 meetings = await loadFromIndexedDB('meetings');
+                // Migra durate riunioni dal formato numerico (ore) al formato hh:mm
+                let meetingsNeedsSave = false;
+                meetings.forEach(m => {
+                    if (m.expectedDuration !== null && m.expectedDuration !== undefined && typeof m.expectedDuration === 'number') {
+                        m.expectedDuration = hoursToHHMM(m.expectedDuration);
+                        meetingsNeedsSave = true;
+                    }
+                    if (m.actualDuration !== null && m.actualDuration !== undefined && typeof m.actualDuration === 'number') {
+                        m.actualDuration = hoursToHHMM(m.actualDuration);
+                        meetingsNeedsSave = true;
+                    }
+                });
+                if (meetingsNeedsSave) {
+                    await saveToIndexedDB('meetings', meetings);
+                }
                 plants = await loadFromIndexedDB('plants');
                 
                 // Carica holidays (calcolato, non salvato)
