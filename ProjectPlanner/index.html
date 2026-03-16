@@ -2572,12 +2572,15 @@
 
         /* Location Type Badges */
         .location-badge {
-            display: inline-block;
+            display: block;
             padding: 2px 6px;
             border-radius: 3px;
             font-size: 10px;
             font-weight: 600;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
         }
         .location-badge.sede {
             background-color: #e3f2fd;
@@ -4015,7 +4018,7 @@
                             <select id="taskLocationType" onchange="togglePlantSelector()" style="width: 180px;">
                                 <option value="sede">🏢 In Sede</option>
                                 <option value="cliente">🏭 Presso Cliente</option>
-                                <option value="remoto">🏠 Da Remoto</option>
+                                <option value="remoto">📡 Da Remoto</option>
                             </select>
                             <select id="taskPlantId" style="width: 250px; display: none;">
                                 <option value="">-- Seleziona Stabilimento --</option>
@@ -14171,7 +14174,7 @@
                     projects.forEach(project => {
                         if (project.tasks) {
                             project.tasks.forEach(task => {
-                                if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa') {
+                                if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa' && task.status !== 'annullata') {
                                     // Se ha risorse assegnate, mostra solo per quelle risorse
                                     if (hasAssignedResources(task)) {
                                         const res = task.resources.find(r => r.resourceId == resource.id);
@@ -14664,7 +14667,7 @@
                     projects.forEach(project => {
                         if (project.tasks) {
                             project.tasks.forEach(task => {
-                                if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa') {
+                                if (task.flexibleDate && task.completion === 0 && task.status !== 'pausa' && task.status !== 'annullata') {
                                     // Se ha risorse assegnate, mostra solo per quelle risorse
                                     if (hasAssignedResources(task)) {
                                         const res = task.resources.find(r => r.resourceId == resource.id);
@@ -15345,17 +15348,20 @@
 
         function getLocationBadgeHtml(task) {
             const type = task.locationType || 'sede';
-            const labels = { sede: '🏢 Sede', cliente: '🏭 Cliente', remoto: '🏠 Remoto' };
-            let label = labels[type] || labels.sede;
+            const icons = { sede: '🏢', cliente: '🏭', remoto: '📡' };
+            const titles = { sede: 'Sede', cliente: 'Cliente', remoto: 'Remoto' };
+            let label = icons[type] || icons.sede;
+            let title = titles[type] || titles.sede;
             
             if (type === 'cliente' && task.plantId) {
                 const plant = plants.find(p => p.id == task.plantId);
                 if (plant) {
-                    label += ` - ${plant.name}`;
+                    label += ` ${plant.name}`;
+                    title += ` - ${plant.name}`;
                 }
             }
             
-            return `<span class="location-badge ${type}">${label}</span>`;
+            return `<span class="location-badge ${type}" title="${title}">${label}</span>`;
         }
 
         // === LOGICA SUGGERIMENTI PER LOCALIZZAZIONE ===
