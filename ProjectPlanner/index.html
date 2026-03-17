@@ -16215,79 +16215,18 @@
             // Centro Italia di default
             activityMapInstance = L.map('mapContainer').setView([42.5, 12.5], 6);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors',
-                maxZoom: 18
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+                maxZoom: 19,
+                subdomains: 'abcd'
             }).addTo(activityMapInstance);
 
             const bounds = [];
 
-            // Aggiungi marker per stabilimenti con attività flessibili
-            Object.values(byPlant).forEach(group => {
-                const plant = group.plant;
-                if (!plant.lat || !plant.lng) return;
-
-                const taskList = group.tasks.map(item => {
-                    const res = item.task.resources?.map(r => {
-                        const resource = resources.find(rs => rs.id == r.resourceId);
-                        return resource ? `${resource.firstName} ${resource.lastName}` : 'Non assegnata';
-                    }).join(', ') || 'Non assegnata';
-                    
-                    return `<li><strong>${item.task.name}</strong><br>
-                            <small>${item.project.client} - ${item.project.code}</small><br>
-                            <small>Durata: ${item.task.duration}gg | Risorse: ${res}</small></li>`;
-                }).join('');
-
-                const popupContent = `
-                    <div style="max-width: 300px; max-height: 250px; overflow-y: auto;">
-                        <strong style="font-size: 14px;">🏭 ${plant.name}</strong><br>
-                        <small>${plant.client || ''} - ${plant.address || ''}</small>
-                        <hr style="margin: 5px 0;">
-                        <strong>${group.tasks.length} attività flessibili:</strong>
-                        <ul style="padding-left: 15px; margin: 5px 0;">${taskList}</ul>
-                    </div>
-                `;
-
-                const marker = L.marker([plant.lat, plant.lng])
-                    .addTo(activityMapInstance)
-                    .bindPopup(popupContent);
-
-                // Marker arancione per attività flessibili
-                marker.setIcon(L.divIcon({
-                    className: '',
-                    html: `<div style="background: #e65100; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">${group.tasks.length}</div>`,
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
-                }));
-
-                bounds.push([plant.lat, plant.lng]);
-            });
-
-            // Aggiungi anche stabilimenti senza attività flessibili se richiesto
-            if (showAll) {
-                plants.forEach(plant => {
-                    if (!plant.lat || !plant.lng) return;
-                    if (byPlant[plant.id]) return; // Già aggiunto sopra
-
-                    const marker = L.marker([plant.lat, plant.lng])
-                        .addTo(activityMapInstance)
-                        .bindPopup(`<strong>🏭 ${plant.name}</strong><br><small>${plant.client || ''} - ${plant.address || ''}</small><br><em>Nessuna attività flessibile</em>`);
-
-                    marker.setIcon(L.divIcon({
-                        className: '',
-                        html: `<div style="background: #1565c0; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                        iconSize: [18, 18],
-                        iconAnchor: [9, 9]
-                    }));
-
-                    bounds.push([plant.lat, plant.lng]);
-                });
-            }
-
-            // Aggiungi marker per tutte le attività attive presso cliente (non completate, non annullate)
+            // Raccogli attività attive presso cliente (non completate, non annullate, non flessibili)
+            const activeByPlant = {};
             const showActiveTasks = document.getElementById('mapShowActiveTasks')?.checked || false;
             if (showActiveTasks) {
-                const activeByPlant = {};
                 projects.forEach(project => {
                     if (project.tasks) {
                         project.tasks.forEach(task => {
@@ -16307,13 +16246,40 @@
                         });
                     }
                 });
+            }
 
-                Object.values(activeByPlant).forEach(group => {
-                    const plant = group.plant;
-                    // Salta se già c'è un marker flessibile per questo stabilimento
-                    if (byPlant[plant.id]) return;
+            // Unisci tutti gli stabilimenti che hanno attività (flessibili e/o attive)
+            const allPlantIds = new Set([...Object.keys(byPlant), ...Object.keys(activeByPlant)]);
 
-                    const taskList = group.tasks.map(item => {
+            allPlantIds.forEach(plantId => {
+                const flexGroup = byPlant[plantId];
+                const activeGroup = activeByPlant[plantId];
+                const plant = (flexGroup || activeGroup).plant;
+                if (!plant.lat || !plant.lng) return;
+
+                const hasFlexible = flexGroup && flexGroup.tasks.length > 0;
+                const hasActive = activeGroup && activeGroup.tasks.length > 0;
+
+                let popupSections = `<strong style="font-size: 14px;">🏭 ${plant.name}</strong><br>
+                    <small>${plant.client || ''} - ${plant.address || ''}</small>`;
+
+                if (hasFlexible) {
+                    const taskList = flexGroup.tasks.map(item => {
+                        const res = item.task.resources?.map(r => {
+                            const resource = resources.find(rs => rs.id == r.resourceId);
+                            return resource ? `${resource.firstName} ${resource.lastName}` : 'Non assegnata';
+                        }).join(', ') || 'Non assegnata';
+                        return `<li><strong>${item.task.name}</strong><br>
+                                <small>${item.project.client} - ${item.project.code}</small><br>
+                                <small>Durata: ${item.task.duration}gg | Risorse: ${res}</small></li>`;
+                    }).join('');
+                    popupSections += `<hr style="margin: 5px 0;">
+                        <strong>💡 ${flexGroup.tasks.length} attività flessibili:</strong>
+                        <ul style="padding-left: 15px; margin: 5px 0;">${taskList}</ul>`;
+                }
+
+                if (hasActive) {
+                    const taskList = activeGroup.tasks.map(item => {
                         const res = item.task.resources?.map(r => {
                             const resource = resources.find(rs => rs.id == r.resourceId);
                             return resource ? `${resource.firstName} ${resource.lastName}` : 'Non assegnata';
@@ -16324,26 +16290,56 @@
                                 <small>${item.project.client} - ${item.project.code}</small><br>
                                 <small>${dates} | ${item.task.duration}gg | ${item.task.completion}% | Risorse: ${res}</small></li>`;
                     }).join('');
+                    popupSections += `<hr style="margin: 5px 0;">
+                        <strong>🟢 ${activeGroup.tasks.length} attività attive:</strong>
+                        <ul style="padding-left: 15px; margin: 5px 0;">${taskList}</ul>`;
+                }
 
-                    const popupContent = `
-                        <div style="max-width: 300px; max-height: 250px; overflow-y: auto;">
-                            <strong style="font-size: 14px;">🏭 ${plant.name}</strong><br>
-                            <small>${plant.client || ''} - ${plant.address || ''}</small>
-                            <hr style="margin: 5px 0;">
-                            <strong>${group.tasks.length} attività attive:</strong>
-                            <ul style="padding-left: 15px; margin: 5px 0;">${taskList}</ul>
-                        </div>
-                    `;
+                const popupContent = `<div style="max-width: 300px; max-height: 300px; overflow-y: auto;">${popupSections}</div>`;
 
-                    const marker = L.marker([plant.lat, plant.lng])
+                // Colore marker: arancione se flessibili, verde se solo attive, metà/metà se entrambe
+                let markerHtml;
+                const totalCount = (hasFlexible ? flexGroup.tasks.length : 0) + (hasActive ? activeGroup.tasks.length : 0);
+                if (hasFlexible && hasActive) {
+                    markerHtml = `<div style="background: linear-gradient(135deg, #e65100 50%, #4CAF50 50%); width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">${totalCount}</div>`;
+                } else if (hasFlexible) {
+                    markerHtml = `<div style="background: #e65100; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">${totalCount}</div>`;
+                } else {
+                    markerHtml = `<div style="background: #4CAF50; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">${totalCount}</div>`;
+                }
+
+                const size = (hasFlexible && hasActive) ? [28, 28] : [24, 24];
+                const anchor = (hasFlexible && hasActive) ? [14, 14] : [12, 12];
+
+                const marker = L.marker([plant.lat, plant.lng])
+                    .addTo(activityMapInstance)
+                    .bindPopup(popupContent);
+
+                marker.setIcon(L.divIcon({
+                    className: '',
+                    html: markerHtml,
+                    iconSize: size,
+                    iconAnchor: anchor
+                }));
+
+                bounds.push([plant.lat, plant.lng]);
+            });
+
+            // Aggiungi anche stabilimenti senza attività se richiesto
+            if (showAll) {
+                plants.forEach(plant => {
+                    if (!plant.lat || !plant.lng) return;
+                    if (allPlantIds.has(String(plant.id))) return; // Già aggiunto sopra
+
+                    const marker = L.marker([plant.lat, plant.lng], { zIndexOffset: -1000 })
                         .addTo(activityMapInstance)
-                        .bindPopup(popupContent);
+                        .bindPopup(`<strong>🏭 ${plant.name}</strong><br><small>${plant.client || ''} - ${plant.address || ''}</small>`);
 
                     marker.setIcon(L.divIcon({
                         className: '',
-                        html: `<div style="background: #4CAF50; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">${group.tasks.length}</div>`,
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
+                        html: `<div style="background: #1565c0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); opacity: 0.7;"></div>`,
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
                     }));
 
                     bounds.push([plant.lat, plant.lng]);
