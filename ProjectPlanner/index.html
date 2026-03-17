@@ -2721,6 +2721,7 @@
             <button class="tab" onclick="switchTab('taskReview')">🔍 Revisione Attività</button>
             <button class="tab" onclick="switchTab('plants')">🏭 Stabilimenti</button>
             <button class="tab" onclick="switchTab('activityMap')">🗺️ Mappa Attività</button>
+            <button class="tab" onclick="switchTab('annotations')">📌 Annotazioni</button>
             <button class="tab" onclick="switchTab('help')">❓ Guida</button>
             <button class="tab" onclick="switchTab('data')">Import/Export</button>
         </div>
@@ -3326,122 +3327,380 @@
             <div id="mapContainer"></div>
         </div>
 
+        <!-- TAB ANNOTAZIONI -->
+        <div id="annotations" class="tab-content">
+            <h2>📌 Annotazioni Attività</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">Elenco delle attività con annotazioni da verificare, ordinate per data di inizio (più urgenti in alto).</p>
+            
+            <div class="action-bar">
+                <button onclick="renderAnnotations()">🔄 Aggiorna</button>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px; margin-left: 15px;">
+                    <label style="width: auto;">Filtra cliente:</label>
+                    <input type="text" id="annotationsFilterClient" placeholder="Cliente..." onkeyup="renderAnnotations()" style="width: 150px;">
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px; margin-left: 10px;">
+                    <label style="width: auto;">Filtra codice:</label>
+                    <input type="text" id="annotationsFilterCode" placeholder="Codice..." onkeyup="renderAnnotations()" style="width: 120px;">
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px; margin-left: 10px;">
+                    <label style="width: auto;">Filtra annotazione:</label>
+                    <input type="text" id="annotationsFilterText" placeholder="Testo annotazione..." onkeyup="renderAnnotations()" style="width: 180px;">
+                </div>
+            </div>
+
+            <table id="annotationsTable">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Codice Lavoro</th>
+                        <th>Descrizione Progetto</th>
+                        <th>Attività</th>
+                        <th>Data Inizio</th>
+                        <th>📌 Annotazione</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
         <!-- TAB GUIDA -->
         <div id="help" class="tab-content">
             <div class="help-container">
                 <h1 class="help-title">📖 Guida al Project Planner</h1>
-                <p class="help-intro">Benvenuto nel Project Planner! Questa guida ti aiuterà a scoprire tutte le funzionalità disponibili per gestire progetti, risorse e attività in modo efficiente.</p>
+                <p class="help-intro">Benvenuto nel Project Planner! Questa guida completa descrive tutte le funzionalità disponibili per gestire progetti, risorse, attività, riunioni, offerte e molto altro in modo efficiente.</p>
                 
+                <!-- RISORSE -->
                 <div class="help-section">
                     <h2 class="help-section-title">👥 Gestione Risorse</h2>
                     <div class="help-content">
-                        <p>Le risorse sono le persone del tuo team che lavoreranno sui progetti.</p>
+                        <p>Le risorse rappresentano i membri del team che lavoreranno sui progetti. Si gestiscono nella tab <strong>Risorse</strong>.</p>
+                        <h3>Creare e Modificare Risorse</h3>
                         <ul>
-                            <li><strong>Creare una risorsa:</strong> Click su "+ Nuova Risorsa" per aggiungere un membro del team</li>
-                            <li><strong>Assenze:</strong> Puoi definire periodi di assenza per ogni risorsa, specificando il tipo:
-                                <ul>
-                                    <li>🏖️ <strong>Ferie</strong>: Assenze pianificate per riposo</li>
-                                    <li>🤒 <strong>Malattia</strong>: Assenze per motivi di salute</li>
-                                    <li>🏥 <strong>Intervento Pianificato</strong>: Interventi medici programmati</li>
-                                </ul>
-                                Le assenze vengono mostrate in rosso nel Gantt e nella Vista Risorse. Le diverse causali sono identificate da icone specifiche: 🏖️ per le ferie, 🤒 per le malattie, 🏥 per gli interventi pianificati.
-                            </li>
-                            <li><strong>Modifica/Elimina:</strong> Usa i pulsanti ✏️ ed 🗑️ per gestire le risorse esistenti</li>
+                            <li><strong>Nuova Risorsa:</strong> Click su "➕ Nuova Risorsa" per aggiungere un membro. Compila Nome, Cognome e Tipo Risorsa (Programmatore Robot, Programmatore PLC, Programmatore Visione, Meccanico, Elettricista, Project Manager, Esterno, Responsabile).</li>
+                            <li><strong>Modifica/Elimina:</strong> Usa i pulsanti ✏️ ed 🗑️ nella tabella per gestire le risorse esistenti.</li>
+                            <li><strong>Ordinamento:</strong> Usa le frecce ⬆️ e ⬇️ per riordinare le risorse nella tabella. L'ordine viene rispettato anche nel Gantt e nella Vista Risorse.</li>
+                            <li><strong>Visibilità:</strong> Usa il pulsante ● / ○ per nascondere o mostrare una risorsa nel Gantt e nella Vista Risorse senza eliminarla.</li>
+                        </ul>
+                        <h3>Gestione Assenze</h3>
+                        <p>Per ogni risorsa puoi definire periodi di assenza con tipologia:</p>
+                        <ul>
+                            <li>🏖️ <strong>Ferie:</strong> Assenze pianificate per riposo.</li>
+                            <li>🤒 <strong>Malattia:</strong> Assenze per motivi di salute.</li>
+                            <li>🏥 <strong>Intervento Pianificato:</strong> Interventi medici programmati.</li>
+                        </ul>
+                        <p>Le assenze vengono mostrate in rosso nel Gantt e nella Vista Risorse con icone specifiche. Quando inserisci un'assenza che si sovrappone ad attività attive, il sistema ti avvisa e ricalcola automaticamente le date di fine delle attività coinvolte.</p>
+                        <h3>Esporta Riepilogo Markdown</h3>
+                        <ul>
+                            <li>Il pulsante <strong>📄 Esporta MD</strong> genera un riepilogo in Markdown di tutte le attività assegnate alla risorsa, con dettagli su progetti, date, stato e completamento.</li>
                         </ul>
                     </div>
                 </div>
 
+                <!-- FESTIVITÀ -->
+                <div class="help-section">
+                    <h2 class="help-section-title">🎄 Festività</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Festività</strong> mostra e gestisce i giorni non lavorativi.</p>
+                        <h3>Festività Nazionali</h3>
+                        <p>Le festività italiane (Capodanno, Epifania, Pasqua, Pasquetta, 25 Aprile, 1 Maggio, 2 Giugno, Ferragosto, 1 Novembre, 8 Dicembre, Natale, Santo Stefano) vengono calcolate automaticamente per tutti gli anni coperti dai progetti.</p>
+                        <h3>Festività Locali Ricorrenti</h3>
+                        <ul>
+                            <li>Usa "➕ Nuova Festività Locale" per aggiungere festività ricorrenti (es. patrono della città).</li>
+                            <li>Specifica nome, giorno e mese: la festività verrà applicata automaticamente a tutti gli anni.</li>
+                        </ul>
+                        <h3>Effetti sulle Attività</h3>
+                        <ul>
+                            <li>Le festività <strong>non contano</strong> nel calcolo della durata lavorativa delle attività.</li>
+                            <li>Appaiono evidenziate nel Gantt e nella Vista Risorse.</li>
+                            <li>Ogni attività può avere l'opzione <strong>"Festivi Lavorativi"</strong> per ignorare le festività.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- PROGETTI E ATTIVITÀ -->
                 <div class="help-section">
                     <h2 class="help-section-title">📁 Progetti e Attività</h2>
                     <div class="help-content">
-                        <p>I progetti contengono le attività da svolgere per un cliente.</p>
+                        <p>La tab <strong>Progetti</strong> è il cuore dell'applicazione. Ogni progetto contiene attività, milestone, offerte, issue, riunioni e aggiornamenti.</p>
+
                         <h3>Creare un Progetto</h3>
                         <ul>
-                            <li>Click su "+ Nuovo Progetto"</li>
-                            <li>Inserisci Cliente, Codice e altre informazioni</li>
-                            <li>Aggiungi festività specifiche del progetto (opzionale)</li>
+                            <li>Click su "➕ Nuovo Progetto" e compila: <strong>Cliente</strong>, <strong>Codice Lavoro</strong> e <strong>Descrizione</strong> (supporta Markdown).</li>
+                            <li>Al momento della creazione puoi selezionare un <strong>Template</strong> per pre-popolare le attività.</li>
+                            <li>Il campo Cliente suggerisce automaticamente i nomi già utilizzati in altri progetti o stabilimenti.</li>
                         </ul>
+                        <h3>Contenuti del Progetto</h3>
+                        <p>Una volta aperto un progetto, hai accesso a diverse sotto-sezioni:</p>
+                        <ul>
+                            <li><strong>Attività:</strong> L'elenco di tutte le attività del progetto con azioni rapide.</li>
+                            <li><strong>Milestone:</strong> Punti di controllo con data, visibili nel Gantt come diamanti.</li>
+                            <li><strong>Offerte:</strong> Offerte commerciali collegate al progetto.</li>
+                            <li><strong>Issue:</strong> Segnalazioni di problemi con priorità e assegnatario.</li>
+                            <li><strong>Riunioni:</strong> Riunioni specifiche del progetto.</li>
+                            <li><strong>Aggiornamenti:</strong> Diario delle novità e aggiornamenti sul progetto.</li>
+                            <li><strong>Informazioni Generali:</strong> Note generali in Markdown.</li>
+                        </ul>
+                        <h3>Statistiche Progetto</h3>
+                        <p>Nella vista progetto è presente un riepilogo con: totale attività, completate, in corso, in pausa, percentuale media di completamento e barre di progresso per stato.</p>
+
                         <h3>Gestire le Attività</h3>
                         <ul>
-                            <li><strong>Nuova Attività:</strong> Click su "+ Nuova Attività" nel progetto</li>
-                            <li><strong>Nome e Descrizione:</strong> Identifica chiaramente l'attività</li>
-                            <li><strong>Durata:</strong> Numero di giorni lavorativi necessari</li>
-                            <li><strong>Date:</strong> Data inizio e fine (calcolata automaticamente dalla durata)</li>
-                            <li><strong>Stato:</strong> Da fare, In corso, Completata, Pausa, Annullata</li>
-                            <li><strong>Completamento:</strong> Percentuale di avanzamento (0-100%)</li>
-                            <li><strong>Risorse:</strong> Assegna una o più risorse con percentuale di impegno</li>
+                            <li><strong>Nuova Attività:</strong> Click su "➕ Nuova Attività" nel progetto aperto.</li>
+                            <li><strong>Nome:</strong> Identifica chiaramente l'attività.</li>
+                            <li><strong>Metodo Calcolo:</strong> Scegli tra "Inizio + Durata" o "Fine + Durata" per il calcolo automatico date.</li>
+                            <li><strong>Durata:</strong> Numero di giorni lavorativi necessari.</li>
+                            <li><strong>Date Inizio/Fine:</strong> Calcolate automaticamente in base al metodo scelto, alla durata e tenendo conto di weekend, festività e assenze delle risorse.</li>
+                            <li><strong>Stato:</strong> Nessuno, In Corso, In Ritardo, In Pausa, Completata, Annullata.</li>
+                            <li><strong>Completamento:</strong> Percentuale di avanzamento (0-100%).</li>
+                            <li><strong>Risorse:</strong> Assegna una o più risorse con percentuale di impegno ciascuna.</li>
+                            <li><strong>Note:</strong> Campo di testo con supporto Markdown (titoli, grassetto, corsivo, elenchi, link, codice, citazioni). L'editor offre le tab ✏️ Modifica e 👁️ Anteprima.</li>
+                            <li><strong>📌 Annotazione:</strong> Breve nota testuale (max 200 caratteri) per segnarsi cose da verificare sull'attività. Le annotazioni sono visibili nella tab dedicata "Annotazioni".</li>
                         </ul>
+
+                        <h3>📋 Checklist</h3>
+                        <p>Ogni attività ha un pannello laterale <strong>Checklist</strong> per gestire sotto-attività:</p>
+                        <ul>
+                            <li>Clicca "➕ Aggiungi Elemento" per aggiungere voci.</li>
+                            <li>Ogni voce ha una checkbox per segnare il completamento e un pulsante 🗑️ per rimuoverla.</li>
+                            <li>Solo le voci con testo vengono salvate.</li>
+                        </ul>
+
+                        <h3>Opzioni Giornate Lavorative</h3>
+                        <ul>
+                            <li><strong>Sabato Lavorativo:</strong> Include il sabato nel calcolo della durata.</li>
+                            <li><strong>Domenica Lavorativa:</strong> Include la domenica nel calcolo della durata.</li>
+                            <li><strong>Festivi Lavorativi:</strong> Include le festività nel calcolo della durata.</li>
+                        </ul>
+
+                        <h3>🔗 Collegamento Date (Date Collegate)</h3>
+                        <p>Puoi collegare la data di inizio o di fine di un'attività alla fine o all'inizio di un'altra attività dello stesso progetto:</p>
+                        <ul>
+                            <li><strong>Data Inizio collegata a (Dopo):</strong> L'attività inizia dopo la fine di un'altra, con un offset in giorni opzionale (positivo = dopo, negativo = prima).</li>
+                            <li><strong>Data Fine collegata a (Prima):</strong> L'attività finisce in relazione all'inizio di un'altra, con offset.</li>
+                            <li>Quando un collegamento è attivo, i campi data e l'altro collegamento sono disabilitati automaticamente.</li>
+                            <li>Le date collegate vengono ricalcolate automaticamente quando l'attività di riferimento cambia.</li>
+                        </ul>
+
+                        <h3>📍 Luogo Attività</h3>
+                        <p>Ogni attività ha un campo <strong>Luogo</strong> che indica dove si svolge:</p>
+                        <ul>
+                            <li>🏢 <strong>In Sede:</strong> L'attività si svolge in sede aziendale (default).</li>
+                            <li>🏭 <strong>Presso Cliente:</strong> Seleziona uno stabilimento del cliente dal menu a tendina. Vengono mostrati gli stabilimenti associati allo stesso cliente del progetto. Se lo stabilimento ha coordinate, viene mostrato un badge con indirizzo.</li>
+                            <li>📡 <strong>Da Remoto:</strong> L'attività si svolge da remoto.</li>
+                        </ul>
+
                         <h3>💡 Data Flessibile</h3>
                         <ul>
-                            <li>Attiva la checkbox "Data Flessibile" per attività non ancora pianificate</li>
-                            <li>Le attività flessibili appaiono come <span style="color: #28a745; font-weight: bold;">suggerimenti verdi</span> nella Vista Risorse</li>
-                            <li>Click su un suggerimento per pianificare l'attività in automatico</li>
-                            <li>Le attività flessibili <strong>senza risorsa</strong> appaiono con <span style="border: 2px solid #28a745;">bordo verde</span></li>
-                            <li>I suggerimenti che causerebbero sovrapposizioni hanno <span style="color: #ffc107;">testo giallo</span></li>
-                            <li>La data flessibile si rimuove automaticamente quando l'attività viene completata</li>
+                            <li>Attiva la checkbox <strong>"Data Flessibile"</strong> per attività non ancora pianificate con data certa.</li>
+                            <li>Quando attivata, i campi data e collegamento vengono disabilitati.</li>
+                            <li>Le attività flessibili appaiono come <span style="color: #28a745; font-weight: bold;">suggerimenti verdi</span> nella Vista Risorse.</li>
+                            <li>Click su un suggerimento per pianificare l'attività automaticamente a quella data e risorsa.</li>
+                            <li>Le attività flessibili <strong>senza risorsa</strong> appaiono con <span style="border: 2px solid #28a745;">bordo verde</span>.</li>
+                            <li>I suggerimenti che causerebbero sovrapposizioni hanno <span style="color: #ffc107;">testo giallo</span>.</li>
+                            <li>La data flessibile si rimuove automaticamente quando l'attività viene completata al 100%.</li>
+                        </ul>
+
+                        <h3>📋 Copia Attività su Altri Progetti</h3>
+                        <ul>
+                            <li>Nella lista attività, il pulsante <strong>📋 Copia</strong> apre un modal per copiare l'attività su uno o più progetti.</li>
+                            <li>Puoi scegliere se copiare le <strong>date</strong> e/o le <strong>risorse assegnate</strong>.</li>
+                            <li>I progetti destinazione sono filtrabili per cliente e descrizione.</li>
+                            <li>Se il cliente del progetto di destinazione coincide con quello di origine, viene copiato anche lo stabilimento.</li>
+                        </ul>
+
+                        <h3>✂️ Spezza/Duplica Attività</h3>
+                        <ul>
+                            <li>Il pulsante <strong>✂️ Spezza</strong> apre un modal con due modalità:
+                                <ul>
+                                    <li><strong>Spezza in due:</strong> Divide l'attività in due parti a una data scelta. La prima parte conserva il nome originale con "(Parte 1)", la seconda "(Parte 2)". Risorse, checklist, note vengono duplicate.</li>
+                                    <li><strong>Duplica:</strong> Crea una copia identica dell'attività con completamento azzerato e senza collegamenti.</li>
+                                </ul>
+                            </li>
+                            <li>Un'anteprima mostra le date risultanti prima di confermare.</li>
+                        </ul>
+
+                        <h3>📧 Invia Email Attività</h3>
+                        <ul>
+                            <li>Nel modal di un'attività, il pulsante <strong>📧 Invia Email</strong> apre il client email con un riepilogo completo dell'attività: nome, progetto, date, sede, stato, risorse, checklist e note.</li>
+                        </ul>
+
+                        <h3>💾 Salva come Template</h3>
+                        <ul>
+                            <li>Nella vista progetto, il pulsante <strong>"💾 Salva come Template"</strong> salva la struttura del progetto come template riutilizzabile.</li>
                         </ul>
                     </div>
                 </div>
 
+                <!-- TEMPLATE -->
                 <div class="help-section">
-                    <h2 class="help-section-title">📊 Vista Gantt</h2>
+                    <h2 class="help-section-title">📝 Template</h2>
                     <div class="help-content">
-                        <p>Il diagramma di Gantt mostra tutte le attività su una timeline.</p>
+                        <p>I template permettono di salvare strutture di progetto riutilizzabili. Si gestiscono nella tab <strong>Template</strong>.</p>
+                        <h3>Creare un Template</h3>
                         <ul>
-                            <li><strong>Barre colorate:</strong> Ogni progetto ha un colore diverso</li>
-                            <li><strong>Zoom:</strong> Usa i pulsanti + e - per modificare la scala temporale</li>
-                            <li><strong>Scroll orizzontale:</strong> Scorri per vedere date passate o future</li>
-                            <li><strong>Filtro progetti:</strong> Seleziona uno o più progetti da visualizzare</li>
-                            <li><strong>Legenda:</strong> Mostra i progetti con i relativi colori</li>
+                            <li><strong>Da un progetto:</strong> Nella tab Progetti, apri un progetto e usa "💾 Salva come Template".</li>
+                            <li><strong>Manualmente:</strong> Nella tab Template, usa "➕ Nuovo Template" per creare un template vuoto, poi aggiungi attività e milestone con offset in giorni dall'inizio.</li>
+                        </ul>
+                        <h3>Applicare un Template</h3>
+                        <ul>
+                            <li>Alla creazione di un nuovo progetto, seleziona un template dal menu a tendina.</li>
+                            <li>Le attività del template vengono create con le durate e gli offset definiti.</li>
+                        </ul>
+                        <h3>Cosa viene salvato / non salvato</h3>
+                        <ul>
+                            <li><strong>Salvato:</strong> Struttura attività, nomi, durate, offset in giorni, opzioni sabato/domenica lavorativi, milestone.</li>
+                            <li><strong>NON salvato:</strong> Date specifiche, risorse assegnate, completamento, stato.</li>
                         </ul>
                     </div>
                 </div>
 
+                <!-- RIUNIONI -->
                 <div class="help-section">
-                    <h2 class="help-section-title">👥 Vista Risorse</h2>
+                    <h2 class="help-section-title">👥 Riunioni</h2>
                     <div class="help-content">
-                        <p>Visualizza il carico di lavoro delle risorse nel tempo.</p>
-                        <h3>Tipi di Vista</h3>
+                        <p>La tab <strong>Riunioni</strong> gestisce le riunioni globali del team, indipendenti dai singoli progetti.</p>
+                        <h3>Creare una Riunione</h3>
                         <ul>
-                            <li><strong>Settimana:</strong> Mostra 7 giorni con dettaglio orario per giorno</li>
-                            <li><strong>Mese:</strong> Vista mensile del carico</li>
-                            <li><strong>Giorno Specifico:</strong> Dettaglio di un singolo giorno</li>
-                            <li><strong>Periodo Personalizzato:</strong> Seleziona data inizio e fine</li>
+                            <li>Click su "➕ Nuova Riunione" e compila: <strong>Data</strong>, <strong>Ora</strong> (opzionale, con step di 5 minuti), <strong>Oggetto</strong>, <strong>Tag</strong> (es. Planning, Review, Technical), <strong>Risorse partecipanti</strong>.</li>
+                            <li><strong>Durata Prevista / Durata Reale:</strong> Campi orari per confrontare la durata stimata con quella effettiva.</li>
+                            <li><strong>Descrizione e Resoconto:</strong> Campi di testo con supporto Markdown completo.</li>
                         </ul>
-                        <h3>Interpretare i Colori</h3>
+                        <h3>Riunioni Ricorsive</h3>
                         <ul>
-                            <li><strong>Grigio:</strong> Giorno di assenza</li>
-                            <li><strong>Verde chiaro:</strong> Carico &lt; 50%</li>
-                            <li><strong>Giallo:</strong> Carico 50-80%</li>
-                            <li><strong>Arancione:</strong> Carico 80-100%</li>
-                            <li><strong>Rosso:</strong> Sovraccarico &gt; 100%</li>
+                            <li>Attiva la checkbox <strong>"Riunione Ricorsiva"</strong> per creare più riunioni in automatico.</li>
+                            <li>Specifica: <strong>Data Fine Ricorrenza</strong>, <strong>Ogni quante settimane</strong> e <strong>Giorni della Settimana</strong> (Lun-Dom).</li>
+                            <li>Ogni occorrenza viene creata come riunione separata con lo stesso oggetto e risorse.</li>
                         </ul>
-                        <h3>Suggerimenti Attività Flessibili</h3>
+                        <h3>Filtri e Visualizzazione</h3>
                         <ul>
-                            <li>Appaiono nei giorni con carico basso (&lt; 80%)</li>
-                            <li>Non vengono mostrati per: giorni passati, assenze, weekend, festività</li>
-                            <li>Click su un suggerimento per assegnare automaticamente l'attività</li>
+                            <li>Tag e risorse sono filtrabili per trovare rapidamente le riunioni desiderate.</li>
+                            <li>I tag suggeriti vengono popolati automaticamente dai tag già utilizzati.</li>
                         </ul>
+                        <h3>Riunioni di Progetto</h3>
+                        <p>Oltre alle riunioni globali, ogni progetto ha una sotto-sezione dedicata per le riunioni specifiche a quel progetto, con campi: Data, Argomento, Partecipanti e Argomenti Discussi.</p>
                     </div>
                 </div>
 
+                <!-- BACHECA KANBAN -->
                 <div class="help-section">
                     <h2 class="help-section-title">📋 Bacheca Kanban</h2>
                     <div class="help-content">
-                        <p>Visualizzazione delle attività organizzate per stato.</p>
+                        <p>La tab <strong>Bacheca</strong> mostra una vista Kanban delle attività organizzate per stato.</p>
                         <ul>
-                            <li><strong>Colonne:</strong> Da Fare → In Corso → Completata</li>
-                            <li><strong>Filtri:</strong> Seleziona progetto e/o risorsa</li>
-                            <li><strong>Card:</strong> Ogni attività mostra nome, progetto, date e risorse</li>
-                            <li><strong>Click su card:</strong> Apre il dettaglio dell'attività</li>
+                            <li><strong>Colonne:</strong> Da Fare → In Corso → Completata. Le attività sono raggruppate automaticamente in base al loro stato.</li>
+                            <li><strong>Filtri:</strong> Filtra per progetto e/o risorsa per focalizzarti su un sottoinsieme.</li>
+                            <li><strong>Card:</strong> Ogni card mostra nome attività, progetto, date, risorse assegnate e percentuale di completamento.</li>
+                            <li><strong>Click su card:</strong> Apre il modal dell'attività per modificarla.</li>
                         </ul>
                     </div>
                 </div>
 
+                <!-- OFFERTE -->
+                <div class="help-section">
+                    <h2 class="help-section-title">💼 Offerte</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Offerte</strong> fornisce una vista riepilogativa di tutte le offerte commerciali inserite nei vari progetti.</p>
+                        <h3>Creare un'Offerta</h3>
+                        <p>Le offerte si creano dall'interno di un progetto, nella sotto-sezione "Offerte":</p>
+                        <ul>
+                            <li><strong>Titolo Offerta</strong> (obbligatorio)</li>
+                            <li><strong>Data</strong> (obbligatoria)</li>
+                            <li><strong>Stima Tempi</strong> (es. "40 ore", "2 settimane", "3 mesi")</li>
+                            <li><strong>Valore €</strong> (opzionale)</li>
+                            <li><strong>Stato:</strong> In Preparazione, Inviata, Accettata, Rifiutata</li>
+                            <li><strong>Note</strong> (opzionale)</li>
+                        </ul>
+                        <h3>Riepilogo Offerte</h3>
+                        <ul>
+                            <li>La tab Offerte globale mostra una tabella con tutte le offerte di tutti i progetti.</li>
+                            <li>Puoi filtrare per <strong>stato</strong>, <strong>cliente</strong> e <strong>codice progetto</strong>.</li>
+                            <li>Lo stato è identificato da colori: giallo per "In Preparazione", blu per "Inviata", verde per "Accettata", rosso per "Rifiutata".</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- GANTT -->
+                <div class="help-section">
+                    <h2 class="help-section-title">📊 Vista Gantt</h2>
+                    <div class="help-content">
+                        <p>Il diagramma di Gantt mostra tutte le attività distribuite su una timeline visuale.</p>
+                        <h3>Filtri e Opzioni</h3>
+                        <ul>
+                            <li><strong>Filtro Progetto:</strong> Visualizza tutti i progetti o solo uno specifico.</li>
+                            <li><strong>Filtro Periodo:</strong> Settimana, Mese, Trimestre, Anno o Tutti.</li>
+                            <li><strong>Vista:</strong> Organizza il Gantt <strong>Per Progetto</strong> o <strong>Per Risorsa</strong>.</li>
+                            <li><strong>Nascondi completati:</strong> Nasconde le attività con stato "Completata".</li>
+                            <li><strong>Nascondi fuori periodo:</strong> Nasconde le attività che non ricadono nel periodo selezionato.</li>
+                            <li><strong>Collapse/Expand All:</strong> Comprimi o espandi tutti i raggruppamenti.</li>
+                        </ul>
+                        <h3>Legenda Colori Barre</h3>
+                        <ul>
+                            <li><strong>Grigio:</strong> Stato "Nessuno" (da fare)</li>
+                            <li><strong>Verde:</strong> Completata</li>
+                            <li><strong>Blu:</strong> In corso</li>
+                            <li><strong>Rosso:</strong> In ritardo</li>
+                            <li><strong>Giallo:</strong> In pausa</li>
+                            <li><strong>Marrone:</strong> Non assegnata (senza risorse)</li>
+                            <li><strong>Nero:</strong> Annullata</li>
+                            <li><strong>◆ Diamante:</strong> Milestone (punto di controllo)</li>
+                        </ul>
+                        <h3>Legenda Giorni</h3>
+                        <ul>
+                            <li><strong>Arancione/Rosso:</strong> Giorno corrente (Oggi)</li>
+                            <li><strong>Righe diagonali grigie:</strong> Weekend</li>
+                            <li><strong>Sfondo giallo:</strong> Festività</li>
+                            <li><strong>Righe diagonali rosse:</strong> Ferie / Malattia / Intervento Pianificato</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- VISTA RISORSE -->
+                <div class="help-section">
+                    <h2 class="help-section-title">👥 Vista Risorse</h2>
+                    <div class="help-content">
+                        <p>Visualizza il carico di lavoro delle risorse nel tempo, evidenziando sovraccarichi e disponibilità.</p>
+                        <h3>Tipi di Periodo</h3>
+                        <ul>
+                            <li><strong>Giorno:</strong> Dettaglio di un singolo giorno con navigazione ◀ ▶ e indicazione del giorno della settimana.</li>
+                            <li><strong>Settimana:</strong> Mostra 7 giorni con dettaglio per giorno. Navigazione settimana per settimana.</li>
+                            <li><strong>Mese:</strong> Vista mensile del carico. Navigazione mese per mese.</li>
+                            <li><strong>Trimestre:</strong> Vista su 3 mesi.</li>
+                            <li><strong>Anno:</strong> Vista annuale.</li>
+                            <li><strong>Tutto:</strong> Tutte le date coperte dalle attività.</li>
+                            <li><strong>Personalizzato:</strong> Seleziona data inizio e fine a piacere.</li>
+                        </ul>
+                        <p>I pulsanti <strong>📅 Oggi / Corrente</strong> riportano alla data odierna.</p>
+                        <h3>Filtri</h3>
+                        <ul>
+                            <li><strong>Filtra per risorsa:</strong> Mostra solo una risorsa specifica o tutte.</li>
+                            <li><strong>Nascondi suggerimenti:</strong> Nasconde i suggerimenti di attività flessibili.</li>
+                        </ul>
+                        <h3>Indicatori di Carico</h3>
+                        <ul>
+                            <li><strong style="color: var(--accent-color);">Verde:</strong> Carico normale (≤ 100%)</li>
+                            <li><strong style="color: #ff9800;">Arancione:</strong> Sovraccarico moderato (100-150%)</li>
+                            <li><strong style="color: var(--danger-color);">Rosso:</strong> Sovraccarico critico (&gt; 150%)</li>
+                            <li><strong>Grigio:</strong> Giorno di assenza</li>
+                        </ul>
+                        <h3>Suggerimenti Attività Flessibili</h3>
+                        <ul>
+                            <li>Appaiono nei giorni con carico basso (&lt; 80%) come suggerimenti verdi.</li>
+                            <li>Non vengono mostrati per: giorni passati, assenze, weekend, festività.</li>
+                            <li>Click su un suggerimento per assegnare automaticamente l'attività a quella data e risorsa.</li>
+                        </ul>
+                        <h3>Creare Attività dalla Vista Risorse</h3>
+                        <ul>
+                            <li>Nella vista settimanale, <strong>click su un giorno</strong> vuoto apre il modal nuova attività con data e risorsa precompilati.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- AVVISI -->
                 <div class="help-section">
                     <h2 class="help-section-title">⚠️ Avvisi</h2>
                     <div class="help-content">
-                        <p>Dashboard centralizzata per identificare problemi nei progetti.</p>
+                        <p>Dashboard centralizzata per identificare problemi e anomalie nei progetti.</p>
                         <h3>Tipi di Avvisi</h3>
                         <ul>
                             <li><strong>🔴 Critici:</strong>
@@ -3455,66 +3714,143 @@
                                     <li>Attività in ritardo parzialmente completate</li>
                                     <li>Assenze durante attività pianificate</li>
                                     <li>Attività senza risorse assegnate</li>
+                                    <li>Attività senza date</li>
                                 </ul>
                             </li>
                             <li><strong>ℹ️ Informativi:</strong>
                                 <ul>
                                     <li>Progetti senza attività</li>
-                                    <li>Attività flessibili da pianificare</li>
+                                    <li>Attività in pausa</li>
                                 </ul>
                             </li>
+                        </ul>
+                        <h3>Configurazione Avvisi</h3>
+                        <ul>
+                            <li>Il pulsante <strong>⚙️ Configura Tipi</strong> mostra una tabella dove puoi abilitare o disabilitare singoli tipi di avviso.</li>
+                            <li>Le preferenze vengono salvate automaticamente.</li>
                         </ul>
                         <p><strong>💡 Suggerimento:</strong> Click su un avviso per navigare direttamente al problema!</p>
                     </div>
                 </div>
 
+                <!-- REVISIONE ATTIVITÀ -->
                 <div class="help-section">
-                    <h2 class="help-section-title">📝 Template</h2>
+                    <h2 class="help-section-title">🔍 Revisione Attività</h2>
                     <div class="help-content">
-                        <p>Salva progetti come template per riutilizzarli.</p>
+                        <p>La tab <strong>Revisione Attività</strong> mostra una tabella con tutte le attività a <strong>data flessibile</strong> o <strong>in pausa</strong>, permettendo una revisione rapida delle attività che richiedono attenzione.</p>
                         <ul>
-                            <li><strong>Creare un template:</strong> Nella tab Progetti, usa il pulsante "💾 Salva come Template"</li>
-                            <li><strong>Applicare un template:</strong> Crea un nuovo progetto e seleziona "Applica Template"</li>
-                            <li><strong>Cosa viene salvato:</strong> Struttura delle attività, durate, dipendenze</li>
-                            <li><strong>Cosa NON viene salvato:</strong> Date specifiche, risorse assegnate</li>
+                            <li><strong>Filtri:</strong> Filtra per cliente, codice lavoro, descrizione progetto, nome attività e risorsa.</li>
+                            <li><strong>Nascondi in pausa:</strong> Checkbox per nascondere le attività in pausa e vedere solo le flessibili.</li>
+                            <li><strong>Selezione multipla:</strong> Checkbox per selezionare più attività.</li>
+                            <li><strong>Colonne:</strong> Cliente, Codice Lavoro, Descrizione, Attività, Risorse, Carico, Durata, Tipo (Flessibile/Pausa), Sede e azioni rapide.</li>
+                            <li><strong>Azioni:</strong> Apri il modal dell'attività per modificarla direttamente.</li>
                         </ul>
                     </div>
                 </div>
 
+                <!-- STABILIMENTI -->
                 <div class="help-section">
-                    <h2 class="help-section-title">🎄 Festività</h2>
+                    <h2 class="help-section-title">🏭 Stabilimenti</h2>
                     <div class="help-content">
-                        <p>Definisci giorni festivi che non vengono considerati giorni lavorativi.</p>
+                        <p>La tab <strong>Stabilimenti</strong> gestisce le sedi dei clienti dove si svolgono le attività.</p>
+                        <h3>Creare uno Stabilimento</h3>
                         <ul>
-                            <li><strong>Festività Globali:</strong> Visibili nell'header, valgono per tutti i progetti</li>
-                            <li><strong>Festività per Progetto:</strong> Specifiche per singoli progetti (es. festività internazionali)</li>
-                            <li><strong>Effetto:</strong> Non contano nel calcolo della durata delle attività</li>
-                            <li><strong>Visualizzazione:</strong> Appaiono nella Vista Risorse e nel calcolo dei carichi</li>
+                            <li>Click su "➕ Nuovo Stabilimento" e compila: <strong>Nome</strong>, <strong>Cliente</strong> (con suggerimenti automatici), <strong>Indirizzo</strong> e <strong>Note</strong>.</li>
+                            <li>Il pulsante <strong>📍 Geocodifica Indirizzo</strong> rileva automaticamente le coordinate dall'indirizzo inserito.</li>
+                            <li>Una <strong>mappa interattiva</strong> mostra la posizione. Puoi trascinare il marker o cliccare sulla mappa per regolare la posizione.</li>
+                        </ul>
+                        <h3>Utilizzo negli Task</h3>
+                        <ul>
+                            <li>Quando crei un'attività "Presso Cliente", puoi selezionare uno stabilimento dal menu a tendina.</li>
+                            <li>Vengono mostrati solo gli stabilimenti del cliente del progetto corrente.</li>
+                        </ul>
+                        <h3>Ricerca</h3>
+                        <ul>
+                            <li>Usa il campo di ricerca per filtrare stabilimenti per nome, cliente o indirizzo.</li>
                         </ul>
                     </div>
                 </div>
 
+                <!-- MAPPA ATTIVITÀ -->
                 <div class="help-section">
-                    <h2 class="help-section-title">💾 Salvataggio Dati</h2>
+                    <h2 class="help-section-title">🗺️ Mappa Attività</h2>
                     <div class="help-content">
-                        <p>Tutti i dati sono salvati automaticamente nel browser (IndexedDB).</p>
+                        <p>La tab <strong>Mappa Attività</strong> mostra su una mappa interattiva tutte le attività "Presso Cliente" associate a stabilimenti con coordinate.</p>
+                        <h3>Tipo di Marker</h3>
                         <ul>
-                            <li><strong>Backup:</strong> Usa "⬇️ Scarica Backup" per salvare un file JSON</li>
-                            <li><strong>Ripristino:</strong> Usa "⬆️ Carica Backup" per ripristinare da file</li>
-                            <li><strong>Attenzione:</strong> Cancellare i dati del browser elimina tutti i progetti!</li>
+                            <li><span style="color: #e65100;">●</span> <strong>Arancione:</strong> Attività flessibili presso cliente (da pianificare).</li>
+                            <li><span style="color: #1565c0;">●</span> <strong>Blu:</strong> Stabilimenti senza attività flessibili.</li>
+                            <li><span style="color: #4CAF50;">●</span> <strong>Verde:</strong> Attività attive presso cliente (in corso o pianificate con data).</li>
+                        </ul>
+                        <h3>Opzioni</h3>
+                        <ul>
+                            <li><strong>Mostra tutti gli stabilimenti:</strong> Visualizza anche gli stabilimenti senza attività flessibili.</li>
+                            <li><strong>Mostra attività attive:</strong> Visualizza anche le attività non flessibili presso cliente.</li>
+                        </ul>
+                        <p>Cliccando sui marker si visualizzano i dettagli dell'attività e dello stabilimento.</p>
+                    </div>
+                </div>
+
+                <!-- ANNOTAZIONI -->
+                <div class="help-section">
+                    <h2 class="help-section-title">📌 Annotazioni</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Annotazioni</strong> raccoglie in una tabella tutte le attività che hanno un'annotazione compilata.</p>
+                        <ul>
+                            <li><strong>Ordinamento:</strong> Le attività sono ordinate per <strong>data di inizio</strong> crescente, mostrando prima quelle più urgenti.</li>
+                            <li><strong>Evidenziazione:</strong> Le attività con data di inizio passata vengono evidenziate con uno sfondo rosso tenue per richiamare l'attenzione.</li>
+                            <li><strong>Filtri:</strong> Puoi filtrare per cliente, codice lavoro e testo dell'annotazione.</li>
+                            <li><strong>Colonne:</strong> Cliente, Codice Lavoro, Descrizione Progetto, Attività, Data Inizio, Annotazione.</li>
+                            <li><strong>Azioni:</strong> Il pulsante "✏️ Apri" per ogni riga apre il modal dell'attività per modificarla.</li>
+                        </ul>
+                        <p>Le annotazioni si compilano nel campo "📌 Annotazione" del modal attività.</p>
+                    </div>
+                </div>
+
+                <!-- IMPORT/EXPORT -->
+                <div class="help-section">
+                    <h2 class="help-section-title">💾 Import/Export Dati</h2>
+                    <div class="help-content">
+                        <p>Tutti i dati sono salvati automaticamente nel browser tramite <strong>IndexedDB</strong>.</p>
+                        <h3>Esportazione</h3>
+                        <ul>
+                            <li><strong>💾 Esporta Tutti i Dati:</strong> Scarica un file JSON con tutti i dati (risorse, progetti, festività locali, template, riunioni, stabilimenti).</li>
+                        </ul>
+                        <h3>Importazione</h3>
+                        <ul>
+                            <li><strong>📂 Importa Dati:</strong> <span style="color: var(--danger-color);">Sostituisce completamente</span> tutti i dati correnti con quelli del file JSON.</li>
+                            <li><strong>📂 Importa e Unisci:</strong> Aggiunge i dati importati a quelli esistenti, senza cancellare nulla.</li>
+                        </ul>
+                        <p><strong>⚠️ Attenzione:</strong> Cancellare i dati del browser (cache, dati siti) elimina tutti i progetti! Effettua backup regolari.</p>
+                    </div>
+                </div>
+
+                <!-- TEMA -->
+                <div class="help-section">
+                    <h2 class="help-section-title">🎨 Tema Chiaro/Scuro</h2>
+                    <div class="help-content">
+                        <p>L'applicazione supporta sia il tema <strong>chiaro</strong> che il tema <strong>scuro</strong>.</p>
+                        <ul>
+                            <li>Usa il pulsante <strong>🌙 / ☀️</strong> nell'header per cambiare tema.</li>
+                            <li>La preferenza viene salvata e mantenuta tra le sessioni.</li>
+                            <li>Al primo avvio, il tema viene impostato in base alla preferenza del sistema operativo.</li>
                         </ul>
                     </div>
                 </div>
 
+                <!-- SCORCIATOIE -->
                 <div class="help-section">
                     <h2 class="help-section-title">⌨️ Scorciatoie e Suggerimenti</h2>
                     <div class="help-content">
                         <ul>
-                            <li>Nella Vista Risorse settimanale, <strong>click su un giorno</strong> apre il modal con data e risorsa precompilati</li>
-                            <li>Gli <strong>avvisi cliccabili</strong> ti portano direttamente al problema da risolvere</li>
-                            <li>I <strong>suggerimenti verdi</strong> pianificano automaticamente le attività flessibili</li>
-                            <li>La <strong>percentuale di completamento</strong> rimuove automaticamente la data flessibile</li>
-                            <li>Il <strong>calcolo automatico delle date</strong> considera weekend e festività</li>
+                            <li><strong>Chiudi modal con ESC:</strong> Premi il tasto <strong>Esc</strong> per chiudere qualsiasi modal aperto.</li>
+                            <li><strong>Click su giorno (Vista Risorse):</strong> Nella vista settimanale, click su un giorno vuoto apre il modal nuova attività con data e risorsa precompilati.</li>
+                            <li><strong>Avvisi cliccabili:</strong> Click su un avviso ti porta direttamente al problema da risolvere.</li>
+                            <li><strong>Suggerimenti verdi:</strong> Nella Vista Risorse, click su un suggerimento verde pianifica automaticamente l'attività flessibile.</li>
+                            <li><strong>Completamento automatico:</strong> Impostare il completamento al 100% rimuove automaticamente la data flessibile.</li>
+                            <li><strong>Calcolo automatico date:</strong> Le date di fine vengono calcolate considerando weekend, festività e assenze delle risorse assegnate.</li>
+                            <li><strong>Suggerimenti clienti:</strong> I campi "Cliente" suggeriscono automaticamente i nomi già utilizzati in altri progetti o stabilimenti.</li>
+                            <li><strong>Markdown:</strong> I campi Note attività, Descrizione progetto, Descrizione riunione e Resoconto riunione supportano la sintassi Markdown con anteprima integrata.</li>
                         </ul>
                     </div>
                 </div>
@@ -4064,6 +4400,10 @@
                     <div class="form-group">
                         <label>Note:</label>
                         <textarea id="taskNotes" rows="4" placeholder="Inserisci note aggiuntive sull'attività..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>📌 Annotazione:</label>
+                        <input type="text" id="taskAnnotation" placeholder="Breve nota da verificare..." maxlength="200">
                     </div>
                 </div>
                 <div class="modal-side-column">
@@ -4989,6 +5329,10 @@
             if (tabName === 'activityMap') {
                 renderActivityMap();
             }
+            // Renderizza le Annotazioni quando si apre la tab
+            if (tabName === 'annotations') {
+                renderAnnotations();
+            }
         }
 
         // === CHECKLIST MANAGEMENT ===
@@ -5240,6 +5584,7 @@
                         document.getElementById('taskCompletion').value = task.completion;
                         document.getElementById('taskStatus').value = task.status;
                         document.getElementById('taskNotes').value = task.notes || '';
+                        document.getElementById('taskAnnotation').value = task.annotation || '';
                         document.getElementById('taskSaturdayWork').checked = task.saturdayWork;
                         document.getElementById('taskSundayWork').checked = task.sundayWork;
                         document.getElementById('taskHolidayWork').checked = task.holidayWork || false;
@@ -9009,6 +9354,7 @@
             const completion = parseInt(document.getElementById('taskCompletion').value);
             let status = document.getElementById('taskStatus').value;
             const notes = document.getElementById('taskNotes').value.trim();
+            const annotation = document.getElementById('taskAnnotation').value.trim();
             const saturdayWork = document.getElementById('taskSaturdayWork').checked;
             const sundayWork = document.getElementById('taskSundayWork').checked;
             const holidayWork = document.getElementById('taskHolidayWork').checked;
@@ -9078,6 +9424,7 @@
                 startOffset,
                 endOffset,
                 notes,
+                annotation,
                 resources: assignedResources,
                 flexibleDate: flexibleDate || false,
                 checklist: checklistItems,
@@ -9122,6 +9469,14 @@
             if (taskReviewTab && taskReviewTab.classList.contains('active')) {
                 const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
                 renderTaskReview();
+                window.scrollTo(0, scrollPosition);
+            }
+            
+            // Aggiorna Annotazioni se visibile e mantieni posizione scroll
+            const annotationsTab = document.getElementById('annotations');
+            if (annotationsTab && annotationsTab.classList.contains('active')) {
+                const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+                renderAnnotations();
                 window.scrollTo(0, scrollPosition);
             }
             
@@ -9598,6 +9953,7 @@
             document.getElementById('taskCompletion').value = '0';
             document.getElementById('taskStatus').value = '';
             document.getElementById('taskNotes').value = '';
+            document.getElementById('taskAnnotation').value = '';
             document.getElementById('taskSaturdayWork').checked = false;
             document.getElementById('taskSundayWork').checked = false;
             document.getElementById('taskHolidayWork').checked = false;
@@ -13560,6 +13916,102 @@
                 `;
                 document.body.appendChild(modal);
             });
+        }
+
+        // === ANNOTAZIONI ATTIVITÀ ===
+        function renderAnnotations() {
+            const tbody = document.querySelector('#annotationsTable tbody');
+            tbody.innerHTML = '';
+
+            const filterClient = (document.getElementById('annotationsFilterClient')?.value || '').toLowerCase();
+            const filterCode = (document.getElementById('annotationsFilterCode')?.value || '').toLowerCase();
+            const filterText = (document.getElementById('annotationsFilterText')?.value || '').toLowerCase();
+
+            // Raccogli tutte le attività con annotazione non vuota
+            const annotatedTasks = [];
+            projects.forEach(project => {
+                if (!project.tasks) return;
+                project.tasks.forEach(task => {
+                    if (task.annotation && task.annotation.trim()) {
+                        annotatedTasks.push({ project, task });
+                    }
+                });
+            });
+
+            // Applica filtri
+            let filtered = annotatedTasks;
+            if (filterClient) {
+                filtered = filtered.filter(item => (item.project.client || '').toLowerCase().includes(filterClient));
+            }
+            if (filterCode) {
+                filtered = filtered.filter(item => (item.project.code || '').toLowerCase().includes(filterCode));
+            }
+            if (filterText) {
+                filtered = filtered.filter(item => (item.task.annotation || '').toLowerCase().includes(filterText));
+            }
+
+            // Ordina per data di inizio (più vecchia/urgente in alto), attività senza data in fondo
+            filtered.sort((a, b) => {
+                const dateA = a.task.startDate || '';
+                const dateB = b.task.startDate || '';
+                if (!dateA && !dateB) return 0;
+                if (!dateA) return 1;
+                if (!dateB) return -1;
+                return dateA.localeCompare(dateB);
+            });
+
+            // Renderizza righe
+            filtered.forEach(item => {
+                const { project, task } = item;
+                const tr = document.createElement('tr');
+
+                // Evidenzia attività con data passata
+                const today = formatDateLocal(new Date());
+                if (task.startDate && task.startDate < today) {
+                    tr.style.backgroundColor = 'rgba(244, 67, 54, 0.06)';
+                }
+
+                const startDateFormatted = task.startDate
+                    ? new Date(task.startDate + 'T00:00:00').toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                    : '<span style="color:var(--text-tertiary); font-style:italic;">Non definita</span>';
+
+                tr.innerHTML = `
+                    <td>${escapeHtml(project.client || '')}</td>
+                    <td>${escapeHtml(project.code || '')}</td>
+                    <td>${escapeHtml(project.description || '-')}</td>
+                    <td>${escapeHtml(task.name || '')}</td>
+                    <td>${startDateFormatted}</td>
+                    <td style="max-width: 350px;"><span title="${escapeHtml(task.annotation)}">${escapeHtml(task.annotation)}</span></td>
+                    <td class="action-buttons">
+                        <button onclick="openTaskFromAnnotations(${task.id}, ${project.id})" class="secondary" title="Modifica attività">✏️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Contatore
+            const countMsg = filtered.length === annotatedTasks.length
+                ? `Trovate ${filtered.length} annotazioni`
+                : `Mostrate ${filtered.length} di ${annotatedTasks.length} annotazioni`;
+            
+            const existingCount = document.querySelector('#annotations .annotations-count');
+            if (existingCount) {
+                existingCount.textContent = countMsg;
+            } else {
+                const countDiv = document.createElement('div');
+                countDiv.className = 'annotations-count';
+                countDiv.style.marginBottom = '10px';
+                countDiv.style.color = 'var(--text-secondary)';
+                countDiv.style.fontStyle = 'italic';
+                countDiv.textContent = countMsg;
+                const table = document.getElementById('annotationsTable');
+                table.parentNode.insertBefore(countDiv, table);
+            }
+        }
+
+        function openTaskFromAnnotations(taskId, projectId) {
+            currentProjectId = projectId;
+            openTaskModal(taskId);
         }
 
         // === VISTA RISORSE ===
