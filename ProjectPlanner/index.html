@@ -1749,6 +1749,47 @@
             color: white;
         }
 
+        .resource-stats {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .resource-stat-badge {
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .resource-stat-badge.allocated {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .resource-stat-badge.allocated.warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .resource-stat-badge.allocated.overload {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .resource-stat-badge.extra {
+            background: #9c27b0;
+            color: white;
+        }
+
+        .resource-stat-badge.absence {
+            background: #f44336;
+            color: white;
+        }
+
         .resource-timeline {
             margin-top: 10px;
         }
@@ -3676,12 +3717,11 @@
                             <li><strong>Filtra per risorsa:</strong> Mostra solo una risorsa specifica o tutte.</li>
                             <li><strong>Nascondi suggerimenti:</strong> Nasconde i suggerimenti di attività flessibili.</li>
                         </ul>
-                        <h3>Indicatori di Carico</h3>
+                        <h3>Indicatori nell'intestazione</h3>
                         <ul>
-                            <li><strong style="color: var(--accent-color);">Verde:</strong> Carico normale (≤ 100%)</li>
-                            <li><strong style="color: #ff9800;">Arancione:</strong> Sovraccarico moderato (100-150%)</li>
-                            <li><strong style="color: var(--danger-color);">Rosso:</strong> Sovraccarico critico (&gt; 150%)</li>
-                            <li><strong>Grigio:</strong> Giorno di assenza</li>
+                            <li><strong style="color: var(--accent-color);">📊 X/Y gg lavorativi:</strong> Giorni allocati su giorni lavorativi del periodo (arancione se carico &gt; 100%, rosso se &gt; 150%)</li>
+                            <li><strong style="color: #9c27b0;">📅 N gg extra:</strong> Giorni con lavoro su weekend o festivi (visibile solo se &gt; 0)</li>
+                            <li><strong style="color: var(--danger-color);">🏖️ N gg assenza:</strong> Giorni di assenza nel periodo (visibile solo se &gt; 0)</li>
                         </ul>
                         <h3>Suggerimenti Attività Flessibili</h3>
                         <ul>
@@ -4060,6 +4100,10 @@
                     <input type="date" id="resourceViewEndDate" onchange="renderResourceView()">
                 </div>
                 <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 15px;">
+                    <input type="checkbox" id="resourceViewHideCompleted" onchange="renderResourceView()" style="cursor: pointer;" checked>
+                    <span>Nascondi completate</span>
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 15px;">
                     <input type="checkbox" id="resourceViewHideSuggestions" onchange="renderResourceView()" style="cursor: pointer;">
                     <span>Nascondi suggerimenti</span>
                 </label>
@@ -4127,10 +4171,10 @@
             </div>
 
             <div class="holidays-info">
-                <strong>⚠️ Indicatori di Carico</strong><br>
-                <strong style="color: var(--accent-color);">Verde</strong>: Carico normale (≤ 100%)<br>
-                <strong style="color: #ff9800;">Arancione</strong>: Sovraccarico moderato (100-150%)<br>
-                <strong style="color: var(--danger-color);">Rosso</strong>: Sovraccarico critico (> 150%)
+                <strong>📊 Indicatori nell'intestazione risorsa</strong><br>
+                <strong style="color: var(--accent-color);">📊 X/Y gg lavorativi</strong>: Giorni allocati su giorni lavorativi del periodo (arancione se carico > 100%, rosso se > 150%)<br>
+                <strong style="color: #9c27b0;">📅 N gg extra</strong>: Giorni con lavoro su weekend o festivi (visibile solo se > 0)<br>
+                <strong style="color: var(--danger-color);">🏖️ N gg assenza</strong>: Giorni di assenza nel periodo (visibile solo se > 0)
             </div>
 
             <div id="resourceViewContainer"></div>
@@ -14451,10 +14495,12 @@
             card.dataset.resourceId = resource.id;
 
             // Raccogli tutte le assegnazioni per questa risorsa
+            const hideCompleted = document.getElementById('resourceViewHideCompleted')?.checked || false;
             const assignments = [];
             projects.forEach(project => {
                 if (project.tasks) {
                     project.tasks.forEach(task => {
+                        if (hideCompleted && (task.completion >= 100 || task.status === 'completata')) return;
                         if (task.resources && task.startDate && task.endDate) {
                             const res = task.resources.find(r => r.resourceId == resource.id);
                             if (res) {
@@ -14527,19 +14573,100 @@
             name.textContent = `${resource.firstName} ${resource.lastName}`;
             header.appendChild(name);
 
-            const load = document.createElement('div');
-            load.className = 'resource-load';
-            if (overload.maxLoad <= 100) {
-                load.classList.add('normal');
-                load.textContent = `Carico: ${overload.maxLoad.toFixed(0)}%`;
-            } else if (overload.maxLoad <= 150) {
-                load.classList.add('warning');
-                load.textContent = `⚠️ Sovraccarico: ${overload.maxLoad.toFixed(0)}%`;
+            if (period === 'day') {
+                // Vista giorno: mostra carico % come prima
+                const load = document.createElement('div');
+                load.className = 'resource-load';
+                if (overload.maxLoad <= 100) {
+                    load.classList.add('normal');
+                    load.textContent = `Carico: ${overload.maxLoad.toFixed(0)}%`;
+                } else if (overload.maxLoad <= 150) {
+                    load.classList.add('warning');
+                    load.textContent = `⚠️ Sovraccarico: ${overload.maxLoad.toFixed(0)}%`;
+                } else {
+                    load.classList.add('overload');
+                    load.textContent = `🛑 Critico: ${overload.maxLoad.toFixed(0)}%`;
+                }
+                header.appendChild(load);
             } else {
-                load.classList.add('overload');
-                load.textContent = `🛑 Critico: ${overload.maxLoad.toFixed(0)}%`;
+                // Altre viste: mostra statistiche giorni
+                // Per periodi che includono oggi, conta solo da oggi in avanti
+                let workingDaysInPeriod = 0;
+                let allocatedWorkingDays = 0;
+                let extraAllocatedDays = 0;
+                let absenceDaysInPeriod = 0;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const statsStart = (startDate < today && endDate >= today) ? new Date(today) : new Date(startDate);
+                const statsDate = new Date(statsStart);
+                while (statsDate <= endDate) {
+                    const dateStr = formatDateLocal(statsDate);
+                    const dayOfWeek = statsDate.getDay();
+                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                    const isHoliday = holidays.some(h => h.date === dateStr);
+
+                    const isAbsent = resource.absences && resource.absences.some(absence => {
+                        const absStart = new Date(absence.start);
+                        const absEnd = new Date(absence.end);
+                        absStart.setHours(0, 0, 0, 0);
+                        absEnd.setHours(23, 59, 59, 999);
+                        const checkDate = new Date(statsDate);
+                        checkDate.setHours(12, 0, 0, 0);
+                        return checkDate >= absStart && checkDate <= absEnd;
+                    });
+
+                    const hasLoad = overload.dailyLoad[dateStr] && overload.dailyLoad[dateStr] > 0;
+
+                    if (!isWeekend && !isHoliday) {
+                        if (isAbsent) {
+                            absenceDaysInPeriod++;
+                        } else {
+                            workingDaysInPeriod++;
+                            if (hasLoad) allocatedWorkingDays++;
+                        }
+                    } else {
+                        if (hasLoad) extraAllocatedDays++;
+                    }
+                    statsDate.setDate(statsDate.getDate() + 1);
+                }
+
+                // Container statistiche
+                const statsDiv = document.createElement('div');
+                statsDiv.className = 'resource-stats';
+
+                // Badge giorni allocati / lavorativi
+                const allocBadge = document.createElement('span');
+                allocBadge.className = 'resource-stat-badge allocated';
+                if (overload.maxLoad > 150) {
+                    allocBadge.classList.add('overload');
+                } else if (overload.maxLoad > 100) {
+                    allocBadge.classList.add('warning');
+                }
+                allocBadge.textContent = `📊 ${allocatedWorkingDays}/${workingDaysInPeriod} gg lavorativi`;
+                allocBadge.title = `${allocatedWorkingDays} giorni allocati su ${workingDaysInPeriod} giorni lavorativi nel periodo`;
+                statsDiv.appendChild(allocBadge);
+
+                // Badge giorni extra (solo se > 0)
+                if (extraAllocatedDays > 0) {
+                    const extraBadge = document.createElement('span');
+                    extraBadge.className = 'resource-stat-badge extra';
+                    extraBadge.textContent = `📅 ${extraAllocatedDays} gg extra`;
+                    extraBadge.title = `${extraAllocatedDays} giorni di lavoro su weekend o festivi`;
+                    statsDiv.appendChild(extraBadge);
+                }
+
+                // Badge assenze (solo se > 0)
+                if (absenceDaysInPeriod > 0) {
+                    const absBadge = document.createElement('span');
+                    absBadge.className = 'resource-stat-badge absence';
+                    absBadge.textContent = `🏖️ ${absenceDaysInPeriod} gg assenza`;
+                    absBadge.title = `${absenceDaysInPeriod} giorni di assenza nel periodo`;
+                    statsDiv.appendChild(absBadge);
+                }
+
+                header.appendChild(statsDiv);
             }
-            header.appendChild(load);
 
             card.appendChild(header);
             
