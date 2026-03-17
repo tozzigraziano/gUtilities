@@ -2937,6 +2937,7 @@
                             <th>Data Inizio</th>
                             <th>Data Fine</th>
                             <th>Durata</th>
+                            <th>Luogo</th>
                             <th>Collegamenti</th>
                             <th>Completamento</th>
                             <th>Stato</th>
@@ -10011,6 +10012,7 @@
                     <td ${cancelledStyle}>${task.startDate || '-'}</td>
                     <td ${cancelledStyle}>${task.endDate || '-'}</td>
                     <td ${cancelledStyle}>${task.duration} giorni</td>
+                    <td ${cancelledStyle}>${getLocationBadgeHtml(task)}</td>
                     <td ${cancelledStyle}>${linksStr}</td>
                     <td ${cancelledStyle}>${task.completion}%</td>
                     <td ${cancelledStyle}>${statusLabels[task.status] || '-'}</td>
