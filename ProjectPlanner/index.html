@@ -5834,7 +5834,55 @@
             
             // Prepara il subject e il body dell'email
             const subject = `Attività: ${taskName} - ${projectName}`;
-            const body = `Dettagli Attività\n` +
+
+            // Converti le note da markdown a HTML
+            const notesHtml = notes ? marked.parse(notes) : '<em>Nessuna nota</em>';
+
+            // Checklist in HTML
+            let checklistHtml = '';
+            if (checklistItems.length > 0) {
+                checklistHtml = '<h3 style="margin:12px 0 6px;">Checklist</h3><ul style="list-style:none;padding-left:0;">';
+                checklistItems.forEach(item => {
+                    const icon = item.completed ? '☑' : '☐';
+                    const style = item.completed ? 'text-decoration:line-through;color:#888;' : '';
+                    checklistHtml += `<li style="${style}">${icon} ${item.text}</li>`;
+                });
+                checklistHtml += '</ul>';
+            }
+
+            // Risorse in HTML
+            let resourcesHtml = '';
+            if (resourcesText) {
+                const lines = resourcesText.trim().split('\n');
+                resourcesHtml = '<ul>' + lines.map(l => `<li>${l.replace(/^\s*-\s*/, '')}</li>`).join('') + '</ul>';
+            } else {
+                resourcesHtml = '<em>Nessuna risorsa assegnata</em>';
+            }
+
+            // Corpo email in HTML formattato
+            const htmlBody = `
+                <div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:14px;color:#333;">
+                    <h2 style="border-bottom:2px solid #4CAF50;padding-bottom:6px;">Dettagli Attività</h2>
+                    <table style="border-collapse:collapse;margin:10px 0;">
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Nome:</td><td>${taskName}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Progetto:</td><td>${projectName}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Inizio:</td><td>${startDate || 'Non definita'}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Fine:</td><td>${endDate || 'Non definita'}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Durata:</td><td>${duration} giorni lavorativi</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Data Flessibile:</td><td>${flexibleDate ? 'Sì' : 'No'}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Sede:</td><td>${locationText}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Stato:</td><td>${statusText}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Completamento:</td><td>${completion}%</td></tr>
+                    </table>
+                    <h3 style="margin:12px 0 6px;">Risorse Assegnate</h3>
+                    ${resourcesHtml}
+                    ${checklistHtml}
+                    <h3 style="margin:12px 0 6px;">Note</h3>
+                    <div style="background:#f9f9f9;border-left:3px solid #4CAF50;padding:8px 12px;margin:6px 0;">${notesHtml}</div>
+                </div>`;
+
+            // Corpo email in testo semplice (fallback per mailto)
+            const plainBody = `Dettagli Attività\n` +
                         `================\n\n` +
                         `Nome: ${taskName}\n` +
                         `Progetto: ${projectName}\n\n` +
@@ -5849,12 +5897,21 @@
                         `Risorse Assegnate:\n${resourcesText}\n` +
                         checklistText +
                         `Note:\n${notes || 'Nessuna nota'}\n`;
-            
-            // Crea il link mailto
-            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            
-            // Apri il client email
-            window.location.href = mailtoLink;
+
+            // Copia l'HTML formattato negli appunti, poi apri mailto come fallback
+            const blob = new Blob([htmlBody], { type: 'text/html' });
+            const clipboardItem = new ClipboardItem({ 'text/html': blob, 'text/plain': new Blob([plainBody], { type: 'text/plain' }) });
+            navigator.clipboard.write([clipboardItem]).then(() => {
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
+                window.location.href = mailtoLink;
+                setTimeout(() => {
+                    alert('✅ Il contenuto formattato è stato copiato negli appunti.\n\nNel client email, usa Ctrl+V (Incolla) per sostituire il testo con la versione formattata con stili e markdown.');
+                }, 500);
+            }).catch(() => {
+                // Fallback: apri solo mailto con testo semplice
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
+                window.location.href = mailtoLink;
+            });
         }
 
         function openTemplateModal(id = null) {
