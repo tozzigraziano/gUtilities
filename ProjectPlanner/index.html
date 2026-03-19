@@ -6,6 +6,26 @@
     <title>Pianificazione Risorse e Progetti</title>
     <!-- Marked.js for Markdown support -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Custom marked renderer per blocchi di codice con numeri di linea e codice inline
+        const codeRenderer = {
+            code(token) {
+                const lang = token.lang || '';
+                const escaped = token.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const lines = escaped.split('\n');
+                // Rimuovi ultima riga vuota (artefatto comune)
+                if (lines.length > 1 && lines[lines.length - 1].trim() === '') lines.pop();
+                const numberedLines = lines.map(line => `<span class="code-line">${line}</span>`).join('');
+                const langLabel = lang ? lang : 'code';
+                return `<pre><div class="code-header">${langLabel}</div><code>${numberedLines}</code></pre>`;
+            },
+            codespan(token) {
+                const escaped = token.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                return `<code class="inline-code">${escaped}</code>`;
+            }
+        };
+        marked.use({ renderer: codeRenderer });
+    </script>
     <style>
         :root {
             --bg-primary: #f5f5f5;
@@ -2533,34 +2553,86 @@
         .markdown-preview li > p {
             margin: 0.25em 0;
         }
-        .markdown-preview code { 
-            background: #f3f3f3; 
-            padding: 0.2em 0.4em; 
-            border-radius: 3px; 
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 0.9em;
-            color: #1e1e1e;
+        .markdown-preview code,
+        .markdown-preview code.inline-code,
+        code.inline-code { 
+            background: #fff0f0 !important; 
+            padding: 0.2em 0.5em !important; 
+            border-radius: 4px !important; 
+            border: 1px solid #e0b4b4 !important;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+            font-size: 0.88em !important;
+            color: #c7254e !important;
+            white-space: nowrap;
         }
-        [data-theme="dark"] .markdown-preview code {
-            background: #2d2d2d;
-            color: #cccccc;
+        [data-theme="dark"] .markdown-preview code,
+        [data-theme="dark"] .markdown-preview code.inline-code,
+        [data-theme="dark"] code.inline-code {
+            background: #3a2020 !important;
+            border-color: #6a3a3a !important;
+            color: #e06c75 !important;
         }
         .markdown-preview pre { 
-            background: #f6f8fa; 
-            padding: 16px; 
-            border-radius: 6px; 
+            background: #1e1e1e; 
+            border-radius: 8px; 
             overflow-x: auto;
             margin: 1em 0;
-            line-height: 1.45;
+            line-height: 1.6;
+            border: 1px solid #333;
+            position: relative;
         }
-        [data-theme="dark"] .markdown-preview pre {
+        .markdown-preview pre .code-header {
             background: #2d2d2d;
+            border-bottom: 1px solid #404040;
+            padding: 6px 12px;
+            font-size: 0.75em;
+            color: #888;
+            font-family: 'Segoe UI', sans-serif;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .markdown-preview pre .code-header::before {
+            content: '';
+            display: inline-block;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #ff5f56;
+            box-shadow: 16px 0 0 #ffbd2e, 32px 0 0 #27c93f;
         }
         .markdown-preview pre code { 
-            background: none; 
-            padding: 0;
-            color: inherit;
-            font-size: 0.85em;
+            background: none !important; 
+            padding: 12px 16px !important;
+            color: #d4d4d4 !important;
+            font-size: 0.85em !important;
+            border: none !important;
+            display: block;
+            counter-reset: code-line;
+            white-space: pre;
+        }
+        .markdown-preview pre code .code-line {
+            display: block;
+        }
+        .markdown-preview pre code .code-line::before {
+            counter-increment: code-line;
+            content: counter(code-line);
+            display: inline-block;
+            width: 2.5em;
+            margin-right: 1em;
+            text-align: right;
+            color: #555;
+            border-right: 1px solid #404040;
+            padding-right: 0.8em;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        [data-theme="dark"] .markdown-preview pre {
+            background: #1e1e1e;
+            border-color: #333;
+        }
+        [data-theme="light"] .markdown-preview pre {
+            background: #1e1e1e;
         }
         .markdown-preview blockquote {
             border-left: 4px solid #dfe2e5;
@@ -5835,8 +5907,17 @@
             // Prepara il subject e il body dell'email
             const subject = `Attività: ${taskName} - ${projectName}`;
 
-            // Converti le note da markdown a HTML
-            const notesHtml = notes ? marked.parse(notes) : '<em>Nessuna nota</em>';
+            // Converti le note da markdown a HTML e aggiungi stili inline per email
+            let notesHtml = notes ? marked.parse(notes) : '<em>Nessuna nota</em>';
+            // Stili inline per codice in email (i client email non supportano <style>)
+            // IMPORTANTE: prima i blocchi pre>code, poi il codice inline residuo
+            notesHtml = notesHtml
+                .replace(/<pre([^>]*)><div class="code-header">([^<]*)<\/div><code>/g,
+                    '<pre$1 style="background:#1e1e1e;border-radius:8px;overflow-x:auto;margin:1em 0;border:1px solid #333;"><div style="background:#2d2d2d;border-bottom:1px solid #404040;padding:6px 12px;font-size:0.75em;color:#888;font-family:Segoe UI,sans-serif;border-radius:8px 8px 0 0;">$2</div><code style="background:none;padding:12px 16px;color:#d4d4d4;font-size:0.85em;display:block;border:none;white-space:pre;">')
+                .replace(/<pre>/g, '<pre style="background:#1e1e1e;border-radius:8px;overflow-x:auto;margin:1em 0;border:1px solid #333;">')
+                .replace(/<span class="code-line">/g, '<span style="display:block;">')
+                .replace(/<code class="inline-code">/g, '<code style="background:#fff0f0;padding:0.2em 0.5em;border-radius:4px;border:1px solid #e0b4b4;font-family:Consolas,Monaco,monospace;font-size:0.88em;color:#c7254e;">')
+                ;
 
             // Checklist in HTML
             let checklistHtml = '';
