@@ -15193,6 +15193,7 @@
                                 taskCard.innerHTML = `
                                     <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}</div>
                                     <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.client}">${assignment.project.client}</div>
+                                    <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.code} - ${assignment.project.description || ''}">${assignment.project.code}${assignment.project.description ? ' - ' + assignment.project.description : ''}</div>
                                     <div style="font-size: 10px; margin-top: 2px;">
                                         <span>Carico: ${assignment.percentage}%</span>
                                         <span style="margin-left: 8px;">Compl: ${assignment.task.completion}%</span>
