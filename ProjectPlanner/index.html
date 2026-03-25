@@ -13579,13 +13579,17 @@
             projects.forEach(project => {
                 if (project.tasks) {
                     project.tasks.forEach(task => {
-                        if ((!task.resources || task.resources.length === 0) && !task.flexibleDate && task.startDate && task.completion < 100 && task.status !== 'completata' && task.status !== 'annullata') {
+                        const hasValidResources = task.resources && task.resources.length > 0 && task.resources.some(taskRes => {
+                            return taskRes && taskRes.resourceId && resources.some(r => r.id == taskRes.resourceId);
+                        });
+
+                        if ((!task.resources || task.resources.length === 0 || !hasValidResources) && !task.flexibleDate && task.completion < 100 && task.status !== 'completata' && task.status !== 'annullata') {
                             warnings.push({
                                 type: 'nessuna_risorsa',
                                 severity: 'warning',
                                 icon: '👤',
                                 title: `Nessuna risorsa assegnata: ${task.name}`,
-                                description: `Progetto: ${project.client} (${project.code}) - Attività pianificata dal ${task.startDate} senza risorse`,
+                                description: `Progetto: ${project.client} (${project.code}) - Attività${task.startDate ? ` pianificata dal ${task.startDate}` : ''} senza risorse`,
                                 action: 'Assegnare una o più risorse',
                                 onClick: () => {
                                     switchTab('projects');
