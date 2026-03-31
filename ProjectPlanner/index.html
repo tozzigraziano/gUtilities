@@ -5979,6 +5979,147 @@
                         checklistText +
                         `Note:\n${notes || 'Nessuna nota'}\n`;
 
+            // --- Genera file .ics per evento calendario ---
+            function generateICS() {
+                // Formatta date per ICS (YYYYMMDD) - eventi "all day"
+                const formatICSDate = (dateStr) => {
+                    if (!dateStr) return null;
+                    return dateStr.replace(/-/g, '');
+                };
+
+                const icsStart = formatICSDate(startDate);
+                // Per eventi all-day, DTEND è il giorno DOPO la fine
+                let icsEnd = null;
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setDate(end.getDate() + 1);
+                    icsEnd = end.toISOString().slice(0, 10).replace(/-/g, '');
+                }
+
+                if (!icsStart || !icsEnd) return null;
+
+                // Timestamp per DTSTAMP e UID
+                const now = new Date();
+                const dtstamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                const uid = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}@gutilities`;
+
+                // Descrizione in plain text per il calendario
+                let description = `Progetto: ${projectName}\\n`;
+                description += `Stato: ${statusText}\\n`;
+                description += `Completamento: ${completion}%\\n`;
+                description += `Durata: ${duration} giorni lavorativi\\n`;
+                description += `Data Flessibile: ${flexibleDate ? 'Sì' : 'No'}\\n`;
+                description += `Sede: ${locationText}\\n\\n`;
+
+                // Risorse
+                description += `Risorse Assegnate:\\n`;
+                if (resourcesText.trim()) {
+                    resourcesText.trim().split('\n').forEach(line => {
+                        description += `${line.trim()}\\n`;
+                    });
+                } else {
+                    description += `Nessuna risorsa assegnata\\n`;
+                }
+
+                // Checklist
+                if (checklistItems.length > 0) {
+                    description += `\\nChecklist:\\n`;
+                    checklistItems.forEach(item => {
+                        const check = item.completed ? '[✓]' : '[ ]';
+                        description += `${check} ${item.text}\\n`;
+                    });
+                }
+
+                // Note
+                if (notes) {
+                    description += `\\nNote:\\n${notes.replace(/\n/g, '\\n')}`;
+                }
+
+                // Location per Outlook - solo indirizzo per cliente
+                let icsLocation = locationText;
+                let icsGeo = '';
+                let isOutOfOffice = false;
+                if (locationType === 'cliente') {
+                    const plant = plants.find(p => p.id == plantId);
+                    if (plant) {
+                        icsLocation = (plant.name ? plant.name + ' - ' : '') + (plant.address || '');
+                        if (plant.lat && plant.lng) {
+                            icsGeo = `${plant.lat};${plant.lng}`;
+                        }
+                    }
+                    isOutOfOffice = true;
+                }
+
+                // Fold delle righe ICS lunghe (max 75 ottetti per riga)
+                const foldLine = (key, value) => {
+                    let line = `${key}:${value}`;
+                    let result = '';
+                    while (line.length > 75) {
+                        result += line.substring(0, 75) + '\r\n ';
+                        line = line.substring(75);
+                    }
+                    result += line;
+                    return result;
+                };
+
+                const icsLines = [
+                    'BEGIN:VCALENDAR',
+                    'VERSION:2.0',
+                    'PRODID:-//gUtilities//ProjectPlanner//IT',
+                    'CALSCALE:GREGORIAN',
+                    'METHOD:PUBLISH',
+                    'BEGIN:VEVENT',
+                    foldLine('UID', uid),
+                    foldLine('DTSTAMP', dtstamp),
+                    `DTSTART;VALUE=DATE:${icsStart}`,
+                    `DTEND;VALUE=DATE:${icsEnd}`,
+                    foldLine('SUMMARY', taskName + ' - ' + projectName),
+                    foldLine('DESCRIPTION', description),
+                    foldLine('LOCATION', icsLocation),
+                ];
+                if (icsGeo) {
+                    icsLines.push(`GEO:${icsGeo}`);
+                }
+                // Fuori sede per Outlook quando presso cliente
+                icsLines.push(`X-MICROSOFT-CDO-BUSYSTATUS:${isOutOfOffice ? 'OOF' : 'BUSY'}`);
+                icsLines.push(
+                    `STATUS:${status === 'completata' ? 'COMPLETED' : 'CONFIRMED'}`,
+                    'TRANSP:OPAQUE',
+                    'BEGIN:VALARM',
+                    'TRIGGER;VALUE=DATE-TIME:' + (() => {
+                        // Notifica il giorno prima alle 14:10
+                        if (!startDate) return '';
+                        const d = new Date(startDate);
+                        d.setDate(d.getDate() - 1);
+                        d.setHours(14, 10, 0, 0);
+                        return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                    })(),
+                    'ACTION:DISPLAY',
+                    foldLine('DESCRIPTION', 'Promemoria: ' + taskName),
+                    'END:VALARM',
+                    'END:VEVENT',
+                    'END:VCALENDAR'
+                );
+
+                const icsContent = icsLines.join('\r\n');
+
+                return icsContent;
+            }
+
+            // Scarica il file .ics
+            const icsContent = generateICS();
+            if (icsContent) {
+                const icsBlob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const icsUrl = URL.createObjectURL(icsBlob);
+                const icsLink = document.createElement('a');
+                icsLink.href = icsUrl;
+                icsLink.download = `${taskName.replace(/[^a-zA-Z0-9àèéìòùÀÈÉÌÒÙ\s_-]/g, '').replace(/\s+/g, '_')}.ics`;
+                document.body.appendChild(icsLink);
+                icsLink.click();
+                document.body.removeChild(icsLink);
+                URL.revokeObjectURL(icsUrl);
+            }
+
             // Copia l'HTML formattato negli appunti, poi apri mailto come fallback
             const blob = new Blob([htmlBody], { type: 'text/html' });
             const clipboardItem = new ClipboardItem({ 'text/html': blob, 'text/plain': new Blob([plainBody], { type: 'text/plain' }) });
@@ -5986,7 +6127,7 @@
                 const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
                 window.location.href = mailtoLink;
                 setTimeout(() => {
-                    alert('✅ Il contenuto formattato è stato copiato negli appunti.\n\nNel client email, usa Ctrl+V (Incolla) per sostituire il testo con la versione formattata con stili e markdown.');
+                    alert('✅ Il contenuto formattato è stato copiato negli appunti.\n📅 Il file .ics per il calendario è stato scaricato.\n\nNel client email:\n1. Usa Ctrl+V per incollare la versione formattata\n2. Allega il file .ics scaricato per aggiungere l\'evento al calendario');
                 }, 500);
             }).catch(() => {
                 // Fallback: apri solo mailto con testo semplice
