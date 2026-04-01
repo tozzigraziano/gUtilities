@@ -2810,6 +2810,217 @@
             background: var(--bg-tertiary);
             border-radius: 3px;
         }
+
+        /* === DASHBOARD STYLES === */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .dashboard-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .dashboard-card h3 {
+            margin: 0 0 12px 0;
+            font-size: 1em;
+            color: var(--text-primary);
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dashboard-stat-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .dashboard-stat {
+            flex: 1;
+            min-width: 140px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .dashboard-stat .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .dashboard-stat .stat-label {
+            font-size: 0.8em;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
+
+        .dashboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .dashboard-list li {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dashboard-list li:last-child {
+            border-bottom: none;
+        }
+
+        .dashboard-list li:hover {
+            background: var(--bg-hover);
+        }
+
+        .dashboard-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .dashboard-badge.danger { background: #ffebee; color: #c62828; }
+        .dashboard-badge.warning { background: #fff3e0; color: #e65100; }
+        .dashboard-badge.info { background: #e3f2fd; color: #1565c0; }
+        .dashboard-badge.success { background: #e8f5e9; color: #2e7d32; }
+        .dashboard-badge.muted { background: var(--bg-tertiary); color: var(--text-tertiary); }
+
+        [data-theme="dark"] .dashboard-badge.danger { background: #4d2221; color: #ef9a9a; }
+        [data-theme="dark"] .dashboard-badge.warning { background: #4a3a1a; color: #ffcc80; }
+        [data-theme="dark"] .dashboard-badge.info { background: #1a3a5c; color: #90caf9; }
+        [data-theme="dark"] .dashboard-badge.success { background: #1a3a1a; color: #a5d6a7; }
+
+        .dashboard-empty {
+            text-align: center;
+            color: var(--text-tertiary);
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* === CHECKPOINT CALENDAR STYLES === */
+        .checkpoint-calendar {
+            margin-top: 10px;
+        }
+
+        .checkpoint-calendar-grid {
+            display: grid;
+            gap: 1px;
+            background: var(--border-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .checkpoint-calendar-grid.week-view {
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        .checkpoint-calendar-grid.month-view {
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        .checkpoint-cal-header {
+            background: #37474f;
+            color: white;
+            padding: 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .checkpoint-cal-day {
+            background: var(--bg-secondary);
+            padding: 6px;
+            min-height: 90px;
+            vertical-align: top;
+            position: relative;
+        }
+
+        .checkpoint-cal-day.today {
+            background: var(--accent-color-light);
+        }
+
+        .checkpoint-cal-day.other-month {
+            background: var(--bg-tertiary);
+            opacity: 0.5;
+        }
+
+        .checkpoint-cal-day.weekend {
+            background: var(--bg-tertiary);
+        }
+
+        .checkpoint-cal-day-number {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            margin-bottom: 4px;
+        }
+
+        .checkpoint-cal-item {
+            background: #e3f2fd;
+            border-left: 3px solid #1565c0;
+            padding: 3px 6px;
+            margin-bottom: 3px;
+            border-radius: 0 3px 3px 0;
+            font-size: 0.75em;
+            cursor: default;
+            line-height: 1.3;
+        }
+
+        [data-theme="dark"] .checkpoint-cal-item {
+            background: #1a3a5c;
+            border-left-color: #64b5f6;
+        }
+
+        .checkpoint-cal-item .cp-client {
+            font-weight: 600;
+            color: #1565c0;
+        }
+
+        [data-theme="dark"] .checkpoint-cal-item .cp-client {
+            color: #90caf9;
+        }
+
+        .checkpoint-cal-item .cp-project {
+            color: var(--text-tertiary);
+            font-size: 0.9em;
+        }
+
+        .checkpoint-cal-item .cp-name {
+            color: var(--text-primary);
+        }
+
+        .checkpoint-list-view {
+            margin-top: 10px;
+        }
+
+        .checkpoint-list-view table {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -2835,6 +3046,8 @@
             <button class="tab" onclick="switchTab('plants')">🏭 Stabilimenti</button>
             <button class="tab" onclick="switchTab('activityMap')">🗺️ Mappa Attività</button>
             <button class="tab" onclick="switchTab('annotations')">📌 Annotazioni</button>
+            <button class="tab" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="switchTab('checkpointCalendar')">📅 Calendario Controlli</button>
             <button class="tab" onclick="switchTab('help')">❓ Guida</button>
             <button class="tab" onclick="switchTab('data')">Import/Export</button>
         </div>
@@ -3475,6 +3688,42 @@
                 </thead>
                 <tbody></tbody>
             </table>
+        </div>
+
+        <!-- TAB DASHBOARD -->
+        <div id="dashboard" class="tab-content">
+            <h2>📊 Dashboard Giornaliera</h2>
+            <div class="action-bar" style="margin-bottom: 10px;">
+                <button onclick="renderDashboard()">🔄 Aggiorna</button>
+                <span id="dashboardDate" style="margin-left: 15px; font-weight: 600; font-size: 1.1em;"></span>
+            </div>
+            <div id="dashboardContainer"></div>
+        </div>
+
+        <!-- TAB CALENDARIO CONTROLLI -->
+        <div id="checkpointCalendar" class="tab-content">
+            <h2>📅 Calendario Punti di Controllo</h2>
+            <div class="action-bar" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button onclick="renderCheckpointCalendar()">🔄 Aggiorna</button>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <label style="width: auto;">Vista:</label>
+                    <select id="checkpointCalendarView" onchange="renderCheckpointCalendar()" style="width: 160px;">
+                        <option value="week">Settimanale</option>
+                        <option value="month" selected>Mensile</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <button onclick="navigateCheckpointCalendar(-1)" style="padding: 2px 8px;">◀</button>
+                    <span id="checkpointCalendarLabel" style="font-weight: 600; min-width: 160px; text-align: center;"></span>
+                    <button onclick="navigateCheckpointCalendar(1)" style="padding: 2px 8px;">▶</button>
+                    <button onclick="navigateCheckpointCalendar(0)" class="secondary" style="margin-left: 5px;">Oggi</button>
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <label style="width: auto;">Cliente:</label>
+                    <input type="text" id="checkpointFilterClient" placeholder="Filtra cliente..." onkeyup="renderCheckpointCalendar()" style="width: 150px;">
+                </div>
+            </div>
+            <div id="checkpointCalendarContainer"></div>
         </div>
 
         <!-- TAB GUIDA -->
@@ -5448,6 +5697,14 @@
             // Renderizza le Annotazioni quando si apre la tab
             if (tabName === 'annotations') {
                 renderAnnotations();
+            }
+            // Renderizza la Dashboard quando si apre la tab
+            if (tabName === 'dashboard') {
+                renderDashboard();
+            }
+            // Renderizza il Calendario Controlli quando si apre la tab
+            if (tabName === 'checkpointCalendar') {
+                renderCheckpointCalendar();
             }
         }
 
@@ -16643,6 +16900,573 @@
                 container.style.position = 'relative';
                 container.appendChild(noData);
             }
+        }
+
+        // ==========================================
+        // === DASHBOARD GIORNALIERA ===
+        // ==========================================
+        function renderDashboard() {
+            const container = document.getElementById('dashboardContainer');
+            if (!container) return;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = formatDateLocal(today);
+
+            document.getElementById('dashboardDate').textContent =
+                today.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+            // Raccogli dati
+            const todayTasks = [];
+            const overdueTasks = [];
+            const upcomingMilestones = [];
+            const todayMilestones = [];
+            const offSiteResources = new Map();
+            const absentResources = [];
+            const inProgressProjects = [];
+            const todayMeetings = [];
+
+            // Analisi progetti e attività
+            projects.forEach(project => {
+                let hasActiveTasks = false;
+
+                // Milestone
+                if (project.milestones) {
+                    project.milestones.forEach(m => {
+                        if (m.date === todayStr) {
+                            todayMilestones.push({ milestone: m, project });
+                        }
+                        const mDate = new Date(m.date);
+                        const diffDays = Math.ceil((mDate - today) / (86400000));
+                        if (diffDays > 0 && diffDays <= 7) {
+                            upcomingMilestones.push({ milestone: m, project, daysLeft: diffDays });
+                        }
+                    });
+                }
+
+                // Tasks
+                if (project.tasks) {
+                    project.tasks.forEach(task => {
+                        if (task.status === 'completata' || task.status === 'annullata') return;
+                        if (task.completion >= 100) return;
+
+                        hasActiveTasks = true;
+                        const taskStart = task.startDate ? new Date(task.startDate) : null;
+                        const taskEnd = task.endDate ? new Date(task.endDate) : null;
+
+                        if (taskStart && taskEnd) {
+                            taskStart.setHours(0, 0, 0, 0);
+                            taskEnd.setHours(23, 59, 59, 999);
+
+                            // Active today
+                            if (taskStart <= today && taskEnd >= today) {
+                                todayTasks.push({ task, project });
+
+                                // Check off-site
+                                if (task.locationType === 'cliente' && task.resources) {
+                                    task.resources.forEach(tr => {
+                                        if (tr.resourceId) {
+                                            const r = resources.find(res => res.id == tr.resourceId);
+                                            if (r) {
+                                                const plantName = task.plantId ? (plants.find(p => p.id == task.plantId)?.name || '') : '';
+                                                const key = r.id;
+                                                if (!offSiteResources.has(key)) {
+                                                    offSiteResources.set(key, { resource: r, tasks: [] });
+                                                }
+                                                offSiteResources.get(key).tasks.push({ task, project, plantName });
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+
+                            // Overdue
+                            if (taskEnd < today && task.completion < 100) {
+                                overdueTasks.push({ task, project });
+                            }
+                        }
+                    });
+                }
+
+                if (hasActiveTasks) {
+                    // Calcola completamento medio progetto
+                    const activeTasks = project.tasks.filter(t => t.status !== 'annullata');
+                    const avgCompletion = activeTasks.length > 0
+                        ? Math.round(activeTasks.reduce((sum, t) => sum + (t.completion || 0), 0) / activeTasks.length)
+                        : 0;
+                    inProgressProjects.push({ project, avgCompletion, taskCount: activeTasks.length });
+                }
+            });
+
+            // Risorse assenti oggi
+            resources.forEach(resource => {
+                if (resource.hidden) return;
+                if (resource.absences) {
+                    resource.absences.forEach(abs => {
+                        const absStart = new Date(abs.start);
+                        absStart.setHours(0, 0, 0, 0);
+                        const absEnd = new Date(abs.end || abs.start);
+                        absEnd.setHours(23, 59, 59, 999);
+                        if (absStart <= today && absEnd >= today) {
+                            const typeLabels = { vacation: 'Ferie', sick: 'Malattia', permit: 'Permesso', other: 'Altro' };
+                            absentResources.push({
+                                resource,
+                                type: typeLabels[abs.type] || abs.type || 'Assenza'
+                            });
+                        }
+                    });
+                }
+            });
+
+            // Riunioni di oggi
+            if (meetings) {
+                meetings.forEach(m => {
+                    if (m.date === todayStr) {
+                        todayMeetings.push(m);
+                    }
+                });
+            }
+            // Riunioni dai progetti
+            projects.forEach(project => {
+                if (project.meetings) {
+                    project.meetings.forEach(m => {
+                        if (m.date === todayStr) {
+                            todayMeetings.push({ ...m, projectClient: project.client, projectCode: project.code });
+                        }
+                    });
+                }
+            });
+            todayMeetings.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+            // Ordina
+            overdueTasks.sort((a, b) => new Date(a.task.endDate) - new Date(b.task.endDate));
+            upcomingMilestones.sort((a, b) => a.daysLeft - b.daysLeft);
+
+            // Conta risorse totali attive
+            const activeResources = resources.filter(r => !r.hidden);
+
+            // Build HTML
+            let html = '';
+
+            // Statistiche riassuntive
+            html += '<div class="dashboard-stat-row">';
+            html += `<div class="dashboard-stat"><div class="stat-value">${todayTasks.length}</div><div class="stat-label">Attività in corso oggi</div></div>`;
+            html += `<div class="dashboard-stat"><div class="stat-value" style="color: ${overdueTasks.length > 0 ? '#f44336' : 'inherit'}">${overdueTasks.length}</div><div class="stat-label">Attività in ritardo</div></div>`;
+            html += `<div class="dashboard-stat"><div class="stat-value">${offSiteResources.size}</div><div class="stat-label">Risorse fuori sede</div></div>`;
+            html += `<div class="dashboard-stat"><div class="stat-value" style="color: ${absentResources.length > 0 ? '#ff9800' : 'inherit'}">${absentResources.length}</div><div class="stat-label">Risorse assenti</div></div>`;
+            html += `<div class="dashboard-stat"><div class="stat-value">${todayMilestones.length}</div><div class="stat-label">Milestone oggi</div></div>`;
+            html += `<div class="dashboard-stat"><div class="stat-value">${todayMeetings.length}</div><div class="stat-label">Riunioni oggi</div></div>`;
+            html += '</div>';
+
+            html += '<div class="dashboard-grid">';
+
+            // Card: Milestone di oggi
+            if (todayMilestones.length > 0) {
+                html += '<div class="dashboard-card">';
+                html += '<h3>🚩 Milestone di oggi</h3>';
+                html += '<ul class="dashboard-list">';
+                todayMilestones.forEach(item => {
+                    html += `<li>
+                        <div>
+                            <strong>${escapeHtml(item.milestone.name)}</strong><br>
+                            <small style="color: var(--text-tertiary);">${escapeHtml(item.project.client)} — ${escapeHtml(item.project.code)}</small>
+                        </div>
+                        <span class="dashboard-badge info">Oggi</span>
+                    </li>`;
+                });
+                html += '</ul></div>';
+            }
+
+            // Card: Milestone imminenti (prossimi 7 giorni)
+            if (upcomingMilestones.length > 0) {
+                html += '<div class="dashboard-card">';
+                html += '<h3>📅 Milestone prossimi 7 giorni</h3>';
+                html += '<ul class="dashboard-list">';
+                upcomingMilestones.forEach(item => {
+                    const badgeClass = item.daysLeft <= 2 ? 'danger' : item.daysLeft <= 4 ? 'warning' : 'info';
+                    html += `<li>
+                        <div>
+                            <strong>${escapeHtml(item.milestone.name)}</strong><br>
+                            <small style="color: var(--text-tertiary);">${escapeHtml(item.project.client)} — ${escapeHtml(item.project.code)}</small>
+                        </div>
+                        <span class="dashboard-badge ${badgeClass}">${item.daysLeft}g — ${item.milestone.date}</span>
+                    </li>`;
+                });
+                html += '</ul></div>';
+            }
+
+            // Card: Attività in ritardo
+            if (overdueTasks.length > 0) {
+                html += '<div class="dashboard-card">';
+                html += '<h3>🔴 Attività in ritardo</h3>';
+                html += '<ul class="dashboard-list">';
+                overdueTasks.slice(0, 15).forEach(item => {
+                    const daysLate = Math.ceil((today - new Date(item.task.endDate)) / 86400000);
+                    html += `<li>
+                        <div>
+                            <strong>${escapeHtml(item.task.name)}</strong><br>
+                            <small style="color: var(--text-tertiary);">${escapeHtml(item.project.client)} — ${escapeHtml(item.project.code)}</small>
+                        </div>
+                        <span class="dashboard-badge danger">${daysLate}g ritardo · ${item.task.completion || 0}%</span>
+                    </li>`;
+                });
+                if (overdueTasks.length > 15) {
+                    html += `<li class="dashboard-empty">...e altre ${overdueTasks.length - 15} attività</li>`;
+                }
+                html += '</ul></div>';
+            }
+
+            // Card: Risorse assenti
+            html += '<div class="dashboard-card">';
+            html += '<h3>🚫 Risorse assenti oggi</h3>';
+            if (absentResources.length > 0) {
+                html += '<ul class="dashboard-list">';
+                absentResources.forEach(item => {
+                    const typeClass = item.type === 'Malattia' ? 'danger' : item.type === 'Ferie' ? 'warning' : 'muted';
+                    html += `<li>
+                        <span>${escapeHtml(item.resource.firstName)} ${escapeHtml(item.resource.lastName)}</span>
+                        <span class="dashboard-badge ${typeClass}">${item.type}</span>
+                    </li>`;
+                });
+                html += '</ul>';
+            } else {
+                html += '<p class="dashboard-empty">Nessuna risorsa assente oggi</p>';
+            }
+            html += '</div>';
+
+            // Card: Risorse fuori sede
+            html += '<div class="dashboard-card">';
+            html += '<h3>🏢 Risorse fuori sede oggi</h3>';
+            if (offSiteResources.size > 0) {
+                html += '<ul class="dashboard-list">';
+                offSiteResources.forEach(item => {
+                    const taskDetails = item.tasks.map(t =>
+                        `${escapeHtml(t.project.client)} — ${escapeHtml(t.task.name)}${t.plantName ? ' @ ' + escapeHtml(t.plantName) : ''}`
+                    ).join('<br>');
+                    html += `<li style="flex-direction: column; align-items: flex-start;">
+                        <strong>${escapeHtml(item.resource.firstName)} ${escapeHtml(item.resource.lastName)}</strong>
+                        <small style="color: var(--text-tertiary);">${taskDetails}</small>
+                    </li>`;
+                });
+                html += '</ul>';
+            } else {
+                html += '<p class="dashboard-empty">Nessuna risorsa fuori sede oggi</p>';
+            }
+            html += '</div>';
+
+            // Card: Riunioni di oggi
+            html += '<div class="dashboard-card">';
+            html += '<h3>👥 Riunioni di oggi</h3>';
+            if (todayMeetings.length > 0) {
+                html += '<ul class="dashboard-list">';
+                todayMeetings.forEach(m => {
+                    const time = m.time || '';
+                    const title = m.title || m.subject || 'Riunione';
+                    const ctx = m.projectClient ? `${m.projectClient} — ${m.projectCode}` : '';
+                    html += `<li>
+                        <div>
+                            ${time ? '<strong>' + escapeHtml(time) + '</strong> — ' : ''}${escapeHtml(title)}
+                            ${ctx ? '<br><small style="color: var(--text-tertiary);">' + escapeHtml(ctx) + '</small>' : ''}
+                        </div>
+                    </li>`;
+                });
+                html += '</ul>';
+            } else {
+                html += '<p class="dashboard-empty">Nessuna riunione programmata per oggi</p>';
+            }
+            html += '</div>';
+
+            // Card: Attività attive oggi (riepilogo per progetto)
+            html += '<div class="dashboard-card" style="grid-column: 1 / -1;">';
+            html += '<h3>📋 Attività attive oggi (' + todayTasks.length + ')</h3>';
+            if (todayTasks.length > 0) {
+                html += '<table style="width: 100%; font-size: 0.85em;"><thead><tr>';
+                html += '<th>Cliente</th><th>Codice</th><th>Attività</th><th>Risorse</th><th>Luogo</th><th>Completamento</th>';
+                html += '</tr></thead><tbody>';
+                todayTasks.forEach(item => {
+                    const resNames = (item.task.resources || []).map(tr => {
+                        const r = resources.find(res => res.id == tr.resourceId);
+                        return r ? `${r.firstName} ${r.lastName}` : '';
+                    }).filter(Boolean).join(', ') || '-';
+
+                    let location = 'In sede';
+                    if (item.task.locationType === 'cliente') {
+                        const plant = item.task.plantId ? plants.find(p => p.id == item.task.plantId) : null;
+                        location = plant ? plant.name : 'Presso cliente';
+                    }
+
+                    const compClass = item.task.completion >= 75 ? 'success' : item.task.completion >= 40 ? 'warning' : 'danger';
+                    html += `<tr>
+                        <td>${escapeHtml(item.project.client)}</td>
+                        <td>${escapeHtml(item.project.code)}</td>
+                        <td>${escapeHtml(item.task.name)}</td>
+                        <td>${escapeHtml(resNames)}</td>
+                        <td>${escapeHtml(location)}</td>
+                        <td><span class="dashboard-badge ${compClass}">${item.task.completion || 0}%</span></td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="dashboard-empty">Nessuna attività attiva oggi.</p>';
+            }
+            html += '</div>';
+
+            // Card: Panoramica Progetti attivi
+            html += '<div class="dashboard-card" style="grid-column: 1 / -1;">';
+            html += '<h3>📈 Progetti attivi (' + inProgressProjects.length + ')</h3>';
+            if (inProgressProjects.length > 0) {
+                html += '<table style="width: 100%; font-size: 0.85em;"><thead><tr>';
+                html += '<th>Cliente</th><th>Codice</th><th>Attività</th><th>Completamento medio</th>';
+                html += '</tr></thead><tbody>';
+                inProgressProjects.sort((a, b) => a.avgCompletion - b.avgCompletion).forEach(item => {
+                    const compClass = item.avgCompletion >= 75 ? 'success' : item.avgCompletion >= 40 ? 'warning' : 'danger';
+                    html += `<tr>
+                        <td>${escapeHtml(item.project.client)}</td>
+                        <td>${escapeHtml(item.project.code)}</td>
+                        <td>${item.taskCount}</td>
+                        <td>
+                            <div class="project-progress-container" style="display:inline-block; width: 120px; vertical-align: middle;">
+                                <div class="project-progress-fill ${compClass}" style="width: ${item.avgCompletion}%;"></div>
+                                <span class="project-progress-text">${item.avgCompletion}%</span>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="dashboard-empty">Nessun progetto attivo.</p>';
+            }
+            html += '</div>';
+
+            html += '</div>'; // chiude dashboard-grid
+
+            container.innerHTML = html;
+        }
+
+        // ==========================================
+        // === CALENDARIO PUNTI DI CONTROLLO ===
+        // ==========================================
+        let checkpointCalendarOffset = 0;
+
+        function navigateCheckpointCalendar(direction) {
+            if (direction === 0) {
+                checkpointCalendarOffset = 0;
+            } else {
+                checkpointCalendarOffset += direction;
+            }
+            renderCheckpointCalendar();
+        }
+
+        function getAllCheckpoints() {
+            const checkpoints = [];
+            projects.forEach(project => {
+                if (project.milestones) {
+                    project.milestones.forEach(m => {
+                        if (m.date) {
+                            checkpoints.push({
+                                name: m.name,
+                                date: m.date,
+                                client: project.client,
+                                code: project.code,
+                                description: project.description || '',
+                                projectId: project.id
+                            });
+                        }
+                    });
+                }
+            });
+            return checkpoints;
+        }
+
+        function renderCheckpointCalendar() {
+            const container = document.getElementById('checkpointCalendarContainer');
+            if (!container) return;
+
+            const view = document.getElementById('checkpointCalendarView')?.value || 'month';
+            const filterClient = (document.getElementById('checkpointFilterClient')?.value || '').toLowerCase();
+            const label = document.getElementById('checkpointCalendarLabel');
+
+            let allCheckpoints = getAllCheckpoints();
+            if (filterClient) {
+                allCheckpoints = allCheckpoints.filter(cp => (cp.client || '').toLowerCase().includes(filterClient));
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = formatDateLocal(today);
+
+            if (view === 'week') {
+                renderWeekView(container, allCheckpoints, today, label, todayStr);
+            } else {
+                renderMonthView(container, allCheckpoints, today, label, todayStr);
+            }
+        }
+
+        function renderWeekView(container, checkpoints, today, label, todayStr) {
+            // Calcola la settimana corrente + offset
+            const startOfWeek = new Date(today);
+            const dayOfWeek = startOfWeek.getDay();
+            const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Lunedì come inizio
+            startOfWeek.setDate(startOfWeek.getDate() + diff + (checkpointCalendarOffset * 7));
+
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 6);
+
+            const startStr = startOfWeek.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+            const endStr = endOfWeek.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+            label.textContent = `${startStr} — ${endStr}`;
+
+            // Build checkpoint map
+            const cpMap = {};
+            checkpoints.forEach(cp => {
+                if (!cpMap[cp.date]) cpMap[cp.date] = [];
+                cpMap[cp.date].push(cp);
+            });
+
+            const dayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
+            let html = '<div class="checkpoint-calendar"><div class="checkpoint-calendar-grid week-view">';
+
+            // Header
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(d.getDate() + i);
+                const dateStr = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+                html += `<div class="checkpoint-cal-header">${dayNames[i]}<br>${dateStr}</div>`;
+            }
+
+            // Days
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(d.getDate() + i);
+                const dateStr = formatDateLocal(d);
+                const isToday = dateStr === todayStr;
+                const isWeekend = (i === 5 || i === 6);
+                const dayItems = cpMap[dateStr] || [];
+
+                html += `<div class="checkpoint-cal-day${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}">`;
+                html += `<div class="checkpoint-cal-day-number">${d.getDate()}</div>`;
+                dayItems.forEach(cp => {
+                    html += `<div class="checkpoint-cal-item" title="${escapeHtml(cp.client)} — ${escapeHtml(cp.code)}\n${escapeHtml(cp.description)}">
+                        <div class="cp-client">${escapeHtml(cp.client)}</div>
+                        <div class="cp-project">${escapeHtml(cp.code)}</div>
+                        <div class="cp-name">🚩 ${escapeHtml(cp.name)}</div>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+
+            // Lista sotto il calendario
+            html += renderCheckpointList(checkpoints, startOfWeek, endOfWeek);
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderMonthView(container, checkpoints, today, label, todayStr) {
+            const refDate = new Date(today.getFullYear(), today.getMonth() + checkpointCalendarOffset, 1);
+            const year = refDate.getFullYear();
+            const month = refDate.getMonth();
+
+            label.textContent = refDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDayOfWeek = firstDay.getDay();
+            const offset = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1; // Lunedì = 0
+
+            // Build checkpoint map
+            const cpMap = {};
+            checkpoints.forEach(cp => {
+                if (!cpMap[cp.date]) cpMap[cp.date] = [];
+                cpMap[cp.date].push(cp);
+            });
+
+            const dayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
+            const totalCells = offset + lastDay.getDate();
+            const rows = Math.ceil(totalCells / 7);
+
+            let html = '<div class="checkpoint-calendar"><div class="checkpoint-calendar-grid month-view">';
+
+            // Header
+            dayNames.forEach(name => {
+                html += `<div class="checkpoint-cal-header">${name}</div>`;
+            });
+
+            // Cells
+            let dayNum = 1;
+            const calStart = new Date(firstDay);
+            calStart.setDate(calStart.getDate() - offset);
+
+            for (let i = 0; i < rows * 7; i++) {
+                const d = new Date(calStart);
+                d.setDate(d.getDate() + i);
+                const dateStr = formatDateLocal(d);
+                const isToday = dateStr === todayStr;
+                const isOtherMonth = d.getMonth() !== month;
+                const dayOfWeek = d.getDay();
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                const dayItems = cpMap[dateStr] || [];
+
+                let classes = 'checkpoint-cal-day';
+                if (isToday) classes += ' today';
+                if (isOtherMonth) classes += ' other-month';
+                if (isWeekend && !isToday) classes += ' weekend';
+
+                html += `<div class="${classes}">`;
+                html += `<div class="checkpoint-cal-day-number">${d.getDate()}</div>`;
+                dayItems.forEach(cp => {
+                    html += `<div class="checkpoint-cal-item" title="${escapeHtml(cp.client)} — ${escapeHtml(cp.code)}\n${escapeHtml(cp.description)}">
+                        <div class="cp-client">${escapeHtml(cp.client)}</div>
+                        <div class="cp-project">${escapeHtml(cp.code)}</div>
+                        <div class="cp-name">🚩 ${escapeHtml(cp.name)}</div>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+
+            // Lista sotto il calendario
+            html += renderCheckpointList(checkpoints, firstDay, lastDay);
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderCheckpointList(checkpoints, startDate, endDate) {
+            const startStr = formatDateLocal(startDate);
+            const endStr = formatDateLocal(endDate);
+
+            const filtered = checkpoints
+                .filter(cp => cp.date >= startStr && cp.date <= endStr)
+                .sort((a, b) => a.date.localeCompare(b.date));
+
+            if (filtered.length === 0) return '';
+
+            let html = '<div class="checkpoint-list-view" style="margin-top: 15px;">';
+            html += '<h3 style="margin-bottom: 8px;">📋 Elenco punti di controllo nel periodo (' + filtered.length + ')</h3>';
+            html += '<table><thead><tr>';
+            html += '<th>Data</th><th>Punto di Controllo</th><th>Cliente</th><th>Codice Progetto</th><th>Descrizione</th>';
+            html += '</tr></thead><tbody>';
+
+            filtered.forEach(cp => {
+                const d = new Date(cp.date);
+                const dateFormatted = d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+                html += `<tr>
+                    <td>${dateFormatted}</td>
+                    <td><strong>🚩 ${escapeHtml(cp.name)}</strong></td>
+                    <td>${escapeHtml(cp.client || '-')}</td>
+                    <td>${escapeHtml(cp.code || '-')}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(cp.description || '-')}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            return html;
         }
     </script>
 </body>
