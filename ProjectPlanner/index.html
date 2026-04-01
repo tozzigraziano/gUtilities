@@ -2259,6 +2259,21 @@
             font-size: 12px;
         }
 
+        .filter-row th {
+            padding: 4px 3px !important;
+            background: var(--bg-tertiary) !important;
+        }
+
+        .filter-row input[type="text"],
+        .filter-row select {
+            font-size: 11px;
+            padding: 3px 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+
         .filter-group {
             display: inline-block;
             margin-right: 12px;
@@ -2894,6 +2909,10 @@
             background: var(--bg-hover);
         }
 
+        .dashboard-card table tbody tr[onclick]:hover {
+            background: var(--bg-hover);
+        }
+
         .dashboard-badge {
             display: inline-block;
             padding: 2px 8px;
@@ -3032,7 +3051,8 @@
         </h1>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('resources')">Risorse</button>
+            <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="switchTab('resources')">Risorse</button>
             <button class="tab" onclick="switchTab('holidays')">Festività</button>
             <button class="tab" onclick="switchTab('projects')">Progetti</button>
             <button class="tab" onclick="switchTab('templates')">Template</button>
@@ -3046,14 +3066,13 @@
             <button class="tab" onclick="switchTab('plants')">🏭 Stabilimenti</button>
             <button class="tab" onclick="switchTab('activityMap')">🗺️ Mappa Attività</button>
             <button class="tab" onclick="switchTab('annotations')">📌 Annotazioni</button>
-            <button class="tab" onclick="switchTab('dashboard')">📊 Dashboard</button>
             <button class="tab" onclick="switchTab('checkpointCalendar')">📅 Calendario Controlli</button>
             <button class="tab" onclick="switchTab('help')">❓ Guida</button>
             <button class="tab" onclick="switchTab('data')">Import/Export</button>
         </div>
 
         <!-- TAB RISORSE -->
-        <div id="resources" class="tab-content active">
+        <div id="resources" class="tab-content">
             <h2>Gestione Risorse</h2>
             
             <div class="action-bar">
@@ -3063,6 +3082,30 @@
             <h3>Elenco Risorse</h3>
             <table id="resourcesTable">
                 <thead>
+                    <tr class="filter-row">
+                        <th></th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="resourceFilterFirstName" placeholder="Filtra nome" onkeyup="renderResources()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('resourceFilterFirstName').value=''; renderResources();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="resourceFilterLastName" placeholder="Filtra cognome" onkeyup="renderResources()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('resourceFilterLastName').value=''; renderResources();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="resourceFilterType" placeholder="Filtra tipo" onkeyup="renderResources()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('resourceFilterType').value=''; renderResources();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
                     <tr>
                         <th style="width: 80px;">Ordine</th>
                         <th>Nome</th>
@@ -3118,36 +3161,52 @@
         <!-- TAB OFFERTE -->
         <div id="offerte" class="tab-content">
             <h2>💼 Riepilogo Offerte</h2>
-            
-            <div class="filter-section">
-                <div class="filter-group">
-                    <label>Stato:</label>
-                    <select id="offerFilterStatus" onchange="renderOffersOverview()">
-                        <option value="">Tutti</option>
-                        <option value="in-preparazione">📝 In Preparazione</option>
-                        <option value="inviata">📤 Inviata</option>
-                        <option value="accettata">✅ Accettata</option>
-                        <option value="rifiutata">❌ Rifiutata</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>Cliente:</label>
-                    <input type="text" id="offerFilterClient" placeholder="Filtra cliente" onkeyup="renderOffersOverview()" style="width: 200px;">
-                </div>
-                <div class="filter-group">
-                    <label>Codice Progetto:</label>
-                    <input type="text" id="offerFilterProjectCode" placeholder="Filtra codice" onkeyup="renderOffersOverview()" style="width: 150px;">
-                </div>
-                <div class="filter-group">
-                    <button onclick="clearOfferFilters()" class="secondary" style="padding: 4px 8px; font-size: 12px;">Pulisci Filtri</button>
-                </div>
-            </div>
 
             <table id="offersOverviewTable">
                 <thead>
+                    <tr class="filter-row">
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="offerFilterClient" placeholder="Filtra cliente" onkeyup="renderOffersOverview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('offerFilterClient').value=''; renderOffersOverview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="offerFilterProjectCode" placeholder="Filtra codice" onkeyup="renderOffersOverview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('offerFilterProjectCode').value=''; renderOffersOverview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="offerFilterCode" placeholder="Filtra ID" onkeyup="renderOffersOverview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('offerFilterCode').value=''; renderOffersOverview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="offerFilterTitle" placeholder="Filtra titolo" onkeyup="renderOffersOverview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('offerFilterTitle').value=''; renderOffersOverview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th>
+                            <select id="offerFilterStatus" onchange="renderOffersOverview()" style="width: 100%; box-sizing: border-box;">
+                                <option value="">Tutti</option>
+                                <option value="in-preparazione">📝 In Preparazione</option>
+                                <option value="inviata">📤 Inviata</option>
+                                <option value="accettata">✅ Accettata</option>
+                                <option value="rifiutata">❌ Rifiutata</option>
+                            </select>
+                        </th>
+                        <th></th>
+                    </tr>
                     <tr>
                         <th>Cliente</th>
                         <th>Codice Progetto</th>
+                        <th>ID Offerta</th>
                         <th>Titolo Offerta</th>
                         <th>Data</th>
                         <th>Stima Tempi</th>
@@ -3319,6 +3378,7 @@
                     <table id="projectOffersTable">
                         <thead>
                             <tr>
+                                <th>ID Offerta</th>
                                 <th>Titolo</th>
                                 <th>Data</th>
                                 <th>Stima Tempi</th>
@@ -3442,17 +3502,35 @@
             
             <div class="action-bar">
                 <button onclick="openGlobalMeetingModal()">➕ Nuova Riunione</button>
-                <div style="display: flex; gap: 15px; align-items: center; margin-left: auto; flex-wrap: nowrap;">
-                    <label style="white-space: nowrap;">
-                        Filtra per tag:
-                        <input type="text" id="meetingFilterTag" placeholder="Tag" onkeyup="renderGlobalMeetings()" style="width: 120px;">
-                    </label>
-                </div>
             </div>
 
             <h3>Elenco Riunioni</h3>
             <table id="globalMeetingsTable">
                 <thead>
+                    <tr class="filter-row">
+                        <th></th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="meetingFilterSubject" placeholder="Filtra oggetto" onkeyup="renderGlobalMeetings()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('meetingFilterSubject').value=''; renderGlobalMeetings();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="meetingFilterTag" placeholder="Filtra tag" onkeyup="renderGlobalMeetings()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('meetingFilterTag').value=''; renderGlobalMeetings();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="meetingFilterResource" placeholder="Filtra risorsa" onkeyup="renderGlobalMeetings()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('meetingFilterResource').value=''; renderGlobalMeetings();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
                     <tr>
                         <th style="width: 120px;">Data</th>
                         <th>Oggetto</th>
@@ -3611,12 +3689,30 @@
                 <button onclick="openPlantModal()">➕ Nuovo Stabilimento</button>
             </div>
 
-            <div style="margin-bottom: 10px;">
-                <input type="text" id="plantSearchFilter" placeholder="🔍 Cerca stabilimento per nome, cliente, indirizzo..." style="width: 400px;" oninput="renderPlants()">
-            </div>
-
             <table id="plantsTable">
                 <thead>
+                    <tr class="filter-row">
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="plantFilterName" placeholder="Filtra nome" onkeyup="renderPlants()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('plantFilterName').value=''; renderPlants();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="plantFilterClient" placeholder="Filtra cliente" onkeyup="renderPlants()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('plantFilterClient').value=''; renderPlants();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="plantFilterAddress" placeholder="Filtra indirizzo" onkeyup="renderPlants()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('plantFilterAddress').value=''; renderPlants();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                    </tr>
                     <tr>
                         <th>Nome Stabilimento</th>
                         <th>Cliente</th>
@@ -3660,22 +3756,34 @@
             
             <div class="action-bar">
                 <button onclick="renderAnnotations()">🔄 Aggiorna</button>
-                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px; margin-left: 15px;">
-                    <label style="width: auto;">Filtra cliente:</label>
-                    <input type="text" id="annotationsFilterClient" placeholder="Cliente..." onkeyup="renderAnnotations()" style="width: 150px;">
-                </div>
-                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px; margin-left: 10px;">
-                    <label style="width: auto;">Filtra codice:</label>
-                    <input type="text" id="annotationsFilterCode" placeholder="Codice..." onkeyup="renderAnnotations()" style="width: 120px;">
-                </div>
-                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px; margin-left: 10px;">
-                    <label style="width: auto;">Filtra annotazione:</label>
-                    <input type="text" id="annotationsFilterText" placeholder="Testo annotazione..." onkeyup="renderAnnotations()" style="width: 180px;">
-                </div>
             </div>
 
             <table id="annotationsTable">
                 <thead>
+                    <tr class="filter-row">
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="annotationsFilterClient" placeholder="Filtra cliente" onkeyup="renderAnnotations()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('annotationsFilterClient').value=''; renderAnnotations();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="annotationsFilterCode" placeholder="Filtra codice" onkeyup="renderAnnotations()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('annotationsFilterCode').value=''; renderAnnotations();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="annotationsFilterText" placeholder="Filtra annotazione" onkeyup="renderAnnotations()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('annotationsFilterText').value=''; renderAnnotations();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                    </tr>
                     <tr>
                         <th>Cliente</th>
                         <th>Codice Lavoro</th>
@@ -3691,7 +3799,7 @@
         </div>
 
         <!-- TAB DASHBOARD -->
-        <div id="dashboard" class="tab-content">
+        <div id="dashboard" class="tab-content active">
             <h2>📊 Dashboard Giornaliera</h2>
             <div class="action-bar" style="margin-bottom: 10px;">
                 <button onclick="renderDashboard()">🔄 Aggiorna</button>
@@ -5067,6 +5175,10 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
+                    <label for="offerCode">ID Offerta</label>
+                    <input type="text" id="offerCode" placeholder="es: OFF-001">
+                </div>
+                <div class="form-group">
                     <label for="offerTitle">Titolo Offerta *</label>
                     <input type="text" id="offerTitle" required>
                 </div>
@@ -5638,6 +5750,7 @@
                 updateApplyTemplateSelect();
                 updateGanttFilters();
                 updateResourceViewFilters();
+                renderDashboard();
             } catch (error) {
                 console.error('Errore inizializzazione:', error);
                 alert('Errore nel caricamento dei dati. Verifica la console.');
@@ -7239,25 +7352,36 @@
             const tbody = document.querySelector('#resourcesTable tbody');
             tbody.innerHTML = '';
 
+            const filterFirstName = (document.getElementById('resourceFilterFirstName')?.value || '').toLowerCase();
+            const filterLastName = (document.getElementById('resourceFilterLastName')?.value || '').toLowerCase();
+            const filterType = (document.getElementById('resourceFilterType')?.value || '').toLowerCase();
+
+            const typeLabels = {
+                'programmatore-robot': 'Programmatore Robot',
+                'programmatore-plc': 'Programmatore PLC',
+                'programmatore-visione': 'Programmatore Visione',
+                'meccanico': 'Meccanico',
+                'elettricista': 'Elettricista',
+                'project-manager': 'Project Manager',
+                'esterno': 'Esterno',
+                'responsabile': 'Responsabile'
+            };
+
             resources.forEach((resource, index) => {
+                const typeLabel = resource.type ? typeLabels[resource.type] || resource.type : '-';
+
+                // Apply filters
+                if (filterFirstName && !(resource.firstName || '').toLowerCase().includes(filterFirstName)) return;
+                if (filterLastName && !(resource.lastName || '').toLowerCase().includes(filterLastName)) return;
+                if (filterType && !typeLabel.toLowerCase().includes(filterType)) return;
+
                 const tr = document.createElement('tr');
                 const absencesStr = resource.absences.map(a => {
-                    const typeLabel = a.type === 'sick' ? '🤒 Malattia' : (a.type === 'planned_intervention' ? '🏥 Intervento Pianificato' : '🏖️ Ferie');
+                    const typeLabel2 = a.type === 'sick' ? '🤒 Malattia' : (a.type === 'planned_intervention' ? '🏥 Intervento Pianificato' : '🏖️ Ferie');
                     const dateStr = a.start === a.end ? a.start : `${a.start} - ${a.end}`;
-                    return `${typeLabel}: ${dateStr}`;
+                    return `${typeLabel2}: ${dateStr}`;
                 }).join(', ') || 'Nessuna';
 
-                const typeLabels = {
-                    'programmatore-robot': 'Programmatore Robot',
-                    'programmatore-plc': 'Programmatore PLC',
-                    'programmatore-visione': 'Programmatore Visione',
-                    'meccanico': 'Meccanico',
-                    'elettricista': 'Elettricista',
-                    'project-manager': 'Project Manager',
-                    'esterno': 'Esterno',
-                    'responsabile': 'Responsabile'
-                };
-                const typeLabel = resource.type ? typeLabels[resource.type] || resource.type : '-';
                 const isHidden = resource.hidden || false;
 
                 tr.innerHTML = `
@@ -8031,6 +8155,8 @@
             const filterStatus = document.getElementById('offerFilterStatus')?.value || '';
             const filterClient = document.getElementById('offerFilterClient')?.value.toLowerCase() || '';
             const filterProjectCode = document.getElementById('offerFilterProjectCode')?.value.toLowerCase() || '';
+            const filterCode = document.getElementById('offerFilterCode')?.value.toLowerCase() || '';
+            const filterTitle = document.getElementById('offerFilterTitle')?.value.toLowerCase() || '';
             
             const statusColors = {
                 'in-preparazione': '#999',
@@ -8080,6 +8206,18 @@
                 );
             }
             
+            if (filterCode) {
+                filteredOffers = filteredOffers.filter(item => 
+                    (item.offer.offerCode || '').toLowerCase().includes(filterCode)
+                );
+            }
+            
+            if (filterTitle) {
+                filteredOffers = filteredOffers.filter(item => 
+                    (item.offer.title || '').toLowerCase().includes(filterTitle)
+                );
+            }
+            
             // Ordina per data decrescente (più recenti prima)
             filteredOffers.sort((a, b) => {
                 const dateA = new Date(a.offer.date);
@@ -8103,6 +8241,7 @@
                 row.innerHTML = `
                     <td>${escapeHtml(item.project.client || '-')}</td>
                     <td>${escapeHtml(item.project.code || '-')}</td>
+                    <td>${escapeHtml(item.offer.offerCode || '-')}</td>
                     <td>${escapeHtml(item.offer.title)}</td>
                     <td>${formatDateLocal(new Date(item.offer.date))}</td>
                     <td>${escapeHtml(item.offer.estimate)}</td>
@@ -8116,7 +8255,7 @@
             
             if (filteredOffers.length === 0) {
                 const row = tbody.insertRow();
-                row.innerHTML = '<td colspan="8" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessuna offerta trovata</td>';
+                row.innerHTML = '<td colspan="9" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessuna offerta trovata</td>';
             }
             
             // Mostra totale
@@ -8128,7 +8267,7 @@
             summaryRow.style.fontWeight = 'bold';
             summaryRow.style.backgroundColor = 'var(--bg-tertiary)';
             summaryRow.innerHTML = `
-                <td colspan="5" style="text-align: right;">Totale Offerte: ${filteredOffers.length}</td>
+                <td colspan="6" style="text-align: right;">Totale Offerte: ${filteredOffers.length}</td>
                 <td style="text-align: right;">€ ${totalValue.toFixed(2)}</td>
                 <td colspan="2"></td>
             `;
@@ -8138,6 +8277,8 @@
             document.getElementById('offerFilterStatus').value = '';
             document.getElementById('offerFilterClient').value = '';
             document.getElementById('offerFilterProjectCode').value = '';
+            document.getElementById('offerFilterCode').value = '';
+            document.getElementById('offerFilterTitle').value = '';
             renderOffersOverview();
         }
         
@@ -8177,6 +8318,7 @@
                 };
                 
                 row.innerHTML = `
+                    <td>${escapeHtml(offer.offerCode || '-')}</td>
                     <td>${escapeHtml(offer.title)}</td>
                     <td>${formatDateLocal(new Date(offer.date))}</td>
                     <td>${escapeHtml(offer.estimate)}</td>
@@ -8191,7 +8333,7 @@
             
             if (offers.length === 0) {
                 const row = tbody.insertRow();
-                row.innerHTML = '<td colspan="6" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessuna offerta presente</td>';
+                row.innerHTML = '<td colspan="7" style="text-align: center; color: var(--text-tertiary); font-style: italic;">Nessuna offerta presente</td>';
             }
         }
         
@@ -8204,6 +8346,7 @@
             
             // Se viewOnly, disabilita tutti i campi
             const isViewOnly = viewOnly === true;
+            document.getElementById('offerCode').disabled = isViewOnly;
             document.getElementById('offerTitle').disabled = isViewOnly;
             document.getElementById('offerDate').disabled = isViewOnly;
             document.getElementById('offerEstimate').disabled = isViewOnly;
@@ -8222,6 +8365,7 @@
                 const offer = project.offers[id];
                 
                 document.getElementById('offerModalTitle').textContent = isViewOnly ? '💼 Visualizza Offerta' : '💼 Modifica Offerta';
+                document.getElementById('offerCode').value = offer.offerCode || '';
                 document.getElementById('offerTitle').value = offer.title;
                 document.getElementById('offerDate').value = offer.date;
                 document.getElementById('offerEstimate').value = offer.estimate;
@@ -8230,6 +8374,7 @@
                 document.getElementById('offerNotes').value = offer.notes || '';
             } else {
                 document.getElementById('offerModalTitle').textContent = '💼 Nuova Offerta';
+                document.getElementById('offerCode').value = '';
                 document.getElementById('offerTitle').value = '';
                 document.getElementById('offerDate').value = formatDateLocal(new Date());
                 document.getElementById('offerEstimate').value = '';
@@ -8256,6 +8401,7 @@
             const project = projects.find(p => p.id === (editingOfferProjectId || currentProjectId));
             if (!project) return;
             
+            const offerCode = document.getElementById('offerCode').value.trim();
             const title = document.getElementById('offerTitle').value.trim();
             const date = document.getElementById('offerDate').value;
             const estimate = document.getElementById('offerEstimate').value.trim();
@@ -8269,6 +8415,7 @@
             }
             
             const offer = {
+                offerCode,
                 title,
                 date,
                 estimate,
@@ -8674,11 +8821,22 @@
             tbody.innerHTML = '';
             
             const filterTag = document.getElementById('meetingFilterTag')?.value.toLowerCase() || '';
+            const filterSubject = document.getElementById('meetingFilterSubject')?.value.toLowerCase() || '';
+            const filterResource = document.getElementById('meetingFilterResource')?.value.toLowerCase() || '';
             
             // Filtra e ordina per data crescente
             let filteredMeetings = meetings.filter(meeting => {
                 if (filterTag && (!meeting.tags || !meeting.tags.toLowerCase().includes(filterTag))) {
                     return false;
+                }
+                if (filterSubject && (!meeting.subject || !meeting.subject.toLowerCase().includes(filterSubject))) {
+                    return false;
+                }
+                if (filterResource) {
+                    const resourceNames = (meeting.resourceIds || [])
+                        .map(id => getResourceName(id).toLowerCase())
+                        .join(' ');
+                    if (!resourceNames.includes(filterResource)) return false;
                 }
                 return true;
             });
@@ -11696,6 +11854,7 @@
                     md += `<details>\n<summary><strong>Offerta ${index + 1}: ${offer.title}</strong> - ${offer.status || 'N/A'}</summary>\n\n`;
                     md += `> | Campo | Valore |\n`;
                     md += `> |-------|--------|\n`;
+                    md += `> | **ID Offerta** | ${offer.offerCode || '-'} |\n`;
                     md += `> | **Titolo** | ${offer.title} |\n`;
                     md += `> | **Data** | ${offer.date || '-'} |\n`;
                     md += `> | **Stima Tempi** | ${offer.estimate || '-'} |\n`;
@@ -16511,13 +16670,15 @@
             if (!tbody) return;
             tbody.innerHTML = '';
             
-            const searchFilter = (document.getElementById('plantSearchFilter')?.value || '').toLowerCase();
+            const filterName = (document.getElementById('plantFilterName')?.value || '').toLowerCase();
+            const filterClient = (document.getElementById('plantFilterClient')?.value || '').toLowerCase();
+            const filterAddress = (document.getElementById('plantFilterAddress')?.value || '').toLowerCase();
             
             const filteredPlants = plants.filter(p => {
-                if (!searchFilter) return true;
-                return (p.name || '').toLowerCase().includes(searchFilter) ||
-                       (p.client || '').toLowerCase().includes(searchFilter) ||
-                       (p.address || '').toLowerCase().includes(searchFilter);
+                if (filterName && !(p.name || '').toLowerCase().includes(filterName)) return false;
+                if (filterClient && !(p.client || '').toLowerCase().includes(filterClient)) return false;
+                if (filterAddress && !(p.address || '').toLowerCase().includes(filterAddress)) return false;
+                return true;
             });
 
             if (filteredPlants.length === 0) {
@@ -16905,6 +17066,11 @@
         // ==========================================
         // === DASHBOARD GIORNALIERA ===
         // ==========================================
+        function navigateToProject(projectId) {
+            switchTab('projects');
+            setTimeout(() => { openProjectDetails(projectId); }, 100);
+        }
+
         function renderDashboard() {
             const container = document.getElementById('dashboardContainer');
             if (!container) return;
@@ -16980,8 +17146,8 @@
                                 }
                             }
 
-                            // Overdue
-                            if (taskEnd < today && task.completion < 100) {
+                            // Overdue (escludi task in pausa e annullate)
+                            if (taskEnd < today && task.completion < 100 && task.status !== 'pausa' && task.status !== 'annullata') {
                                 overdueTasks.push({ task, project });
                             }
                         }
@@ -17102,7 +17268,7 @@
                 html += '<ul class="dashboard-list">';
                 overdueTasks.slice(0, 15).forEach(item => {
                     const daysLate = Math.ceil((today - new Date(item.task.endDate)) / 86400000);
-                    html += `<li>
+                    html += `<li style="cursor:pointer;" onclick="navigateToProject(${item.project.id})" title="Vai al progetto">
                         <div>
                             <strong>${escapeHtml(item.task.name)}</strong><br>
                             <small style="color: var(--text-tertiary);">${escapeHtml(item.project.client)} — ${escapeHtml(item.project.code)}</small>
@@ -17196,7 +17362,7 @@
                     }
 
                     const compClass = item.task.completion >= 75 ? 'success' : item.task.completion >= 40 ? 'warning' : 'danger';
-                    html += `<tr>
+                    html += `<tr style="cursor:pointer;" onclick="navigateToProject(${item.project.id})" title="Vai al progetto">
                         <td>${escapeHtml(item.project.client)}</td>
                         <td>${escapeHtml(item.project.code)}</td>
                         <td>${escapeHtml(item.task.name)}</td>
@@ -17220,7 +17386,7 @@
                 html += '</tr></thead><tbody>';
                 inProgressProjects.sort((a, b) => a.avgCompletion - b.avgCompletion).forEach(item => {
                     const compClass = item.avgCompletion >= 75 ? 'success' : item.avgCompletion >= 40 ? 'warning' : 'danger';
-                    html += `<tr>
+                    html += `<tr style="cursor:pointer;" onclick="navigateToProject(${item.project.id})" title="Vai al progetto">
                         <td>${escapeHtml(item.project.client)}</td>
                         <td>${escapeHtml(item.project.code)}</td>
                         <td>${item.taskCount}</td>
