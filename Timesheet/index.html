@@ -697,6 +697,10 @@
                         <input type="text" id="noteProject" placeholder="es. PROJ-001" list="projectSuggestions">
                     </div>
                     <div class="form-group">
+                        <label>Versione (opzionale)</label>
+                        <input type="text" id="noteVersion" placeholder="es. M001 o testo libero">
+                    </div>
+                    <div class="form-group">
                         <label>Tipo di Lavoro</label>
                         <select id="noteWorkType"></select>
                     </div>
@@ -3169,6 +3173,7 @@
             const project = document.getElementById('noteProject').value.trim();
             const workType = document.getElementById('noteWorkType').value;
             const hoursInput = document.getElementById('noteHours').value.trim();
+            const version = document.getElementById('noteVersion').value.trim();
             const description = document.getElementById('noteDescription').value.trim();
 
             if (!project) {
@@ -3216,6 +3221,7 @@
                 project: project,
                 workType: workType,
                 hours: hoursFormatted,
+                version: version,
                 description: description,
                 timestamp: new Date().toISOString()
             };
@@ -3228,6 +3234,7 @@
             document.getElementById('noteProject').value = '';
             document.getElementById('noteWorkType').value = workTypes.length > 0 ? workTypes[0].name : '';
             document.getElementById('noteHours').value = '';
+            document.getElementById('noteVersion').value = '';
             document.getElementById('noteDescription').value = '';
         }
 
@@ -3406,6 +3413,7 @@
                             <span class="note-worktype" style="background: ${bgColor}; border-left-color: ${borderColor}; border-right-color: ${borderColor}; color: ${textColor};">
                                 ${note.workType}
                             </span>
+                            ${note.version ? `<span style="font-size: 11px; color: var(--text-tertiary); margin-left: 5px;">📌 ${note.version}</span>` : ''}
                         </div>
                         ${note.description ? `<div class="note-description">${note.description}</div>` : ''}
                         <div class="note-actions">
@@ -3468,6 +3476,9 @@
                         document.getElementById(`workType-${lastIndex}`).value = note.workType;
                         document.getElementById(`workHours-${lastIndex}`).value = note.hours;
                         
+                        if (note.version) {
+                            document.getElementById(`workVersion-${lastIndex}`).value = note.version;
+                        }
                         if (note.description) {
                             document.getElementById(`workDesc-${lastIndex}`).value = note.description;
                         }
