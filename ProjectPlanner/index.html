@@ -15985,7 +15985,9 @@
                         const locationFilteredTasks = filterFlexibleTasksByLocation(flexibleTasks, resourceLocation);
                         
                         // Se risorsa è presso cliente, mostra suggerimenti anche se carico >= 100%
-                        const showSuggestions = checkDate >= today && !isAbsent && !isSaturday && !isSunday && !isHoliday && locationFilteredTasks.length > 0 &&
+                        // Se la risorsa ha attività con lavoro nel weekend/festivo, mostra comunque i suggerimenti
+                        const isNonWorkingDay = (isSaturday || isSunday || isHoliday) && dayAssignments.length === 0;
+                        const showSuggestions = checkDate >= today && !isAbsent && !isNonWorkingDay && locationFilteredTasks.length > 0 &&
                             (dailyLoad < 100 || (resourceLocation.type === 'cliente' && resourceLocation.plantIds.length > 0));
                         
                         if (showSuggestions) {
@@ -16280,8 +16282,10 @@
                 const isHoliday = holidays.some(h => h.date === dateStr);
                 
                 // Mostra suggerimenti solo se il giorno è lavorativo valido e non nascosti
+                // Se la risorsa ha attività con lavoro nel weekend/festivo, mostra comunque i suggerimenti
                 const hideSuggestions = document.getElementById('resourceViewHideSuggestions')?.checked || false;
-                const shouldShowSuggestions = !hideSuggestions && !isAbsentOnDate && !isSaturday && !isSunday && !isHoliday;
+                const isNonWorkingDayNonCol = (isSaturday || isSunday || isHoliday) && !resourceLocationNonCol.hasWork;
+                const shouldShowSuggestions = !hideSuggestions && !isAbsentOnDate && !isNonWorkingDayNonCol;
                 
                 const flexibleTasks = [];
                 if (shouldShowSuggestions) {
@@ -17029,10 +17033,10 @@
             });
             
             if (hasClientTask) {
-                return { type: 'cliente', plantIds: [...plantIds] };
+                return { type: 'cliente', plantIds: [...plantIds], hasWork: true };
             }
             // Se non ha task o solo task in sede/remoto
-            return { type: hasAnyTask ? 'sede' : 'sede', plantIds: [] };
+            return { type: 'sede', plantIds: [], hasWork: hasAnyTask };
         }
 
         function filterFlexibleTasksByLocation(flexibleTasks, resourceLocation) {
