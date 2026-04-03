@@ -5089,6 +5089,54 @@
         </div>
     </div>
 
+    <!-- Modal Copia Offerta -->
+    <div id="copyOfferModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 Copia Offerta su Altri Progetti</h3>
+                <button class="modal-close" onclick="closeCopyOfferModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label style="font-weight: bold;">Offerta:</label>
+                    <span id="copyOfferName" style="color: var(--accent-color);"></span>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold;">Progetti destinazione:</label>
+                    <div style="max-height: 400px; overflow-y: auto; overflow-x: hidden; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary);">
+                        <table id="copyOfferProjectsTable" style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-secondary); z-index: 1;">
+                                <tr style="background: var(--bg-primary);">
+                                    <th style="padding: 4px; width: 50px;"></th>
+                                    <th style="padding: 4px; width: 100px;"></th>
+                                    <th style="padding: 4px; width: 40%;">
+                                        <input type="text" id="copyOfferFilterClient" placeholder="Filtra cliente..." style="width: 100%; box-sizing: border-box; padding: 4px;" oninput="filterCopyOfferProjects()">
+                                    </th>
+                                    <th style="padding: 4px; width: calc(60% - 150px);">
+                                        <input type="text" id="copyOfferFilterDesc" placeholder="Filtra descrizione..." style="width: 100%; box-sizing: border-box; padding: 4px;" oninput="filterCopyOfferProjects()">
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th style="padding: 8px; text-align: center; border-bottom: 2px solid var(--border-color); width: 50px;">Sel.</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: 100px;">Codice</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: 40%;">Cliente</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: calc(60% - 150px);">Descrizione</th>
+                                </tr>
+                            </thead>
+                            <tbody id="copyOfferProjectsList">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="copyOfferSelectedCount" style="margin-right: auto; color: var(--accent-color); font-weight: bold;">Nessun progetto selezionato</span>
+                <button onclick="closeCopyOfferModal()" class="secondary">Annulla</button>
+                <button onclick="executeCopyOffer()">📋 Copia Offerta</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Aggiornamento -->
     <div id="updateModal" class="modal">
         <div class="modal-content">
@@ -6783,6 +6831,158 @@
             }
         }
 
+        // === COPIA OFFERTA ===
+        let offerToCopy = null;
+        let allCopyOfferProjects = [];
+
+        function openCopyOfferModal(offerIndex, projectId) {
+            offerToCopy = { offerIndex, projectId };
+            
+            const project = projects.find(p => p.id === projectId);
+            if (!project || !project.offers) return;
+            
+            const offer = project.offers[offerIndex];
+            if (!offer) return;
+            
+            document.getElementById('copyOfferName').textContent = `${offer.offerCode || '-'} - ${offer.title}`;
+            
+            allCopyOfferProjects = projects.filter(p => p.id !== projectId)
+                .sort((a, b) => {
+                    const codeA = (a.code || '').toLowerCase();
+                    const codeB = (b.code || '').toLowerCase();
+                    return codeA.localeCompare(codeB);
+                });
+            
+            document.getElementById('copyOfferFilterClient').value = '';
+            document.getElementById('copyOfferFilterDesc').value = '';
+            
+            renderCopyOfferProjectsTable();
+            
+            openModal(document.getElementById('copyOfferModal'));
+        }
+
+        function renderCopyOfferProjectsTable(filteredProjects = null) {
+            const projectsList = document.getElementById('copyOfferProjectsList');
+            projectsList.innerHTML = '';
+            
+            const projectsToShow = filteredProjects || allCopyOfferProjects;
+            
+            if (projectsToShow.length === 0) {
+                projectsList.innerHTML = '<tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--text-secondary); font-style: italic;">Nessun progetto trovato</td></tr>';
+            } else {
+                projectsToShow.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'copy-offer-project-row';
+                    tr.style.borderBottom = '1px solid var(--border-color)';
+                    tr.innerHTML = `
+                        <td style="padding: 8px; text-align: center;">
+                            <input type="checkbox" class="copy-offer-project-checkbox" value="${p.id}" id="copy-offer-project-${p.id}" onchange="updateCopyOfferCount()">
+                        </td>
+                        <td style="padding: 8px; word-wrap: break-word;"><strong>${p.code || '-'}</strong></td>
+                        <td style="padding: 8px; word-wrap: break-word;">${p.client || '-'}</td>
+                        <td style="padding: 8px; word-wrap: break-word;">${p.description || '-'}</td>
+                    `;
+                    projectsList.appendChild(tr);
+                });
+            }
+            
+            updateCopyOfferCount();
+        }
+
+        function filterCopyOfferProjects() {
+            const filterClient = document.getElementById('copyOfferFilterClient').value.toLowerCase();
+            const filterDesc = document.getElementById('copyOfferFilterDesc').value.toLowerCase();
+            
+            if (!filterClient && !filterDesc) {
+                renderCopyOfferProjectsTable();
+                return;
+            }
+            
+            const filtered = allCopyOfferProjects.filter(p => {
+                const client = (p.client || '').toLowerCase();
+                const description = (p.description || '').toLowerCase();
+                return (!filterClient || client.includes(filterClient)) && (!filterDesc || description.includes(filterDesc));
+            });
+            
+            renderCopyOfferProjectsTable(filtered);
+        }
+
+        function updateCopyOfferCount() {
+            const count = document.querySelectorAll('.copy-offer-project-checkbox:checked').length;
+            const countSpan = document.getElementById('copyOfferSelectedCount');
+            
+            if (count === 0) {
+                countSpan.textContent = 'Nessun progetto selezionato';
+                countSpan.style.color = 'var(--text-secondary)';
+            } else if (count === 1) {
+                countSpan.textContent = '1 progetto selezionato';
+                countSpan.style.color = 'var(--accent-color)';
+            } else {
+                countSpan.textContent = `${count} progetti selezionati`;
+                countSpan.style.color = 'var(--accent-color)';
+            }
+        }
+
+        function closeCopyOfferModal() {
+            closeModal(document.getElementById('copyOfferModal'));
+            offerToCopy = null;
+        }
+
+        async function executeCopyOffer() {
+            if (!offerToCopy) return;
+            
+            const sourceProject = projects.find(p => p.id === offerToCopy.projectId);
+            if (!sourceProject || !sourceProject.offers) return;
+            
+            const sourceOffer = sourceProject.offers[offerToCopy.offerIndex];
+            if (!sourceOffer) return;
+            
+            const selectedProjects = [];
+            const checkboxes = document.querySelectorAll('.copy-offer-project-checkbox:checked');
+            checkboxes.forEach(cb => {
+                selectedProjects.push(parseInt(cb.value));
+            });
+            
+            if (selectedProjects.length === 0) {
+                alert('Seleziona almeno un progetto di destinazione');
+                return;
+            }
+            
+            selectedProjects.forEach(projectId => {
+                const targetProject = projects.find(p => p.id === projectId);
+                if (!targetProject) return;
+                
+                if (!targetProject.offers) {
+                    targetProject.offers = [];
+                }
+                
+                const newOffer = {
+                    offerCode: sourceOffer.offerCode || '',
+                    title: sourceOffer.title,
+                    date: sourceOffer.date,
+                    estimate: sourceOffer.estimate,
+                    value: sourceOffer.value,
+                    status: sourceOffer.status,
+                    notes: sourceOffer.notes || ''
+                };
+                
+                targetProject.offers.push(newOffer);
+            });
+            
+            await saveToIndexedDBAll();
+            
+            closeCopyOfferModal();
+            
+            if (currentProjectId === offerToCopy.projectId) {
+                renderProjectOffers();
+            }
+            
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab && activeTab.id === 'offerte') {
+                renderOffersOverview();
+            }
+        }
+
         // === SPLIT/DUPLICA ATTIVITÀ ===
         let taskToSplit = null;
 
@@ -8326,6 +8526,7 @@
                     <td><span style="color: ${statusColors[offer.status]}">${statusLabels[offer.status]}</span></td>
                     <td>
                         <button onclick="event.stopPropagation(); editOffer(${index})" title="Modifica" style="padding: 4px 8px; font-size: 12px;">✏️</button>
+                        <button onclick="event.stopPropagation(); openCopyOfferModal(${index}, ${currentProjectId})" title="Copia su altri progetti" style="padding: 4px 8px; font-size: 12px;">📋</button>
                         <button onclick="event.stopPropagation(); deleteOffer(${index})" title="Elimina" style="padding: 4px 8px; font-size: 12px;">🗑️</button>
                     </td>
                 `;
