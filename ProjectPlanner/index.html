@@ -3315,6 +3315,10 @@
 
                 <!-- Attività -->
                 <h3>Attività</h3>
+                
+                <!-- Riepilogo Giorni Progetto -->
+                <div id="projectDaysSummary" style="display: flex; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;"></div>
+                
                 <table id="tasksTable">
                     <thead>
                         <tr>
@@ -4839,6 +4843,14 @@
                         <label>Completamento (%):</label>
                         <input type="number" id="taskCompletion" min="0" max="100" step="10" value="0">
                     </div>
+                    <div class="form-group" id="taskDatesTrackingContainer">
+                        <label>Tracking:</label>
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; font-size: 0.9em;">
+                            <span style="display: flex; align-items: center; gap: 4px;">🚀 Avviata: <input type="date" id="taskStartedAt" style="padding: 2px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary); font-size: 0.95em;"></span>
+                            <span style="display: flex; align-items: center; gap: 4px;">✅ Completata: <input type="date" id="taskCompletedAt" style="padding: 2px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary); font-size: 0.95em;"></span>
+                            <span id="taskDaysDiffDisplay"></span>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Stato:</label>
                         <select id="taskStatus">
@@ -6228,6 +6240,11 @@
                         } else {
                             clearChecklistItems();
                         }
+                        
+                        // Mostra info tracking date avvio/completamento
+                        document.getElementById('taskStartedAt').value = task.startedAt || '';
+                        document.getElementById('taskCompletedAt').value = task.completedAt || '';
+                        updateTrackingDaysDiff();
                     }
                 }
             } else {
@@ -6797,7 +6814,9 @@
                     resources: copyResources ? (sourceTask.resources ? [...sourceTask.resources] : []) : [],
                     checklist: sourceTask.checklist ? JSON.parse(JSON.stringify(sourceTask.checklist)) : [],
                     locationType: sourceTask.locationType || 'sede',
-                    plantId: ''
+                    plantId: '',
+                    startedAt: null,
+                    completedAt: null
                 };
                 
                 // Gestisci stabilimento in base al cliente
@@ -7163,7 +7182,9 @@
                     startLinkedTo: '',
                     endLinkedTo: '',
                     startOffset: 0,
-                    endOffset: 0
+                    endOffset: 0,
+                    startedAt: null,
+                    completedAt: null
                 };
                 
                 project.tasks.push(newTask);
@@ -7188,7 +7209,9 @@
                     startLinkedTo: '', // Non copiare i collegamenti
                     endLinkedTo: '',
                     startOffset: 0,
-                    endOffset: 0
+                    endOffset: 0,
+                    startedAt: null, // Reset date tracking per la copia
+                    completedAt: null
                 };
                 
                 project.tasks.push(newTask);
@@ -8018,6 +8041,7 @@
             applyTaskLinks();
             
             renderTasks();
+            renderProjectDaysSummary();
             updateResourceSelects();
             
             // Renderizza le nuove sezioni
@@ -9655,6 +9679,114 @@
             return { startDate, endDate, completion, remainingDays, totalDuration };
         }
 
+        function renderProjectDaysSummary() {
+            const project = projects.find(p => p.id === currentProjectId);
+            const container = document.getElementById('projectDaysSummary');
+            if (!project || !container) return;
+            
+            const tasks = project.tasks || [];
+            if (tasks.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            // Giorni totali previsti (somma durate)
+            const totalPlannedDays = tasks.reduce((sum, t) => sum + (parseInt(t.duration) || 0), 0);
+            
+            // Giorni lavorati (somma dei giorni effettivi delle attività avviate)
+            let totalWorkedDays = 0;
+            let totalActualCompleted = 0;
+            const today = new Date();
+            
+            tasks.forEach(task => {
+                if (task.startedAt) {
+                    if (task.completedAt) {
+                        // Attività completata: giorni lavorativi effettivi da avvio a completamento
+                        totalActualCompleted += countWorkingDaysBetween(task.startedAt, task.completedAt, task.saturdayWork, task.sundayWork, task.holidayWork, task.resources);
+                    } else {
+                        // Attività in corso: giorni lavorativi trascorsi da avvio a oggi
+                        totalWorkedDays += countWorkingDaysBetween(task.startedAt, formatDateLocal(today), task.saturdayWork, task.sundayWork, task.holidayWork, task.resources);
+                    }
+                }
+            });
+            
+            totalWorkedDays += totalActualCompleted;
+            
+            // Giorni rimasti (durata attività non ancora completate)
+            const remainingDays = tasks
+                .filter(t => (parseInt(t.completion) || 0) < 100 && t.status !== 'completata' && t.status !== 'annullata')
+                .reduce((sum, t) => sum + (parseInt(t.duration) || 0), 0);
+            
+            // Giorni completati (durata prevista delle attività completate)
+            const completedPlannedDays = tasks
+                .filter(t => (parseInt(t.completion) || 0) >= 100 || t.status === 'completata')
+                .reduce((sum, t) => sum + (parseInt(t.duration) || 0), 0);
+            
+            const badgeStyle = 'padding: 8px 14px; border-radius: 6px; font-size: 0.9em; display: flex; flex-direction: column; align-items: center; min-width: 120px;';
+            
+            container.innerHTML = `
+                <div style="${badgeStyle} background: var(--bg-tertiary); border: 1px solid var(--border-color);">
+                    <span style="font-size: 0.8em; color: var(--text-tertiary);">📋 Giorni Previsti</span>
+                    <strong style="font-size: 1.3em;">${totalPlannedDays}</strong>
+                </div>
+                <div style="${badgeStyle} background: var(--bg-tertiary); border: 1px solid var(--border-color);">
+                    <span style="font-size: 0.8em; color: var(--text-tertiary);">✅ Giorni Completati</span>
+                    <strong style="font-size: 1.3em; color: #4CAF50;">${completedPlannedDays}</strong>
+                </div>
+                <div style="${badgeStyle} background: var(--bg-tertiary); border: 1px solid var(--border-color);">
+                    <span style="font-size: 0.8em; color: var(--text-tertiary);">⏳ Giorni Rimasti</span>
+                    <strong style="font-size: 1.3em; color: #2196F3;">${remainingDays}</strong>
+                </div>
+                <div style="${badgeStyle} background: var(--bg-tertiary); border: 1px solid var(--border-color);">
+                    <span style="font-size: 0.8em; color: var(--text-tertiary);">⏱️ Giorni Lavorati</span>
+                    <strong style="font-size: 1.3em; color: ${totalWorkedDays > totalPlannedDays ? '#f44336' : '#ff9800'};">${totalWorkedDays}</strong>
+                </div>
+                ${totalActualCompleted > 0 ? `
+                <div style="${badgeStyle} background: var(--bg-tertiary); border: 1px solid var(--border-color);">
+                    <span style="font-size: 0.8em; color: var(--text-tertiary);">📊 Scostamento</span>
+                    <strong style="font-size: 1.3em; color: ${totalActualCompleted > completedPlannedDays ? '#f44336' : '#4CAF50'};">${totalActualCompleted > completedPlannedDays ? '+' : ''}${totalActualCompleted - completedPlannedDays}gg</strong>
+                </div>
+                ` : ''}
+            `;
+            
+            // Mostra pulsante per impostare tracking su attività completate senza date
+            const tasksWithoutTracking = tasks.filter(t => 
+                (t.completion >= 100 || t.status === 'completata') && (!t.startedAt || !t.completedAt) && t.startDate && t.endDate
+            );
+            if (tasksWithoutTracking.length > 0) {
+                container.innerHTML += `
+                    <div style="${badgeStyle} background: var(--warning-bg); border: 1px solid var(--warning-border); cursor: pointer;" onclick="fillTrackingFromPlannedDates()" title="Imposta date di avvio e completamento dalle date previste per ${tasksWithoutTracking.length} attività completate">
+                        <span style="font-size: 0.8em; color: var(--text-tertiary);">🔧 Senza tracking</span>
+                        <strong style="font-size: 1.3em;">${tasksWithoutTracking.length}</strong>
+                    </div>
+                `;
+            }
+        }
+        
+        function fillTrackingFromPlannedDates() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project || !project.tasks) return;
+            
+            let count = 0;
+            project.tasks.forEach(task => {
+                if ((task.completion >= 100 || task.status === 'completata') && task.startDate && task.endDate) {
+                    if (!task.startedAt) {
+                        task.startedAt = task.startDate;
+                        count++;
+                    }
+                    if (!task.completedAt) {
+                        task.completedAt = task.endDate;
+                        count++;
+                    }
+                }
+            });
+            
+            if (count > 0) {
+                saveToIndexedDBAll();
+                renderTasks();
+            }
+        }
+
         // === GESTIONE MILESTONE ===
         function saveMilestone() {
             const name = document.getElementById('milestoneName').value.trim();
@@ -10076,18 +10208,75 @@
                 updateLinkedDates();
             });
             
-            // Event listener per gestire lo stato in base al completamento
-            document.getElementById('taskCompletion')?.addEventListener('input', function() {
-                const completion = parseInt(this.value) || 0;
+            // Event listener per gestire lo stato e le date di tracking in base al completamento
+            function onCompletionChange() {
+                const completion = parseInt(document.getElementById('taskCompletion').value) || 0;
                 const statusField = document.getElementById('taskStatus');
+                const startedAtField = document.getElementById('taskStartedAt');
+                const completedAtField = document.getElementById('taskCompletedAt');
+                const today = formatDateLocal(new Date());
                 
                 if (completion === 100) {
                     statusField.value = 'completata';
-                } else if (completion > 0 && statusField.value === '') {
-                    statusField.value = 'in-corso';
+                    if (!startedAtField.value) startedAtField.value = today;
+                    if (!completedAtField.value) completedAtField.value = today;
+                } else if (completion > 0) {
+                    if (statusField.value === '') statusField.value = 'in-corso';
+                    if (!startedAtField.value) startedAtField.value = today;
+                    completedAtField.value = '';
+                } else {
+                    // completion === 0
+                    startedAtField.value = '';
+                    completedAtField.value = '';
                 }
-            });
+                updateTrackingDaysDiff();
+            }
+            const completionEl = document.getElementById('taskCompletion');
+            if (completionEl) {
+                completionEl.addEventListener('input', onCompletionChange);
+                completionEl.addEventListener('change', onCompletionChange);
+            }
+            
+            // Event listener per aggiornare il calcolo giorni quando si modificano le date di tracking
+            document.getElementById('taskStartedAt')?.addEventListener('change', updateTrackingDaysDiff);
+            document.getElementById('taskCompletedAt')?.addEventListener('change', updateTrackingDaysDiff);
         });
+
+        function updateTrackingDaysDiff() {
+            const startedAt = document.getElementById('taskStartedAt').value;
+            const completedAt = document.getElementById('taskCompletedAt').value;
+            const duration = parseInt(document.getElementById('taskDuration').value) || 0;
+            const saturdayWork = document.getElementById('taskSaturdayWork').checked;
+            const sundayWork = document.getElementById('taskSundayWork').checked;
+            const holidayWork = document.getElementById('taskHolidayWork').checked;
+            const daysDiffDisplay = document.getElementById('taskDaysDiffDisplay');
+            
+            // Leggi risorse dal modal
+            const modalResources = [];
+            document.querySelectorAll('.resource-item').forEach(item => {
+                const sel = item.querySelector('.task-resource-select');
+                if (sel && sel.value) modalResources.push({ resourceId: sel.value });
+            });
+            
+            if (startedAt && completedAt && duration) {
+                const actualDays = countWorkingDaysBetween(startedAt, completedAt, saturdayWork, sundayWork, holidayWork, modalResources);
+                const plannedDays = duration;
+                const diff = actualDays - plannedDays;
+                let diffColor = '#4CAF50';
+                let diffIcon = '✅';
+                let diffLabel = 'in anticipo';
+                if (diff > 0) {
+                    diffColor = '#f44336';
+                    diffIcon = '⚠️';
+                    diffLabel = 'in ritardo';
+                } else if (diff === 0) {
+                    diffLabel = 'nei tempi';
+                }
+                daysDiffDisplay.innerHTML = `${diffIcon} <span style="color: ${diffColor}; font-weight: bold;">${Math.abs(diff)}gg ${diff === 0 ? 'nei tempi' : diffLabel}</span> <span style="color: var(--text-tertiary);">(previsti: ${plannedDays}gg, effettivi: ${actualDays}gg)</span>`;
+            } else {
+                daysDiffDisplay.innerHTML = '';
+            }
+        }
 
         function updateLinkedDates() {
             const startLinkedTo = document.getElementById('taskStartLinkedTo').value;
@@ -10347,6 +10536,11 @@
 
             if (!project.tasks) project.tasks = [];
 
+            // Gestione date di avvio e completamento
+            // Leggi i valori correnti dagli input (gestiti in tempo reale dal listener del completamento)
+            const startedAt = document.getElementById('taskStartedAt').value || null;
+            const completedAt = document.getElementById('taskCompletedAt').value || null;
+
             const task = {
                 id: editingTaskId || Date.now(),
                 name,
@@ -10368,7 +10562,9 @@
                 flexibleDate: flexibleDate || false,
                 checklist: checklistItems,
                 locationType: locationType || 'sede',
-                plantId: plantId ? Number(plantId) : null
+                plantId: plantId ? Number(plantId) : null,
+                startedAt: startedAt,
+                completedAt: completedAt
             };
 
             if (editingTaskId) {
@@ -10376,6 +10572,34 @@
                 project.tasks[index] = task;
             } else {
                 project.tasks.push(task);
+            }
+            
+            // Se l'attività è completata al 100%, rimuovi i collegamenti da altre attività che dipendono da questa
+            if (completion === 100) {
+                project.tasks.forEach(otherTask => {
+                    if (otherTask.id === task.id) return;
+                    let changed = false;
+                    
+                    // Controlla startLinkedTo
+                    if (otherTask.startLinkedTo) {
+                        const [linkType, linkedId] = otherTask.startLinkedTo.split(':');
+                        if (parseInt(linkedId) === task.id) {
+                            otherTask.startLinkedTo = '';
+                            otherTask.startOffset = 0;
+                            changed = true;
+                        }
+                    }
+                    
+                    // Controlla endLinkedTo
+                    if (otherTask.endLinkedTo) {
+                        const [linkType, linkedId] = otherTask.endLinkedTo.split(':');
+                        if (parseInt(linkedId) === task.id) {
+                            otherTask.endLinkedTo = '';
+                            otherTask.endOffset = 0;
+                            changed = true;
+                        }
+                    }
+                });
             }
 
             saveToIndexedDBAll();
@@ -10749,6 +10973,46 @@
             });
         }
 
+        /**
+         * Conta i giorni lavorativi tra due date (estremi inclusi).
+         * Esclude sabati, domeniche e festivi (usa l'array globale holidays).
+         * Se il task ha flag saturdayWork/sundayWork/holidayWork, li rispetta.
+         * Se taskResources è fornito, esclude anche i giorni in cui tutte le risorse sono assenti.
+         */
+        function countWorkingDaysBetween(startDateStr, endDateStr, saturdayWork = false, sundayWork = false, holidayWork = false, taskResources = null) {
+            const parts1 = startDateStr.split('-');
+            const parts2 = endDateStr.split('-');
+            const start = new Date(parseInt(parts1[0]), parseInt(parts1[1]) - 1, parseInt(parts1[2]));
+            const end = new Date(parseInt(parts2[0]), parseInt(parts2[1]) - 1, parseInt(parts2[2]));
+            let count = 0;
+            const current = new Date(start);
+            
+            while (current <= end) {
+                const dayOfWeek = current.getDay();
+                const year = current.getFullYear();
+                const month = String(current.getMonth() + 1).padStart(2, '0');
+                const day = String(current.getDate()).padStart(2, '0');
+                const checkDateStr = `${year}-${month}-${day}`;
+                const isHoliday = holidays.some(h => h.date === checkDateStr);
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                
+                const isWorkingDay = (!isHoliday || holidayWork) &&
+                                    (!isSaturday || saturdayWork) &&
+                                    (!isSunday || sundayWork);
+                // Escludi giorni in cui tutte le risorse del task sono assenti
+                if (isWorkingDay && taskResources && taskResources.length > 0) {
+                    if (areAllResourcesAbsent(checkDateStr, taskResources)) {
+                        current.setDate(current.getDate() + 1);
+                        continue;
+                    }
+                }
+                if (isWorkingDay) count++;
+                current.setDate(current.getDate() + 1);
+            }
+            return count;
+        }
+
         function calculateDateWithOffset(dateStr, offsetDays, saturdayWork, sundayWork, holidayWork = false, taskResources = null) {
             if (offsetDays === 0) return dateStr;
             
@@ -10929,6 +11193,11 @@
             
             // Pulisci checklist
             clearChecklistItems();
+            
+            // Reset tracking fields
+            document.getElementById('taskStartedAt').value = '';
+            document.getElementById('taskCompletedAt').value = '';
+            document.getElementById('taskDaysDiffDisplay').innerHTML = '';
         }
 
         // === GESTIONE BACHECA ===
@@ -11298,6 +11567,28 @@
                 const notesIndicator = task.notes && task.notes.trim() ? 
                     `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
 
+                // Indicatore differenza giorni previsti vs effettivi
+                let daysDiffIndicator = '';
+                if (task.startedAt && task.completedAt && task.duration) {
+                    const actualDays = countWorkingDaysBetween(task.startedAt, task.completedAt, task.saturdayWork, task.sundayWork, task.holidayWork, task.resources);
+                    const plannedDays = task.duration;
+                    const diff = actualDays - plannedDays;
+                    if (diff > 0) {
+                        daysDiffIndicator = `<span style="color: #f44336; font-size: 0.85em;" title="Previsti: ${plannedDays}gg, Effettivi: ${actualDays}gg"> ⚠️+${diff}gg</span>`;
+                    } else if (diff < 0) {
+                        daysDiffIndicator = `<span style="color: #4CAF50; font-size: 0.85em;" title="Previsti: ${plannedDays}gg, Effettivi: ${actualDays}gg"> ✅${diff}gg</span>`;
+                    } else {
+                        daysDiffIndicator = `<span style="color: var(--text-tertiary); font-size: 0.85em;" title="Previsti: ${plannedDays}gg, Effettivi: ${actualDays}gg"> ✅ ok</span>`;
+                    }
+                } else if (task.startedAt && !task.completedAt && task.duration) {
+                    const todayStr = formatDateLocal(new Date());
+                    const elapsedDays = countWorkingDaysBetween(task.startedAt, todayStr, task.saturdayWork, task.sundayWork, task.holidayWork, task.resources);
+                    const plannedDays = task.duration;
+                    if (elapsedDays > plannedDays) {
+                        daysDiffIndicator = `<span style="color: #ff9800; font-size: 0.85em;" title="Avviata: ${task.startedAt}, Giorni lavorativi trascorsi: ${elapsedDays}, Previsti: ${plannedDays}"> ⏱️+${elapsedDays - plannedDays}gg</span>`;
+                    }
+                }
+
                 // Stile per attività annullate
                 const cancelledStyle = task.status === 'annullata' ? 'style="text-decoration: line-through; color: #666;"' : '';
                 
@@ -11306,7 +11597,7 @@
                     <td ${cancelledStyle}>${resourcesStr}</td>
                     <td ${cancelledStyle}>${task.startDate || '-'}</td>
                     <td ${cancelledStyle}>${task.endDate || '-'}</td>
-                    <td ${cancelledStyle}>${task.duration} giorni</td>
+                    <td ${cancelledStyle}>${task.duration} giorni${daysDiffIndicator}</td>
                     <td ${cancelledStyle}>${getLocationBadgeHtml(task)}</td>
                     <td ${cancelledStyle}>${linksStr}</td>
                     <td ${cancelledStyle}>${task.completion}%</td>
@@ -11320,6 +11611,9 @@
                 `;
                 tbody.appendChild(tr);
             });
+            
+            // Aggiorna riepilogo giorni progetto
+            renderProjectDaysSummary();
         }
 
         // === GESTIONE TEMPLATE ===
