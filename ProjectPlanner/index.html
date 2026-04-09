@@ -3135,6 +3135,7 @@
             
             <div class="action-bar">
                 <button onclick="openResourceModal()">➕ Nuova Risorsa</button>
+                <button onclick="exportVacationPlanPDF()">📅 Esporta Piano Ferie PDF</button>
             </div>
 
             <h3>Elenco Risorse</h3>
@@ -12228,6 +12229,172 @@
             const endMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
             const endDay = String(currentDate.getDate()).padStart(2, '0');
             return `${endYear}-${endMonth}-${endDay}`;
+        }
+
+        // === EXPORT PIANO FERIE PDF ===
+        function exportVacationPlanPDF() {
+            const year = new Date().getFullYear();
+            const visibleResources = resources.filter(r => r.absences && r.absences.some(abs => abs.type === 'vacation')).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+            if (visibleResources.length === 0) {
+                alert('Nessuna risorsa con ferie registrate da esportare.');
+                return;
+            }
+
+            const holidaySet = new Set();
+            getItalianHolidays(year).forEach(h => holidaySet.add(h.date));
+            localHolidays.forEach(lh => {
+                const mm = String(lh.month).padStart(2, '0');
+                const dd = String(lh.day).padStart(2, '0');
+                holidaySet.add(`${year}-${mm}-${dd}`);
+            });
+
+            const resourceVacations = {};
+            visibleResources.forEach(r => {
+                const vacSet = new Set();
+                if (r.absences) {
+                    r.absences.forEach(abs => {
+                        if (abs.type !== 'vacation') return;
+                        const start = new Date(abs.start + 'T00:00:00');
+                        const end = new Date(abs.end + 'T00:00:00');
+                        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                            if (d.getFullYear() === year) {
+                                const ms = String(d.getMonth() + 1).padStart(2, '0');
+                                const ds = String(d.getDate()).padStart(2, '0');
+                                vacSet.add(`${year}-${ms}-${ds}`);
+                            }
+                        }
+                    });
+                }
+                resourceVacations[r.id] = vacSet;
+            });
+
+            const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+            const monthDays = [];
+            for (let m = 0; m < 12; m++) {
+                monthDays.push(new Date(year, m + 1, 0).getDate());
+            }
+
+            const monthColors = [
+                '#2196F3', '#1E88E5', '#1976D2', '#388E3C',
+                '#43A047', '#4CAF50', '#FF9800', '#F57C00',
+                '#E64A19', '#795548', '#4E342E', '#263238'
+            ];
+
+            const quarterLabels = ['1° Trimestre', '2° Trimestre', '3° Trimestre', '4° Trimestre'];
+            const quarterMonths = [[0,1,2], [3,4,5], [6,7,8], [9,10,11]];
+            const nRes = visibleResources.length;
+            const rowH = Math.max(8, Math.min(14, Math.floor((270 - 60) / (nRes * 4))));
+
+            let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Piano Ferie ${year}</title>
+            <style>
+                @page { size: A3 landscape; margin: 5mm; }
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { font-family: Arial, Helvetica, sans-serif; }
+                .main-title { font-size: 11pt; font-weight: bold; text-align: center; margin-bottom: 3px; color: #282828; }
+                .quarter-block { margin-bottom: 4px; }
+                .quarter-label { font-size: 7pt; font-weight: bold; color: #444; margin-bottom: 1px; }
+                table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+                .month-row td { color: #fff; font-weight: bold; font-size: 6pt; text-align: center; padding: 1.5px 0; border-left: 1.5px solid #444; }
+                .month-row td:first-child { border-left: none; }
+                .day-row td { font-size: 5pt; text-align: center; padding: 0; height: 10px;
+                    border-left: 0.3px solid #ccc; border-bottom: 0.5px solid #aaa; color: #555; font-weight: bold; }
+                .day-row td.weekend, .day-row td.holiday { background: #e0e0e0; color: #aaa; }
+                .day-row td.month-start { border-left: 1.5px solid #444; }
+                .name-col { text-align: left; padding: 0 3px !important; font-size: 6pt; white-space: nowrap;
+                    overflow: hidden; text-overflow: ellipsis; border-right: 1px solid #888;
+                    font-weight: 500; color: #222; }
+                .name-header { background: #282828; color: #fff; font-weight: bold; font-size: 6pt;
+                    text-align: center; vertical-align: middle; border-right: 1px solid #888; padding: 1.5px 0; }
+                .data-row td { padding: 0; border-bottom: 0.3px solid #ddd; border-left: 0.3px solid #eee; }
+                .data-row:nth-child(even) td { background: #fafafa; }
+                .data-row:nth-child(even) td.name-col { background: #fafafa; }
+                .data-row:nth-child(odd) td.name-col { background: #fff; }
+                .data-row td.vacation { background: #d32f2f !important; }
+                .data-row td.weekend, .data-row td.holiday { background: #e0e0e0 !important; }
+                .data-row td.month-start { border-left: 1.5px solid #888; }
+                .legend { margin-top: 3px; font-size: 6pt; display: flex; gap: 15px; align-items: center; }
+                .legend-box { display: inline-block; width: 9px; height: 9px; border: 0.5px solid #999;
+                    vertical-align: middle; margin-right: 3px; }
+                .footer { margin-top: 2px; font-size: 5pt; color: #aaa; text-align: right; }
+                @media print {
+                    body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                }
+            </style></head><body>`;
+
+            html += `<div class="main-title">Piano Ferie ${year}</div>`;
+
+            quarterMonths.forEach((qMonths, qi) => {
+                const qDays = qMonths.reduce((sum, m) => sum + monthDays[m], 0);
+
+                html += `<div class="quarter-block">`;
+                html += `<div class="quarter-label">${quarterLabels[qi]}</div>`;
+                html += `<table>`;
+                html += `<colgroup><col style="width:80px;">`;
+                for (let i = 0; i < qDays; i++) html += `<col>`;
+                html += `</colgroup>`;
+
+                // Month row
+                html += `<tr class="month-row"><td class="name-header" rowspan="2">Risorsa</td>`;
+                qMonths.forEach(m => {
+                    html += `<td colspan="${monthDays[m]}" style="background:${monthColors[m]}">${monthNames[m]}</td>`;
+                });
+                html += `</tr>`;
+
+                // Day row
+                html += `<tr class="day-row">`;
+                qMonths.forEach(m => {
+                    for (let d = 1; d <= monthDays[m]; d++) {
+                        const dateStr = `${year}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                        const dateObj = new Date(year, m, d);
+                        const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                        const isHoliday = holidaySet.has(dateStr);
+                        let cls = '';
+                        if (d === 1) cls += ' month-start';
+                        if (isWeekend) cls += ' weekend';
+                        else if (isHoliday) cls += ' holiday';
+                        html += `<td class="${cls.trim()}">${d}</td>`;
+                    }
+                });
+                html += `</tr>`;
+
+                // Data rows
+                visibleResources.forEach(r => {
+                    const vacSet = resourceVacations[r.id];
+                    html += `<tr class="data-row">`;
+                    html += `<td class="name-col" style="height:${rowH}px" title="${r.lastName} ${r.firstName}">${r.lastName} ${r.firstName}</td>`;
+                    qMonths.forEach(m => {
+                        for (let d = 1; d <= monthDays[m]; d++) {
+                            const dateStr = `${year}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                            const dateObj = new Date(year, m, d);
+                            const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                            const isHoliday = holidaySet.has(dateStr);
+                            const isVacation = vacSet.has(dateStr);
+                            let cls = '';
+                            if (d === 1) cls += ' month-start';
+                            if (isVacation) cls += ' vacation';
+                            else if (isWeekend) cls += ' weekend';
+                            else if (isHoliday) cls += ' holiday';
+                            html += `<td class="${cls.trim()}" style="height:${rowH}px"></td>`;
+                        }
+                    });
+                    html += `</tr>`;
+                });
+
+                html += `</table>`;
+                html += `</div>`;
+            });
+
+            html += `<div class="legend"><strong>Legenda:</strong>`;
+            html += `<span><span class="legend-box" style="background:#d32f2f"></span>Ferie</span>`;
+            html += `<span><span class="legend-box" style="background:#e0e0e0"></span>Weekend / Festivo</span></div>`;
+            html += `<div class="footer">Generato il ${new Date().toLocaleDateString('it-IT')}</div>`;
+            html += `</body></html>`;
+
+            const printWin = window.open('', '_blank');
+            printWin.document.write(html);
+            printWin.document.close();
+            printWin.onload = function() { printWin.print(); };
         }
 
         // === IMPORT/EXPORT ===
