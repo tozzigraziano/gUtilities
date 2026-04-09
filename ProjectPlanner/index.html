@@ -17767,11 +17767,12 @@
                     project.milestones.forEach(m => {
                         if (m.date === todayStr) {
                             todayMilestones.push({ milestone: m, project });
-                        }
-                        const mDate = new Date(m.date);
-                        const diffDays = Math.ceil((mDate - today) / (86400000));
-                        if (diffDays > 0 && diffDays <= 7) {
-                            upcomingMilestones.push({ milestone: m, project, daysLeft: diffDays });
+                        } else {
+                            const mDate = new Date(m.date + 'T00:00:00');
+                            const diffDays = Math.ceil((mDate - today) / (86400000));
+                            if (diffDays > 0 && diffDays <= 7) {
+                                upcomingMilestones.push({ milestone: m, project, daysLeft: diffDays });
+                            }
                         }
                     });
                 }
@@ -17908,36 +17909,26 @@
 
             html += '<div class="dashboard-grid">';
 
-            // Card: Milestone di oggi
-            if (todayMilestones.length > 0) {
-                html += '<div class="dashboard-card">';
-                html += '<h3>🚩 Milestone di oggi</h3>';
-                html += '<ul class="dashboard-list">';
-                todayMilestones.forEach(item => {
-                    html += `<li>
-                        <div>
-                            <strong>${escapeHtml(item.milestone.name)}</strong><br>
-                            <small style="color: var(--text-tertiary);">${escapeHtml(item.project.client)} — ${escapeHtml(item.project.code)}</small>
-                        </div>
-                        <span class="dashboard-badge info">Oggi</span>
-                    </li>`;
-                });
-                html += '</ul></div>';
-            }
+            // Card: Milestone prossimi 7 giorni (incluso oggi)
+            const allUpcomingMilestones = [
+                ...todayMilestones.map(item => ({ ...item, daysLeft: 0 })),
+                ...upcomingMilestones
+            ].sort((a, b) => a.daysLeft - b.daysLeft);
 
-            // Card: Milestone imminenti (prossimi 7 giorni)
-            if (upcomingMilestones.length > 0) {
+            if (allUpcomingMilestones.length > 0) {
                 html += '<div class="dashboard-card">';
                 html += '<h3>📅 Milestone prossimi 7 giorni</h3>';
                 html += '<ul class="dashboard-list">';
-                upcomingMilestones.forEach(item => {
-                    const badgeClass = item.daysLeft <= 2 ? 'danger' : item.daysLeft <= 4 ? 'warning' : 'info';
-                    html += `<li>
+                allUpcomingMilestones.forEach(item => {
+                    const isToday = item.daysLeft === 0;
+                    const badgeClass = isToday ? 'danger' : item.daysLeft <= 2 ? 'danger' : item.daysLeft <= 4 ? 'warning' : 'info';
+                    const badgeText = isToday ? 'Oggi' : `${item.daysLeft}g — ${item.milestone.date}`;
+                    html += `<li${isToday ? ' style="background: var(--warning-bg);"' : ''}>
                         <div>
-                            <strong>${escapeHtml(item.milestone.name)}</strong><br>
+                            <strong>${isToday ? '🚩 ' : ''}${escapeHtml(item.milestone.name)}</strong><br>
                             <small style="color: var(--text-tertiary);">${escapeHtml(item.project.client)} — ${escapeHtml(item.project.code)}</small>
                         </div>
-                        <span class="dashboard-badge ${badgeClass}">${item.daysLeft}g — ${item.milestone.date}</span>
+                        <span class="dashboard-badge ${badgeClass}">${badgeText}</span>
                     </li>`;
                 });
                 html += '</ul></div>';
