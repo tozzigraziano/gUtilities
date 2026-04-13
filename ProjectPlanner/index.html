@@ -918,7 +918,178 @@
             background: #4a3a1a !important;
             border-left: 4px solid #ff9800;
         }
-        
+
+        /* Calendario assenze nel modal risorsa */
+        .res-modal-left {
+            flex: 1;
+            min-width: 0;
+            overflow-y: auto;
+            max-height: 75vh;
+            padding: 10px;
+        }
+
+        .res-modal-left::-webkit-scrollbar {
+            width: 6px;
+        }
+        .res-modal-left::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .res-modal-left::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .res-modal-right {
+            width: 280px;
+            min-width: 280px;
+            border-left: 1px solid var(--border-color);
+            padding: 10px;
+            background: var(--bg-tertiary);
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+        }
+
+        #resourceCalendarPreview {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px;
+            background: var(--bg-secondary);
+        }
+
+        .res-cal-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .res-cal-nav button {
+            padding: 2px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .res-cal-nav span {
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .res-cal-legend {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 6px;
+            font-size: 9px;
+            color: var(--text-tertiary);
+            flex-wrap: wrap;
+        }
+
+        .res-cal-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .res-cal-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .res-cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+
+        .res-cal-header {
+            text-align: center;
+            font-weight: 700;
+            font-size: 11px;
+            color: var(--text-tertiary);
+            padding: 4px 0;
+        }
+
+        .res-cal-day {
+            text-align: center;
+            padding: 4px 1px;
+            font-size: 11px;
+            border-radius: 3px;
+            position: relative;
+            min-height: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .res-cal-day.empty {
+            background: transparent;
+        }
+
+        .res-cal-day.weekend {
+            background: var(--bg-hover);
+            color: var(--text-tertiary);
+        }
+
+        .res-cal-day.today {
+            font-weight: 800;
+            box-shadow: inset 0 0 0 2px #ff5722;
+        }
+
+        .res-cal-day.absence-vacation {
+            background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .res-cal-day.absence-sick {
+            background: #d32f2f;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .res-cal-day.absence-planned {
+            background: #7b1fa2;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .res-cal-day.permit {
+            background: #ff9800;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .res-cal-day.permit .res-cal-permit-time {
+            font-size: 7px;
+            font-weight: 400;
+            line-height: 1;
+            margin-top: 1px;
+        }
+
+        [data-theme="dark"] .res-cal-day.absence-vacation {
+            background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 3px, #c62828 3px, #c62828 6px);
+        }
+
+        [data-theme="dark"] .res-cal-day.absence-sick {
+            background: #b71c1c;
+        }
+
+        [data-theme="dark"] .res-cal-day.absence-planned {
+            background: #6a1b9a;
+        }
+
+        [data-theme="dark"] .res-cal-day.permit {
+            background: #e65100;
+        }
+
         .resource-item .delete-resource {
             background: none;
             border: none;
@@ -1470,6 +1641,39 @@
             pointer-events: none;
         }
         
+        .resource-daily-bar.on-permit {
+            background: repeating-linear-gradient(
+                45deg,
+                #ff9800,
+                #ff9800 4px,
+                #ffb74d 4px,
+                #ffb74d 8px
+            ) !important;
+            position: relative;
+        }
+
+        [data-theme="dark"] .resource-daily-bar.on-permit {
+            background: repeating-linear-gradient(
+                45deg,
+                #e65100,
+                #e65100 4px,
+                #bf360c 4px,
+                #bf360c 8px
+            ) !important;
+        }
+
+        .resource-daily-bar.on-permit::after {
+            content: '⏰';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
+        }
+
         .resource-daily-bar.on-holiday {
             background: repeating-linear-gradient(
                 45deg,
@@ -1551,6 +1755,28 @@
             border: 2px solid #ff5722;
             box-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
         }
+
+        .resource-daily-bar.current-day.on-permit {
+            background: repeating-linear-gradient(
+                45deg,
+                #ff9800,
+                #ff9800 4px,
+                #ffb74d 4px,
+                #ffb74d 8px
+            ) !important;
+            border: 2px solid #ff5722;
+            box-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
+        }
+
+        [data-theme="dark"] .resource-daily-bar.current-day.on-permit {
+            background: repeating-linear-gradient(
+                45deg,
+                #e65100,
+                #e65100 4px,
+                #bf360c 4px,
+                #bf360c 8px
+            ) !important;
+        }
         
         [data-theme="dark"] .resource-daily-bar.current-day.on-absence,
         [data-theme="dark"] .resource-daily-bar.current-day.on-absence-sick,
@@ -1578,7 +1804,8 @@
         /* Nascondi la freccia "oggi" quando c'è un'assenza (per non sovrapporre l'icona) */
         .resource-daily-bar.current-day.on-absence::after,
         .resource-daily-bar.current-day.on-absence-sick::after,
-        .resource-daily-bar.current-day.on-absence-planned-intervention::after {
+        .resource-daily-bar.current-day.on-absence-planned-intervention::after,
+        .resource-daily-bar.current-day.on-permit::after {
             content: '';
         }
         
@@ -1609,6 +1836,18 @@
         
         .resource-daily-bar.current-day.on-absence-planned-intervention::before {
             content: '🏥';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
+        }
+
+        .resource-daily-bar.current-day.on-permit::before {
+            content: '⏰';
             position: absolute;
             top: 50%;
             left: 50%;
@@ -4677,12 +4916,14 @@
     
     <!-- Modal Risorsa -->
     <div id="resourceModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
                 <h3 id="resourceModalTitle">Nuova Risorsa</h3>
                 <button class="modal-close" onclick="closeResourceModal()">&times;</button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="display: flex; gap: 0; padding: 0; overflow: hidden;">
+                <!-- Colonna SX: form con scroll -->
+                <div class="res-modal-left">
                 <div class="form-group">
                     <label>Nome:</label>
                     <input type="text" id="resourceFirstName" placeholder="Nome">
@@ -4715,6 +4956,25 @@
                     <label>Ore di Permesso:</label>
                     <div id="permitDays">
                         <!-- Le righe di permesso verranno aggiunte dinamicamente -->
+                    </div>
+                </div>
+                </div>
+                <!-- Colonna DX: calendario compatto -->
+                <div class="res-modal-right">
+                    <label style="font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;">📅 Calendario</label>
+                    <div id="resourceCalendarPreview">
+                        <div class="res-cal-nav">
+                            <button type="button" onclick="navigateResourceCalendar(-1)" title="Mese precedente">◀</button>
+                            <span id="resCalMonthLabel"></span>
+                            <button type="button" onclick="navigateResourceCalendar(1)" title="Mese successivo">▶</button>
+                        </div>
+                        <div class="res-cal-legend">
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 2px, #e57373 2px, #e57373 4px);"></span> Ferie</span>
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #d32f2f;"></span> Malattia</span>
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #7b1fa2;"></span> Intervento</span>
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #ff9800;"></span> Permesso</span>
+                        </div>
+                        <div id="resCalGrid" class="res-cal-grid"></div>
                     </div>
                 </div>
             </div>
@@ -6048,6 +6308,14 @@
                 permitContainer.appendChild(addPermitBtn);
             }
             
+            // Inizializza calendario preview
+            resCalCurrentMonth = new Date().getMonth();
+            resCalCurrentYear = new Date().getFullYear();
+            setTimeout(() => {
+                renderResourceCalendarPreview();
+                setupCalendarAutoRefresh();
+            }, 50);
+            
             openModal(modal);
         }
 
@@ -7309,6 +7577,151 @@
             }
         }
 
+        // === CALENDARIO ASSENZE/PERMESSI NEL MODAL ===
+        let resCalCurrentMonth = new Date().getMonth();
+        let resCalCurrentYear = new Date().getFullYear();
+
+        function navigateResourceCalendar(direction) {
+            resCalCurrentMonth += direction;
+            if (resCalCurrentMonth > 11) { resCalCurrentMonth = 0; resCalCurrentYear++; }
+            if (resCalCurrentMonth < 0) { resCalCurrentMonth = 11; resCalCurrentYear--; }
+            renderResourceCalendarPreview();
+        }
+
+        function getModalAbsences() {
+            const absences = [];
+            document.querySelectorAll('.absence-range').forEach(range => {
+                const start = range.querySelector('.absence-start')?.value;
+                const end = range.querySelector('.absence-end')?.value || start;
+                const type = range.querySelector('.absence-type')?.value || 'vacation';
+                if (start) absences.push({ start, end, type });
+            });
+            return absences;
+        }
+
+        function getModalPermits() {
+            const permits = [];
+            document.querySelectorAll('.permit-range').forEach(range => {
+                const date = range.querySelector('.permit-date')?.value;
+                const startTime = range.querySelector('.permit-start-time')?.value;
+                const endTime = range.querySelector('.permit-end-time')?.value;
+                if (date && startTime && endTime) permits.push({ date, startTime, endTime });
+            });
+            return permits;
+        }
+
+        function renderResourceCalendarPreview() {
+            const grid = document.getElementById('resCalGrid');
+            const label = document.getElementById('resCalMonthLabel');
+            if (!grid || !label) return;
+
+            const monthNames = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+            label.textContent = `${monthNames[resCalCurrentMonth]} ${resCalCurrentYear}`;
+
+            const absences = getModalAbsences();
+            const permits = getModalPermits();
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            grid.innerHTML = '';
+
+            // Header giorni settimana
+            const dayHeaders = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+            dayHeaders.forEach(d => {
+                const h = document.createElement('div');
+                h.className = 'res-cal-header';
+                h.textContent = d;
+                grid.appendChild(h);
+            });
+
+            const firstDay = new Date(resCalCurrentYear, resCalCurrentMonth, 1);
+            const lastDay = new Date(resCalCurrentYear, resCalCurrentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+
+            // Giorno della settimana del primo giorno (Lun=0 ... Dom=6)
+            let startDow = firstDay.getDay() - 1;
+            if (startDow < 0) startDow = 6;
+
+            // Celle vuote prima del primo giorno
+            for (let i = 0; i < startDow; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'res-cal-day empty';
+                grid.appendChild(empty);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const cell = document.createElement('div');
+                cell.className = 'res-cal-day';
+                const dateObj = new Date(resCalCurrentYear, resCalCurrentMonth, day);
+                dateObj.setHours(0, 0, 0, 0);
+                const dateStr = formatDateLocal(dateObj);
+                const dow = dateObj.getDay();
+
+                // Weekend
+                if (dow === 0 || dow === 6) cell.classList.add('weekend');
+
+                // Oggi
+                if (dateObj.getTime() === today.getTime()) cell.classList.add('today');
+
+                // Controlla assenza
+                let absType = null;
+                absences.forEach(abs => {
+                    const s = new Date(abs.start); s.setHours(0,0,0,0);
+                    const e = new Date(abs.end || abs.start); e.setHours(23,59,59,999);
+                    if (dateObj >= s && dateObj <= e) absType = abs.type || 'vacation';
+                });
+
+                // Controlla permesso
+                let permitMatch = null;
+                permits.forEach(p => {
+                    if (p.date === dateStr) permitMatch = p;
+                });
+
+                if (absType) {
+                    if (absType === 'sick') cell.classList.add('absence-sick');
+                    else if (absType === 'planned_intervention') cell.classList.add('absence-planned');
+                    else cell.classList.add('absence-vacation');
+                } else if (permitMatch) {
+                    cell.classList.add('permit');
+                }
+
+                cell.textContent = day;
+
+                if (permitMatch) {
+                    const timeSpan = document.createElement('span');
+                    timeSpan.className = 'res-cal-permit-time';
+                    timeSpan.textContent = `${permitMatch.startTime}-${permitMatch.endTime}`;
+                    cell.appendChild(timeSpan);
+                }
+
+                // Tooltip
+                let title = dateStr;
+                if (absType === 'vacation') title += ' — 🏖️ Ferie';
+                else if (absType === 'sick') title += ' — 🤒 Malattia';
+                else if (absType === 'planned_intervention') title += ' — 🏥 Intervento Pianificato';
+                if (permitMatch) title += ` — ⏰ Permesso ${permitMatch.startTime}-${permitMatch.endTime}`;
+                cell.title = title;
+
+                grid.appendChild(cell);
+            }
+        }
+
+        function setupCalendarAutoRefresh() {
+            const absContainer = document.getElementById('absenceDays');
+            const permitContainer = document.getElementById('permitDays');
+            if (absContainer) {
+                const observer = new MutationObserver(() => renderResourceCalendarPreview());
+                observer.observe(absContainer, { childList: true, subtree: true, attributes: true, attributeFilter: ['value'] });
+                absContainer.addEventListener('change', renderResourceCalendarPreview);
+            }
+            if (permitContainer) {
+                const observer = new MutationObserver(() => renderResourceCalendarPreview());
+                observer.observe(permitContainer, { childList: true, subtree: true, attributes: true, attributeFilter: ['value'] });
+                permitContainer.addEventListener('change', renderResourceCalendarPreview);
+            }
+        }
+
         // === GESTIONE RISORSE ===
         function addAbsenceRange() {
             const container = document.getElementById('absenceDays');
@@ -7688,6 +8101,14 @@
             addPermitBtn.textContent = '+ Aggiungi Permesso';
             addPermitBtn.onclick = addPermitRange;
             permitContainer.appendChild(addPermitBtn);
+
+            // Aggiorna calendario preview
+            resCalCurrentMonth = new Date().getMonth();
+            resCalCurrentYear = new Date().getFullYear();
+            setTimeout(() => {
+                renderResourceCalendarPreview();
+                setupCalendarAutoRefresh();
+            }, 50);
         }
 
         function deleteResource(id) {
@@ -7752,6 +8173,11 @@
                 if (filterType && !typeLabel.toLowerCase().includes(filterType)) return;
 
                 const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.addEventListener('click', (e) => {
+                    if (e.target.closest('button')) return;
+                    openResourceModal(resource.id);
+                });
                 const absencesStr = resource.absences.map(a => {
                     const typeLabel2 = a.type === 'sick' ? '🤒 Malattia' : (a.type === 'planned_intervention' ? '🏥 Intervento Pianificato' : '🏖️ Ferie');
                     const dateStr = a.start === a.end ? a.start : `${a.start} - ${a.end}`;
@@ -16116,6 +16542,19 @@
                     load.textContent = `🛑 Critico: ${overload.maxLoad.toFixed(0)}%`;
                 }
                 header.appendChild(load);
+
+                // Controlla se la risorsa ha un permesso nel giorno corrente
+                const dayStr = formatDateLocal(startDate);
+                const dayPermit = resource.permits && resource.permits.find(p => p.date === dayStr);
+                if (dayPermit) {
+                    const permitBadge = document.createElement('span');
+                    permitBadge.className = 'resource-stat-badge absence';
+                    permitBadge.style.background = '#fff3e0';
+                    permitBadge.style.color = '#e65100';
+                    permitBadge.style.marginLeft = '8px';
+                    permitBadge.textContent = `⏰ Permesso ${dayPermit.startTime} - ${dayPermit.endTime}`;
+                    header.appendChild(permitBadge);
+                }
             } else {
                 // Altre viste: mostra statistiche giorni
                 // Per periodi che includono oggi, conta solo da oggi in avanti
@@ -16123,6 +16562,7 @@
                 let allocatedWorkingDays = 0;
                 let extraAllocatedDays = 0;
                 let absenceDaysInPeriod = 0;
+                let permitDaysInPeriod = 0;
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -16144,6 +16584,8 @@
                         return checkDate >= absStart && checkDate <= absEnd;
                     });
 
+                    const hasPermitToday = resource.permits && resource.permits.some(p => p.date === dateStr);
+
                     const hasLoad = overload.dailyLoad[dateStr] && overload.dailyLoad[dateStr] > 0;
 
                     if (!isWeekend && !isHoliday) {
@@ -16153,6 +16595,7 @@
                             workingDaysInPeriod++;
                             if (hasLoad) allocatedWorkingDays++;
                         }
+                        if (hasPermitToday) permitDaysInPeriod++;
                     } else {
                         if (hasLoad) extraAllocatedDays++;
                     }
@@ -16191,6 +16634,17 @@
                     absBadge.textContent = `🏖️ ${absenceDaysInPeriod} gg assenza`;
                     absBadge.title = `${absenceDaysInPeriod} giorni di assenza nel periodo`;
                     statsDiv.appendChild(absBadge);
+                }
+
+                // Badge permessi (solo se > 0)
+                if (permitDaysInPeriod > 0) {
+                    const permitBadge = document.createElement('span');
+                    permitBadge.className = 'resource-stat-badge absence';
+                    permitBadge.style.background = '#fff3e0';
+                    permitBadge.style.color = '#e65100';
+                    permitBadge.textContent = `⏰ ${permitDaysInPeriod} permessi`;
+                    permitBadge.title = `${permitDaysInPeriod} giorni con permesso nel periodo`;
+                    statsDiv.appendChild(permitBadge);
                 }
 
                 header.appendChild(statsDiv);
@@ -16271,6 +16725,16 @@
                     }
                     return inRange;
                 });
+
+                // Verifica se la risorsa ha un permesso in questo giorno
+                let permitInfo = null;
+                const hasPermit = resource.permits && resource.permits.some(permit => {
+                    if (permit.date === dateStr) {
+                        permitInfo = permit;
+                        return true;
+                    }
+                    return false;
+                });
                 
                 // Per vista settimanale, crea contenitore colonna
                 const dayColumn = document.createElement('div');
@@ -16300,6 +16764,8 @@
                     } else {
                         dailyBar.classList.add('on-absence');
                     }
+                } else if (hasPermit) {
+                    dailyBar.classList.add('on-permit');
                 } else if (isHoliday) {
                     dailyBar.classList.add('on-holiday');
                 } else if (isSunday) {
@@ -16312,13 +16778,13 @@
                 let heightPercent;
                 if (load > 0) {
                     heightPercent = Math.max(2, (load / maxDailyLoad) * 100);
-                    // Non sovrascrivere il background se è un giorno di assenza (mantieni il pattern rosso e l'icona)
-                    if (!isAbsent) {
+                    // Non sovrascrivere il background se è un giorno di assenza o permesso (mantieni il pattern e l'icona)
+                    if (!isAbsent && !hasPermit) {
                         dailyBar.style.backgroundColor = getColorForLoad(load);
                     }
                 } else {
                     // Nessun carico: mostra barra minima solo se è giorno speciale
-                    if (isAbsent || isHoliday || isSaturday || isSunday) {
+                    if (isAbsent || hasPermit || isHoliday || isSaturday || isSunday) {
                         heightPercent = 100; // Altezza piena per evidenziare
                     } else {
                         heightPercent = 2; // Barra minima per giorni normali senza carico
@@ -16334,6 +16800,8 @@
                 if (isAbsent) {
                     const absenceLabel = absenceType === 'sick' ? 'MALATTIA' : (absenceType === 'planned_intervention' ? 'INTERVENTO PIANIFICATO' : 'FERIE');
                     tooltipText += ` ⚠️ ${absenceLabel}`;
+                } else if (hasPermit) {
+                    tooltipText += ` ⏰ PERMESSO ${permitInfo.startTime} - ${permitInfo.endTime}`;
                 } else if (isHoliday) {
                     tooltipText += ' 🎉 FESTIVO';
                 } else if (isSunday) {
@@ -16387,6 +16855,19 @@
                         return `${a.start} - ${a.end}`;
                     }).join(', ');
                 contentWrapper.appendChild(absencesDiv);
+            }
+
+            // Permessi
+            if (resource.permits && resource.permits.length > 0) {
+                const permitsDiv = document.createElement('div');
+                permitsDiv.style.marginBottom = '10px';
+                permitsDiv.style.fontSize = '13px';
+                permitsDiv.style.color = 'var(--text-tertiary)';
+                permitsDiv.innerHTML = '<strong>⏰ Permessi:</strong> ' + 
+                    resource.permits.map(p => {
+                        return `${p.date} (${p.startTime} - ${p.endTime})`;
+                    }).join(', ');
+                contentWrapper.appendChild(permitsDiv);
             }
 
             // Timeline assegnazioni
