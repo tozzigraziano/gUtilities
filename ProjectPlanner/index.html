@@ -1380,6 +1380,35 @@
             box-shadow: 0 0 8px rgba(255, 107, 107, 0.5);
         }
 
+        .gantt-bar.task.delay-extension {
+            background: repeating-linear-gradient(
+                45deg,
+                #ff6b6b,
+                #ff6b6b 4px,
+                rgba(255, 107, 107, 0.3) 4px,
+                rgba(255, 107, 107, 0.3) 8px
+            ) !important;
+            border: 2px dashed #d32f2f;
+            box-shadow: 0 0 8px rgba(255, 107, 107, 0.3);
+            opacity: 0.8;
+        }
+
+        .resource-delay-badge {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+            cursor: pointer;
+        }
+
+        .resource-assignment.delay-extended,
+        .week-task-card.delay-extended {
+            border-left: 3px dashed #d32f2f !important;
+        }
+
         .gantt-bar.task.status-cancelled {
             background: #9e9e9e !important; /* grigio slavato per "annullata" */
             opacity: 0.7;
@@ -6591,9 +6620,11 @@
                                 const item = items[items.length - 1];
                                 const selectElement = item.querySelector('.task-resource-select');
                                 const percentageElement = item.querySelector('.task-resource-percentage');
+                                const completionElement = item.querySelector('.task-resource-completion');
                                 console.log(`Setting select to resourceId: ${res.resourceId}`);
                                 selectElement.value = res.resourceId;
                                 percentageElement.value = res.percentage;
+                                if (completionElement) completionElement.value = res.completion || 0;
                                 console.log(`After setting - select value: ${selectElement.value}, percentage: ${percentageElement.value}`);
                             });
                         } else {
@@ -10585,6 +10616,9 @@
                 <label>Coinvolgimento:</label>
                 <input type="number" class="task-resource-percentage" min="0" max="100" step="25" value="100" placeholder="%">
                 <span>%</span>
+                <label style="margin-left: 10px;">Completamento:</label>
+                <input type="number" class="task-resource-completion" min="0" max="100" step="10" value="0" placeholder="%">
+                <span>%</span>
             `;
             container.appendChild(newResource);
             
@@ -11193,11 +11227,13 @@
             resourceItems.forEach((item, index) => {
                 const selectElement = item.querySelector('.task-resource-select');
                 const percentageElement = item.querySelector('.task-resource-percentage');
+                const completionElement = item.querySelector('.task-resource-completion');
                 const resourceId = selectElement.value;
                 const percentage = parseInt(percentageElement.value) || 0;
+                const resCompletion = parseInt(completionElement?.value) || 0;
                 // Salva la risorsa se ha una percentuale >= 0, anche senza resourceId
                 if (!isNaN(percentage) && percentage >= 0) {
-                    assignedResources.push({ resourceId: resourceId || null, percentage });
+                    assignedResources.push({ resourceId: resourceId || null, percentage, completion: resCompletion });
                 }
             });
             
@@ -11372,8 +11408,10 @@
                     const item = items[items.length - 1];
                     const selectElement = item.querySelector('.task-resource-select');
                     const percentageElement = item.querySelector('.task-resource-percentage');
+                    const completionElement = item.querySelector('.task-resource-completion');
                     selectElement.value = res.resourceId;
                     percentageElement.value = res.percentage;
+                    if (completionElement) completionElement.value = res.completion || 0;
                 });
             } else {
                 addTaskResource();
@@ -13897,6 +13935,27 @@
                 }
                 plants = await loadFromIndexedDB('plants');
                 
+                // Migra completamento per-risorsa (retrocompatibilità)
+                let projectsNeedsSave = false;
+                projects.forEach(project => {
+                    if (project.tasks) {
+                        project.tasks.forEach(task => {
+                            if (task.resources && task.resources.length > 0) {
+                                task.resources.forEach(res => {
+                                    if (res.completion === undefined) {
+                                        // Se il task ha completamento > 0, inizializza le risorse con quel valore
+                                        res.completion = task.completion > 0 ? task.completion : 0;
+                                        projectsNeedsSave = true;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+                if (projectsNeedsSave) {
+                    await saveToIndexedDB('projects', projects);
+                }
+                
                 // Carica holidays (calcolato, non salvato)
                 const savedHolidays = localStorage.getItem('projectPlanner_holidays');
                 if (savedHolidays) holidays = JSON.parse(savedHolidays);
@@ -14489,10 +14548,10 @@
                         if (!task.startDate || !task.endDate) return false;
                         if (hideCompleted && task.completion === 100) return false;
                         
-                        // Filtra attività fuori dal periodo
+                        // Filtra attività fuori dal periodo (usa data effettiva per task in ritardo)
                         if (hideOutOfPeriod) {
                             const taskStart = new Date(task.startDate);
-                            const taskEnd = new Date(task.endDate);
+                            const taskEnd = new Date(getEffectiveEndDate(task));
                             // L'attività è visibile se ha almeno un giorno nel periodo
                             if (taskEnd < minDate || taskStart > maxDate) return false;
                         }
@@ -14555,7 +14614,7 @@
                             // Salta le attività fuori dal periodo se il filtro è attivo
                             if (hideOutOfPeriod) {
                                 const taskStart = new Date(task.startDate);
-                                const taskEnd = new Date(task.endDate);
+                                const taskEnd = new Date(getEffectiveEndDate(task));
                                 if (taskEnd < minDate || taskStart > maxDate) {
                                     return;
                                 }
@@ -14576,6 +14635,18 @@
                                 currentProjectId = project.id;
                                 openTaskModal(task.id);
                             }, task);
+                            
+                            // Disegna estensione tratteggiata per task in ritardo
+                            const effectiveEnd = getEffectiveEndDate(task);
+                            if (effectiveEnd > task.endDate) {
+                                const nextDay = new Date(task.endDate);
+                                nextDay.setDate(nextDay.getDate() + 1);
+                                const delayClass = 'task delay-extension';
+                                addGanttBar(taskRow, formatDateLocal(nextDay), effectiveEnd, '', days, minDate, delayClass, () => {
+                                    currentProjectId = project.id;
+                                    openTaskModal(task.id);
+                                }, task);
+                            }
                         }
                     });
                 }
@@ -14599,7 +14670,7 @@
                         // Salta le attività fuori dal periodo se il filtro è attivo
                         if (hideOutOfPeriod && task.startDate && task.endDate) {
                             const taskStart = new Date(task.startDate);
-                            const taskEnd = new Date(task.endDate);
+                            const taskEnd = new Date(getEffectiveEndDate(task));
                             if (taskEnd < minDate || taskStart > maxDate) {
                                 return;
                             }
@@ -14667,8 +14738,9 @@
                 const assignments = allTasks.map(task => ({
                     task,
                     percentage: task.percentage,
+                    resourceId: resource.id,
                     startDate: task.startDate,
-                    endDate: task.endDate
+                    endDate: getEffectiveEndDateForResource(task, resource.id)
                 }));
                 const overload = calculateResourceOverload(assignments, minDate, maxDate);
                 
@@ -14771,6 +14843,18 @@
                             currentProjectId = task.project.id;
                             openTaskModal(task.id);
                         }, task);
+                        
+                        // Disegna estensione tratteggiata per task in ritardo
+                        const effectiveEnd = getEffectiveEndDate(task);
+                        if (effectiveEnd > task.endDate) {
+                            const nextDay = new Date(task.endDate);
+                            nextDay.setDate(nextDay.getDate() + 1);
+                            const delayClass = 'task delay-extension';
+                            addGanttBar(taskRow, formatDateLocal(nextDay), effectiveEnd, '', days, minDate, delayClass, () => {
+                                currentProjectId = task.project.id;
+                                openTaskModal(task.id);
+                            }, task);
+                        }
                     });
                 });
             });
@@ -15043,6 +15127,33 @@
             }
         }
 
+        function getEffectiveEndDate(task) {
+            // Per i task in ritardo non completati con endDate nel passato, restituisce oggi
+            if (task.status === 'in-ritardo' && task.completion < 100 && task.endDate) {
+                const today = formatDateLocal(new Date());
+                if (task.endDate < today) {
+                    return today;
+                }
+            }
+            return task.endDate;
+        }
+
+        function getEffectiveEndDateForResource(task, resourceId) {
+            // Come getEffectiveEndDate, ma controlla il completamento per-risorsa
+            if (task.status === 'in-ritardo' && task.completion < 100 && task.endDate) {
+                const today = formatDateLocal(new Date());
+                if (task.endDate < today) {
+                    // Se la risorsa specifica ha completamento 100%, non estendere
+                    const res = task.resources && task.resources.find(r => r.resourceId == resourceId);
+                    if (res && res.completion >= 100) {
+                        return task.endDate;
+                    }
+                    return today;
+                }
+            }
+            return task.endDate;
+        }
+
         function addGanttBar(row, startDate, endDate, label, days, minDate, className, onClickCallback, task) {
             const start = new Date(startDate);
             const end = new Date(endDate);
@@ -15154,6 +15265,23 @@
             }
             if (isOnAbsence) {
                 tooltipText += '\n⚠️ In pausa per assenza risorse';
+            }
+            // Tooltip arricchito per task in ritardo
+            if (task && task.status === 'in-ritardo' && task.endDate) {
+                const daysLate = Math.floor((new Date() - new Date(task.endDate)) / (1000 * 60 * 60 * 24));
+                if (daysLate > 0) {
+                    tooltipText += `\n🔴 In ritardo di ${daysLate} giorni`;
+                }
+                // Mostra completamento per-risorsa se multi-risorsa
+                if (task.resources && task.resources.length > 1) {
+                    tooltipText += '\n--- Completamento risorse ---';
+                    task.resources.forEach(res => {
+                        const r = resources.find(rr => rr.id == res.resourceId);
+                        const rName = r ? `${r.firstName} ${r.lastName}` : 'N/A';
+                        const icon = (res.completion || 0) >= 100 ? '✅' : '⏳';
+                        tooltipText += `\n${icon} ${rName}: ${res.completion || 0}%`;
+                    });
+                }
             }
             bar.title = tooltipText;
             
@@ -15368,8 +15496,9 @@
                                         project,
                                         task,
                                         percentage: res.percentage,
+                                        resourceId: resource.id,
                                         startDate: task.startDate,
-                                        endDate: task.endDate
+                                        endDate: getEffectiveEndDateForResource(task, resource.id)
                                     });
                                 }
                             }
@@ -15429,12 +15558,23 @@
                     project.tasks.forEach(task => {
                         if (task.endDate && task.endDate < today && task.completion < 100 && task.status !== 'completata' && task.status !== 'annullata' && task.status !== 'pausa') {
                             const daysLate = Math.floor((new Date() - new Date(task.endDate)) / (1000 * 60 * 60 * 24));
+                            // Costruisci dettaglio completamento per-risorsa
+                            let resourceDetail = '';
+                            if (task.resources && task.resources.length > 1) {
+                                const details = task.resources.map(res => {
+                                    const r = resources.find(rr => rr.id == res.resourceId);
+                                    const rName = r ? `${r.firstName} ${r.lastName}` : 'N/A';
+                                    const icon = (res.completion || 0) >= 100 ? '✅' : '⚠️';
+                                    return `${icon} ${rName}: ${res.completion || 0}%`;
+                                }).join(', ');
+                                resourceDetail = ` | Risorse: ${details}`;
+                            }
                             warnings.push({
                                 type: 'ritardo',
                                 severity: task.completion === 0 ? 'critical' : 'warning',
                                 icon: '⏰',
                                 title: `Attività in ritardo: ${task.name}`,
-                                description: `Progetto: ${project.client} (${project.code}) - Scaduta ${daysLate} giorni fa (${task.endDate}). Completamento: ${task.completion}%`,
+                                description: `Progetto: ${project.client} (${project.code}) - Scaduta ${daysLate} giorni fa (${task.endDate}). Completamento: ${task.completion}%${resourceDetail}`,
                                 action: 'Aggiornare la data o il completamento',
                                 onClick: () => {
                                     switchTab('projects');
@@ -16569,20 +16709,25 @@
                         if (task.resources && task.startDate && task.endDate) {
                             const res = task.resources.find(r => r.resourceId == resource.id);
                             if (res) {
+                                const effectiveEnd = getEffectiveEndDateForResource(task, resource.id);
                                 const taskStart = new Date(task.startDate);
                                 taskStart.setHours(0, 0, 0, 0);
-                                const taskEnd = new Date(task.endDate);
+                                const taskEnd = new Date(effectiveEnd);
                                 taskEnd.setHours(23, 59, 59, 999);
                                 
                                 // Filtra per periodo
                                 if (taskEnd >= startDate && taskStart <= endDate) {
+                                    const isDelayExtended = effectiveEnd > task.endDate;
                                     assignments.push({
                                         type: 'task',
                                         project,
                                         task,
                                         percentage: res.percentage,
+                                        resourceId: resource.id,
                                         startDate: task.startDate,
-                                        endDate: task.endDate
+                                        endDate: effectiveEnd,
+                                        originalEndDate: task.endDate,
+                                        isDelayExtended
                                     });
                                 }
                             }
@@ -16759,6 +16904,23 @@
                 }
 
                 header.appendChild(statsDiv);
+            }
+
+            // Badge attività in ritardo per questa risorsa
+            const delayedTasks = assignments.filter(a => a.type === 'task' && a.isDelayExtended);
+            if (delayedTasks.length > 0) {
+                const delayBadge = document.createElement('span');
+                delayBadge.className = 'resource-delay-badge';
+                delayBadge.textContent = `⚠️ ${delayedTasks.length} attività in ritardo`;
+                delayBadge.title = delayedTasks.map(a => `${a.project.client} - ${a.task.name}`).join('\n');
+                delayBadge.onclick = (e) => {
+                    e.stopPropagation();
+                    // Apri il primo task in ritardo
+                    const first = delayedTasks[0];
+                    currentProjectId = first.project.id;
+                    openTaskModal(first.task.id);
+                };
+                header.appendChild(delayBadge);
             }
 
             card.appendChild(header);
@@ -17153,6 +17315,7 @@
                             if (status === 'pausa') taskCard.classList.add('status-paused');
                             if (status === 'non-assegnata') taskCard.classList.add('status-not-assigned');
                             if (status === 'annullata') taskCard.classList.add('status-cancelled');
+                            if (assignment.isDelayExtended) taskCard.classList.add('delay-extended');
                             if (assignment.task.nightWork) taskCard.classList.add('night-work');
                             
                             // Indicatore note
@@ -17161,6 +17324,10 @@
                             const nightIndicator = assignment.task.nightWork ? 
                                 `<span style="margin-left: 3px; cursor: help;" title="Notturno: ${assignment.task.nightWork}">🌙</span>` : '';
                             
+                            // Completamento per-risorsa
+                            const resData = assignment.task.resources && assignment.task.resources.find(r => r.resourceId == assignment.resourceId);
+                            const resCompletion = resData ? (resData.completion || 0) : assignment.task.completion;
+                            
                             // Vista mese: formato ultra compatto
                             if (isMonthView) {
                                 taskCard.innerHTML = `
@@ -17168,7 +17335,7 @@
                                     <div style="font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.code}">${assignment.project.code}</div>
                                     <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}${nightIndicator}</div>
                                     <div style="font-size: 8px; margin-top: 1px;">
-                                        <span title="Completamento">C:${assignment.task.completion}%</span>
+                                        <span title="Completamento risorsa">C:${resCompletion}%</span>
                                         <span style="margin-left: 4px;" title="Carico">L:${assignment.percentage}%</span>
                                     </div>
                                     ${getLocationBadgeHtml(assignment.task)}
@@ -17181,7 +17348,7 @@
                                     <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.code} - ${assignment.project.description || ''}">${assignment.project.code}${assignment.project.description ? ' - ' + assignment.project.description : ''}</div>
                                     <div style="font-size: 10px; margin-top: 2px;">
                                         <span>Carico: ${assignment.percentage}%</span>
-                                        <span style="margin-left: 8px;">Compl: ${assignment.task.completion}%</span>
+                                        <span style="margin-left: 8px;">Compl: ${resCompletion}%</span>
                                     </div>
                                     ${getLocationBadgeHtml(assignment.task)}
                                 `;
@@ -17378,6 +17545,7 @@
                         if (status === 'pausa') assignDiv.classList.add('status-paused');
                         if (status === 'non-assegnata') assignDiv.classList.add('status-not-assigned');
                         if (status === 'annullata') assignDiv.classList.add('status-cancelled');
+                        if (assignment.isDelayExtended) assignDiv.classList.add('delay-extended');
 
                         // Lavoro notturno
                         if (assignment.task.nightWork) assignDiv.classList.add('night-work');
@@ -17417,6 +17585,10 @@
                         const nightIndicator = assignment.task.nightWork ? 
                             `<span style="margin-left: 5px; cursor: help;" title="Notturno: ${assignment.task.nightWork}">🌙</span>` : '';
                         
+                        // Completamento per-risorsa
+                        const listResData = assignment.task.resources && assignment.task.resources.find(r => r.resourceId == assignment.resourceId);
+                        const listResCompletion = listResData ? (listResData.completion || 0) : assignment.task.completion;
+                        
                         const assignInfo = document.createElement('div');
                         assignInfo.style.fontSize = '13px';
                         assignInfo.style.padding = '8px 10px';
@@ -17428,7 +17600,7 @@
                             <span style="font-weight: bold; color: var(--primary-color);">${assignment.project.client}</span>
                             <span>${assignment.project.code}</span>
                             <span style="font-weight: bold;">${assignment.task.name}${notesIndicator}${nightIndicator}</span>
-                            <span>Compl: <strong>${assignment.task.completion}%</strong></span>
+                            <span>Compl: <strong>${listResCompletion}%</strong></span>
                             <span>Carico: <strong style="color: ${assignment.percentage > 100 ? 'var(--danger-color)' : 'var(--primary-color)'};">${assignment.percentage}%</strong></span>
                             <span>${getLocationBadgeHtml(assignment.task)}</span>
                             <span style="color: var(--danger-color); font-weight: bold;">${hasConflict ? '⚠️ SOVRAPPOSIZIONE' : ''}</span>
@@ -17725,6 +17897,7 @@
         function calculateResourceOverload(assignments, periodStart, periodEnd) {
             // Calcola il carico massimo giornaliero solo nel periodo visualizzato
             const dailyLoad = {};
+            const todayStr = formatDateLocal(new Date());
 
             assignments.forEach(assignment => {
                 // Escludi attività completate al 100%, con stato 'completata' o in pausa
@@ -17733,7 +17906,18 @@
                 }
                 
                 const start = new Date(assignment.startDate);
-                const end = new Date(assignment.endDate);
+                let endDateStr = assignment.endDate;
+                
+                // Per task in ritardo: estendi fino a oggi, ma rispetta il completamento per-risorsa
+                if (assignment.task.status === 'in-ritardo' && assignment.task.completion < 100 && endDateStr < todayStr) {
+                    // Se questa risorsa specifica ha completamento 100%, non estendere
+                    const resData = assignment.task.resources && assignment.task.resources.find(r => r.resourceId == assignment.resourceId);
+                    if (!resData || (resData.completion || 0) < 100) {
+                        endDateStr = todayStr;
+                    }
+                }
+                
+                const end = new Date(endDateStr);
                 
                 // Limita al periodo visualizzato
                 const calcStart = start < periodStart ? new Date(periodStart) : new Date(start);
