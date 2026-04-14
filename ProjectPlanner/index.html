@@ -2006,6 +2006,26 @@
             border-left-color: #9e9e9e;
         }
 
+        [data-theme="dark"] .resource-assignment.status-none {
+            border-left-color: #d0d0d0 !important;
+            color: var(--text-primary) !important;
+        }
+
+        [data-theme="dark"] .resource-assignment.status-none div,
+        [data-theme="dark"] .resource-assignment.status-none span {
+            color: var(--text-primary) !important;
+        }
+
+        [data-theme="dark"] .week-task-card.status-none {
+            border-left-color: #d0d0d0;
+            color: var(--text-primary) !important;
+        }
+
+        [data-theme="dark"] .week-task-card.status-none div,
+        [data-theme="dark"] .week-task-card.status-none span {
+            color: var(--text-primary) !important;
+        }
+
         .resource-daily-bar-tooltip {
             position: absolute;
             bottom: 100%;
@@ -2152,6 +2172,14 @@
             border-left-color: #9e9e9e !important;
             background: rgba(158, 158, 158, 0.3) !important;
             opacity: 0.7;
+        }
+
+        .resource-assignment.night-work {
+            border-right: 3px solid #7986cb !important;
+        }
+
+        .week-task-card.night-work {
+            border-right: 3px solid #7986cb !important;
         }
         
         .resource-assignment.meeting-item {
@@ -5098,6 +5126,7 @@
                         <strong>📁 Progetto:</strong> <span id="taskProjectClient"></span> &nbsp;|&nbsp; <span id="taskProjectCode" style="font-family:monospace;"></span>
                         <span id="taskProjectDescriptionWrap"> &nbsp;|&nbsp; <span id="taskProjectDescription" style="color:var(--text-tertiary);"></span></span>
                     </div>
+                    <div id="taskCreatedAtDisplay" style="display:none; margin-bottom:8px; font-size:11px; color:var(--text-tertiary);"></div>
                     <div class="form-group">
                         <label>📌 Annotazione:</label>
                         <input type="text" id="taskAnnotation" placeholder="Breve nota da verificare..." maxlength="200">
@@ -5160,6 +5189,10 @@
                         <div class="inline-group">
                             <input type="checkbox" id="taskHolidayWork">
                             <label for="taskHolidayWork">Festivi Lavorativi</label>
+                        </div>
+                        <div class="inline-group" style="margin-left: 20px;">
+                            <label for="taskNightWork" style="width: auto;">🌙 Lavoro Notturno:</label>
+                            <input type="text" id="taskNightWork" placeholder="es. 22:00-06:00" style="width: 130px; margin-left: 5px;">
                         </div>
                     </div>
                     <div class="form-group" id="absenceWarningContainer" style="display: none;">
@@ -5230,6 +5263,7 @@
                 <button onclick="closeTaskModal()" class="secondary">Annulla</button>
                 <button id="taskDeleteBtn" onclick="deleteTaskFromModal()" class="delete" style="display:none;">🗑️ Elimina</button>
                 <button onclick="sendTaskEmail()" class="secondary">📧 Invia Email</button>
+                <span id="taskEmailSentDisplay" style="font-size: 11px; color: var(--text-tertiary); align-self: center;"></span>
                 <button onclick="saveTask()">💾 Salva</button>
             </div>
         </div>
@@ -6588,12 +6622,38 @@
                         document.getElementById('taskStartedAt').value = task.startedAt || '';
                         document.getElementById('taskCompletedAt').value = task.completedAt || '';
                         updateTrackingDaysDiff();
+                        
+                        // Mostra data di creazione
+                        const createdAtDisplay = document.getElementById('taskCreatedAtDisplay');
+                        if (task.createdAt) {
+                            const parts = task.createdAt.split('-');
+                            createdAtDisplay.textContent = `Creata il: ${parts[2]}/${parts[1]}/${parts[0]}`;
+                            createdAtDisplay.style.display = 'block';
+                        } else {
+                            createdAtDisplay.textContent = '';
+                            createdAtDisplay.style.display = 'none';
+                        }
+                        
+                        // Mostra data invio email
+                        const emailSentDisplay = document.getElementById('taskEmailSentDisplay');
+                        if (task.emailSentAt) {
+                            const parts = task.emailSentAt.split('-');
+                            emailSentDisplay.innerHTML = `Inviata: ${parts[2]}/${parts[1]}/${parts[0]} <span onclick="clearEmailSentDate()" style="cursor:pointer; margin-left:4px; color:#ff6b6b;" title="Cancella data invio">✕</span>`;
+                        } else {
+                            emailSentDisplay.innerHTML = '';
+                        }
+                        
+                        // Lavoro notturno
+                        document.getElementById('taskNightWork').value = task.nightWork || '';
                     }
                 }
             } else {
                 title.textContent = 'Nuova Attività';
                 document.getElementById('taskProjectBanner').style.display = 'none';
                 document.getElementById('taskDeleteBtn').style.display = 'none';
+                document.getElementById('taskCreatedAtDisplay').textContent = '';
+                document.getElementById('taskCreatedAtDisplay').style.display = 'none';
+                document.getElementById('taskEmailSentDisplay').innerHTML = '';
                 clearTaskForm();
                 updatePlantSelect();
             }
@@ -6624,6 +6684,7 @@
             const status = document.getElementById('taskStatus').value;
             const notes = document.getElementById('taskNotes').value;
             const flexibleDate = document.getElementById('taskFlexibleDate').checked;
+            const nightWork = document.getElementById('taskNightWork').value.trim();
             
             // Ottieni il progetto corrente
             const project = projects.find(p => p.id === currentProjectId);
@@ -6730,6 +6791,7 @@
                         <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Durata:</td><td>${duration} giorni lavorativi</td></tr>
                         <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Data Flessibile:</td><td>${flexibleDate ? 'Sì' : 'No'}</td></tr>
                         <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Sede:</td><td>${locationText}</td></tr>
+                        ${nightWork ? `<tr><td style="padding:4px 12px 4px 0;font-weight:bold;">🌙 Lavoro Notturno:</td><td>${nightWork}</td></tr>` : ''}
                         <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Stato:</td><td>${statusText}</td></tr>
                         <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Completamento:</td><td>${completion}%</td></tr>
                     </table>
@@ -6751,6 +6813,7 @@
                         `  - Durata: ${duration} giorni lavorativi\n` +
                         `  - Data Flessibile: ${flexibleDate ? 'Sì' : 'No'}\n\n` +
                         `Sede: ${locationText}\n` +
+                        (nightWork ? `🌙 Lavoro Notturno: ${nightWork}\n` : '') +
                         `Stato: ${statusText}\n` +
                         `Completamento: ${completion}%\n\n` +
                         `Risorse Assegnate:\n${resourcesText}\n` +
@@ -6912,6 +6975,31 @@
                 const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
                 window.location.href = mailtoLink;
             });
+
+            // Salva data invio email sul task
+            if (editingTaskId && project) {
+                const task = project.tasks.find(t => t.id === editingTaskId);
+                if (task) {
+                    task.emailSentAt = formatDateLocal(new Date());
+                    saveToIndexedDBAll();
+                    // Aggiorna display nel footer
+                    const emailSentDisplay = document.getElementById('taskEmailSentDisplay');
+                    const parts = task.emailSentAt.split('-');
+                    emailSentDisplay.innerHTML = `Inviata: ${parts[2]}/${parts[1]}/${parts[0]} <span onclick="clearEmailSentDate()" style="cursor:pointer; margin-left:4px; color:#ff6b6b;" title="Cancella data invio">✕</span>`;
+                }
+            }
+        }
+
+        function clearEmailSentDate() {
+            if (!editingTaskId) return;
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            const task = project.tasks.find(t => t.id === editingTaskId);
+            if (task) {
+                task.emailSentAt = null;
+                saveToIndexedDBAll();
+                document.getElementById('taskEmailSentDisplay').innerHTML = '';
+            }
         }
 
         function openTemplateModal(id = null) {
@@ -11125,6 +11213,20 @@
             // Leggi i valori correnti dagli input (gestiti in tempo reale dal listener del completamento)
             const startedAt = document.getElementById('taskStartedAt').value || null;
             const completedAt = document.getElementById('taskCompletedAt').value || null;
+            const nightWork = document.getElementById('taskNightWork').value.trim() || null;
+
+            // Gestione createdAt e emailSentAt: preserva valori esistenti
+            let createdAt = null;
+            let emailSentAt = null;
+            if (editingTaskId) {
+                const existingTask = project.tasks.find(t => t.id === editingTaskId);
+                if (existingTask) {
+                    createdAt = existingTask.createdAt || null;
+                    emailSentAt = existingTask.emailSentAt || null;
+                }
+            } else {
+                createdAt = formatDateLocal(new Date());
+            }
 
             const task = {
                 id: editingTaskId || Date.now(),
@@ -11149,7 +11251,10 @@
                 locationType: locationType || 'sede',
                 plantId: plantId ? Number(plantId) : null,
                 startedAt: startedAt,
-                completedAt: completedAt
+                completedAt: completedAt,
+                createdAt: createdAt,
+                emailSentAt: emailSentAt,
+                nightWork: nightWork
             };
 
             if (editingTaskId) {
@@ -11783,6 +11888,9 @@
             document.getElementById('taskStartedAt').value = '';
             document.getElementById('taskCompletedAt').value = '';
             document.getElementById('taskDaysDiffDisplay').innerHTML = '';
+            
+            // Reset nuovi campi
+            document.getElementById('taskNightWork').value = '';
         }
 
         // === GESTIONE BACHECA ===
@@ -15037,10 +15145,13 @@
                 barClassName += ' on-absence';
             }
             bar.className = barClassName;
-            bar.textContent = label;
+            bar.textContent = task && task.nightWork ? `🌙 ${label}` : label;
             
             // Aggiorna tooltip per indicare se in pausa per assenza
             let tooltipText = `${label}\n${originalStart} - ${originalEnd}`;
+            if (task && task.nightWork) {
+                tooltipText += `\n🌙 Notturno: ${task.nightWork}`;
+            }
             if (isOnAbsence) {
                 tooltipText += '\n⚠️ In pausa per assenza risorse';
             }
@@ -17042,17 +17153,20 @@
                             if (status === 'pausa') taskCard.classList.add('status-paused');
                             if (status === 'non-assegnata') taskCard.classList.add('status-not-assigned');
                             if (status === 'annullata') taskCard.classList.add('status-cancelled');
+                            if (assignment.task.nightWork) taskCard.classList.add('night-work');
                             
                             // Indicatore note
                             const notesIndicator = assignment.task.notes && assignment.task.notes.trim() ? 
                                 `<span style="color: var(--warning-color); margin-left: 3px; cursor: help;" title="${assignment.task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
+                            const nightIndicator = assignment.task.nightWork ? 
+                                `<span style="margin-left: 3px; cursor: help;" title="Notturno: ${assignment.task.nightWork}">🌙</span>` : '';
                             
                             // Vista mese: formato ultra compatto
                             if (isMonthView) {
                                 taskCard.innerHTML = `
                                     <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.client}">${assignment.project.client}</div>
                                     <div style="font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.code}">${assignment.project.code}</div>
-                                    <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}</div>
+                                    <div style="font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}${nightIndicator}</div>
                                     <div style="font-size: 8px; margin-top: 1px;">
                                         <span title="Completamento">C:${assignment.task.completion}%</span>
                                         <span style="margin-left: 4px;" title="Carico">L:${assignment.percentage}%</span>
@@ -17062,7 +17176,7 @@
                             } else {
                                 // Vista settimana: formato normale
                                 taskCard.innerHTML = `
-                                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}</div>
+                                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.task.name}">${assignment.task.name}${notesIndicator}${nightIndicator}</div>
                                     <div style="font-size: 10px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.client}">${assignment.project.client}</div>
                                     <div style="font-size: 9px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${assignment.project.code} - ${assignment.project.description || ''}">${assignment.project.code}${assignment.project.description ? ' - ' + assignment.project.description : ''}</div>
                                     <div style="font-size: 10px; margin-top: 2px;">
@@ -17265,6 +17379,9 @@
                         if (status === 'non-assegnata') assignDiv.classList.add('status-not-assigned');
                         if (status === 'annullata') assignDiv.classList.add('status-cancelled');
 
+                        // Lavoro notturno
+                        if (assignment.task.nightWork) assignDiv.classList.add('night-work');
+
                         // Verifica conflitti (sovrapposizioni)
                         const hasConflict = checkDateOverlap(assignment, assignmentsInPeriod);
                         if (hasConflict) {
@@ -17297,6 +17414,8 @@
                         // Indicatore note
                         const notesIndicator = assignment.task.notes && assignment.task.notes.trim() ? 
                             `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${assignment.task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
+                        const nightIndicator = assignment.task.nightWork ? 
+                            `<span style="margin-left: 5px; cursor: help;" title="Notturno: ${assignment.task.nightWork}">🌙</span>` : '';
                         
                         const assignInfo = document.createElement('div');
                         assignInfo.style.fontSize = '13px';
@@ -17308,7 +17427,7 @@
                         assignInfo.innerHTML = `
                             <span style="font-weight: bold; color: var(--primary-color);">${assignment.project.client}</span>
                             <span>${assignment.project.code}</span>
-                            <span style="font-weight: bold;">${assignment.task.name}${notesIndicator}</span>
+                            <span style="font-weight: bold;">${assignment.task.name}${notesIndicator}${nightIndicator}</span>
                             <span>Compl: <strong>${assignment.task.completion}%</strong></span>
                             <span>Carico: <strong style="color: ${assignment.percentage > 100 ? 'var(--danger-color)' : 'var(--primary-color)'};">${assignment.percentage}%</strong></span>
                             <span>${getLocationBadgeHtml(assignment.task)}</span>
