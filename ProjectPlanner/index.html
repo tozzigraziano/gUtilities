@@ -3577,6 +3577,7 @@
             <div class="action-bar">
                 <button onclick="openResourceModal()">➕ Nuova Risorsa</button>
                 <button onclick="exportVacationPlanPDF()">📅 Esporta Piano Ferie PDF</button>
+                <button onclick="openResourceTypesSettings()" class="secondary">⚙️ Tipi Risorsa</button>
             </div>
 
             <h3>Elenco Risorse</h3>
@@ -5144,14 +5145,6 @@
                     <label>Tipo Risorsa:</label>
                     <select id="resourceType">
                         <option value="">-- Seleziona --</option>
-                        <option value="programmatore-robot">Programmatore Robot</option>
-                        <option value="programmatore-plc">Programmatore PLC</option>
-                        <option value="programmatore-visione">Programmatore Visione</option>
-                        <option value="meccanico">Meccanico</option>
-                        <option value="elettricista">Elettricista</option>
-                        <option value="project-manager">Project Manager</option>
-                        <option value="esterno">Esterno</option>
-                        <option value="responsabile">Responsabile</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -5189,6 +5182,27 @@
             <div class="modal-footer">
                 <button onclick="closeResourceModal()" class="secondary">Annulla</button>
                 <button onclick="saveResource()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Impostazioni Tipi Risorsa -->
+    <div id="resourceTypesSettingsModal" class="modal">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3>⚙️ Gestione Tipi Risorsa</h3>
+                <button class="modal-close" onclick="closeResourceTypesSettings()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 12px;">
+                <div id="resourceTypesListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+                <div style="margin-top: 10px; display: flex; gap: 6px;">
+                    <input type="text" id="newResourceTypeValue" placeholder="valore-tipo (es. tecnico)" style="flex: 1; padding: 5px 8px; font-size: 13px;">
+                    <input type="text" id="newResourceTypeLabel" placeholder="Etichetta (es. Tecnico)" style="flex: 1; padding: 5px 8px; font-size: 13px;">
+                    <button onclick="addResourceType()" style="padding: 5px 12px; font-size: 13px;">➕ Aggiungi</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeResourceTypesSettings()" class="secondary">Chiudi</button>
             </div>
         </div>
     </div>
@@ -5889,6 +5903,7 @@
             </div>
             <div class="modal-footer">
                 <button onclick="closeMeetingModal()" class="secondary">Annulla</button>
+                <button onclick="sendMeetingEmail()" class="secondary">📧 Invia Email</button>
                 <button onclick="saveMeeting()">💾 Salva</button>
             </div>
         </div>
@@ -5987,6 +6002,7 @@
             </div>
             <div class="modal-footer">
                 <button onclick="closeGlobalMeetingModal()" class="secondary">Annulla</button>
+                <button onclick="sendGlobalMeetingEmail()" class="secondary">📧 Invia Email</button>
                 <button onclick="saveGlobalMeeting()">💾 Salva</button>
             </div>
         </div>
@@ -6135,6 +6151,17 @@
         let templates = [];
         let meetings = []; // Riunioni globali
         let plants = []; // Stabilimenti clienti
+        // Tipi risorsa configurabili (caricati da settings, con default)
+        let resourceTypes = [
+            { value: 'programmatore-robot', label: 'Programmatore Robot' },
+            { value: 'programmatore-plc', label: 'Programmatore PLC' },
+            { value: 'programmatore-visione', label: 'Programmatore Visione' },
+            { value: 'meccanico', label: 'Meccanico' },
+            { value: 'elettricista', label: 'Elettricista' },
+            { value: 'project-manager', label: 'Project Manager' },
+            { value: 'esterno', label: 'Esterno' },
+            { value: 'responsabile', label: 'Responsabile' }
+        ];
         let currentProjectId = null;
         let currentTemplateId = null;
         let editingResourceId = null;
@@ -6181,6 +6208,7 @@
         // === CHIUSURA MODAL CON ESC ===
         const modalCloseMap = {
             resourceModal: closeResourceModal,
+            resourceTypesSettingsModal: closeResourceTypesSettings,
             localHolidayModal: closeLocalHolidayModal,
             projectModal: closeProjectModal,
             milestoneModal: closeMilestoneModal,
@@ -6475,10 +6503,24 @@
         }
 
         // === MODAL MANAGEMENT ===
+        function populateResourceTypeSelect() {
+            const sel = document.getElementById('resourceType');
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">-- Seleziona --</option>';
+            resourceTypes.forEach(rt => {
+                const opt = document.createElement('option');
+                opt.value = rt.value;
+                opt.textContent = rt.label;
+                sel.appendChild(opt);
+            });
+            sel.value = currentVal;
+        }
+
         function openResourceModal(id = null) {
             editingResourceId = id;
             const modal = document.getElementById('resourceModal');
             const title = document.getElementById('resourceModalTitle');
+            populateResourceTypeSelect();
             
             if (id) {
                 title.textContent = 'Modifica Risorsa';
@@ -6536,6 +6578,122 @@
         function closeResourceModal() {
             closeModal(document.getElementById('resourceModal'));
             clearResourceForm();
+        }
+
+        // === GESTIONE TIPI RISORSA ===
+        function openResourceTypesSettings() {
+            renderResourceTypesList();
+            openModal(document.getElementById('resourceTypesSettingsModal'));
+        }
+
+        function closeResourceTypesSettings() {
+            closeModal(document.getElementById('resourceTypesSettingsModal'));
+        }
+
+        function getResourceTypeUsageCount(typeValue) {
+            return resources.filter(r => r.type === typeValue).length;
+        }
+
+        function renderResourceTypesList() {
+            const container = document.getElementById('resourceTypesListContainer');
+            let html = '<table style="width: 100%; border-collapse: collapse; font-size: 13px;">';
+            html += '<thead><tr style="background: var(--bg-secondary);">';
+            html += '<th style="padding: 5px 8px; text-align: left;">Valore</th>';
+            html += '<th style="padding: 5px 8px; text-align: left;">Etichetta</th>';
+            html += '<th style="padding: 5px 8px; text-align: center; width: 70px;">Risorse</th>';
+            html += '<th style="padding: 5px 8px; text-align: center; width: 60px;">Azioni</th>';
+            html += '</tr></thead><tbody>';
+
+            resourceTypes.forEach((rt, index) => {
+                const count = getResourceTypeUsageCount(rt.value);
+                html += `<tr style="border-bottom: 1px solid var(--border-color);">`;
+                html += `<td style="padding: 5px 8px;"><input type="text" value="${escapeHtml(rt.value)}" onchange="updateResourceTypeValue(${index}, this.value)" style="width: 100%; padding: 3px 6px; font-size: 12px; box-sizing: border-box;"></td>`;
+                html += `<td style="padding: 5px 8px;"><input type="text" value="${escapeHtml(rt.label)}" onchange="updateResourceTypeLabel(${index}, this.value)" style="width: 100%; padding: 3px 6px; font-size: 12px; box-sizing: border-box;"></td>`;
+                html += `<td style="padding: 5px 8px; text-align: center; font-weight: 600;">${count}</td>`;
+                html += `<td style="padding: 5px 8px; text-align: center;">`;
+                if (count === 0) {
+                    html += `<button onclick="removeResourceType(${index})" class="delete" style="padding: 2px 8px; font-size: 12px;" title="Elimina tipo">🗑️</button>`;
+                } else {
+                    html += `<span style="color: var(--text-tertiary); font-size: 11px;" title="In uso da ${count} risorsa/e">🔒</span>`;
+                }
+                html += `</td></tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function addResourceType() {
+            const valueInput = document.getElementById('newResourceTypeValue');
+            const labelInput = document.getElementById('newResourceTypeLabel');
+            let value = valueInput.value.trim().toLowerCase().replace(/\s+/g, '-');
+            let label = labelInput.value.trim();
+
+            if (!value || !label) {
+                alert('Inserisci sia il valore che l\'etichetta del tipo risorsa.');
+                return;
+            }
+            if (resourceTypes.some(rt => rt.value === value)) {
+                alert('Un tipo risorsa con questo valore esiste già.');
+                return;
+            }
+
+            resourceTypes.push({ value, label });
+            saveResourceTypes();
+            valueInput.value = '';
+            labelInput.value = '';
+            renderResourceTypesList();
+        }
+
+        function updateResourceTypeValue(index, newValue) {
+            newValue = newValue.trim().toLowerCase().replace(/\s+/g, '-');
+            if (!newValue) return;
+            const oldValue = resourceTypes[index].value;
+            if (newValue !== oldValue && resourceTypes.some(rt => rt.value === newValue)) {
+                alert('Un tipo risorsa con questo valore esiste già.');
+                renderResourceTypesList();
+                return;
+            }
+            // Aggiorna le risorse che usano il vecchio valore
+            resources.forEach(r => {
+                if (r.type === oldValue) r.type = newValue;
+            });
+            resourceTypes[index].value = newValue;
+            saveResourceTypes();
+            saveToIndexedDBAll();
+            renderResourceTypesList();
+            renderResources();
+        }
+
+        function updateResourceTypeLabel(index, newLabel) {
+            newLabel = newLabel.trim();
+            if (!newLabel) return;
+            resourceTypes[index].label = newLabel;
+            saveResourceTypes();
+            renderResourceTypesList();
+            renderResources();
+        }
+
+        function removeResourceType(index) {
+            const count = getResourceTypeUsageCount(resourceTypes[index].value);
+            if (count > 0) {
+                alert('Non puoi eliminare un tipo risorsa in uso.');
+                return;
+            }
+            resourceTypes.splice(index, 1);
+            saveResourceTypes();
+            renderResourceTypesList();
+        }
+
+        async function saveResourceTypes() {
+            await saveSetting('resourceTypes', resourceTypes);
+        }
+
+        async function loadResourceTypes() {
+            const saved = await loadSetting('resourceTypes');
+            if (saved && Array.isArray(saved) && saved.length > 0) {
+                resourceTypes = saved;
+            }
         }
 
         function openLocalHolidayModal(id = null) {
@@ -7182,6 +7340,169 @@
                 saveToIndexedDBAll();
                 document.getElementById('taskEmailSentDisplay').innerHTML = '';
             }
+        }
+
+        // Converte markdown in HTML con stili inline per email
+        function markdownToEmailHtml(mdText) {
+            if (!mdText) return '<em>Nessuna nota</em>';
+            let html = marked.parse(mdText);
+            html = html
+                // Blocchi codice con header lingua
+                .replace(/<pre([^>]*)><div class="code-header">([^<]*)<\/div><code>/g,
+                    '<pre$1 style="background:#1e1e1e;border-radius:8px;overflow-x:auto;margin:1em 0;border:1px solid #333;"><div style="background:#2d2d2d;border-bottom:1px solid #404040;padding:6px 12px;font-size:0.75em;color:#888;font-family:Segoe UI,sans-serif;border-radius:8px 8px 0 0;">$2</div><code style="background:none;padding:12px 16px;color:#d4d4d4;font-size:0.85em;display:block;border:none;white-space:pre;">')
+                .replace(/<pre>/g, '<pre style="background:#1e1e1e;border-radius:8px;overflow-x:auto;margin:1em 0;border:1px solid #333;">')
+                .replace(/<span class="code-line">/g, '<span style="display:block;">')
+                // Codice inline
+                .replace(/<code class="inline-code">/g, '<code style="background:#fff0f0;padding:0.2em 0.5em;border-radius:4px;border:1px solid #e0b4b4;font-family:Consolas,Monaco,monospace;font-size:0.88em;color:#c7254e;">')
+                // Citazioni (blockquote)
+                .replace(/<blockquote>/g, '<blockquote style="margin:8px 0;padding:8px 14px;background:#f0f4ff;border-left:4px solid #5b8db8;border-radius:0 4px 4px 0;color:#444;">')
+                // Titoli
+                .replace(/<h1>/g, '<h1 style="font-size:1.4em;margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid #4CAF50;color:#222;">')
+                .replace(/<h2>/g, '<h2 style="font-size:1.2em;margin:12px 0 5px;padding-bottom:3px;border-bottom:1px solid #ccc;color:#333;">')
+                .replace(/<h3>/g, '<h3 style="font-size:1.05em;margin:10px 0 4px;color:#444;">')
+                // Liste
+                .replace(/<ul>/g, '<ul style="margin:6px 0 6px 20px;padding:0;">')
+                .replace(/<ol>/g, '<ol style="margin:6px 0 6px 20px;padding:0;">')
+                .replace(/<li>/g, '<li style="margin:3px 0;">')
+                // Paragrafi
+                .replace(/<p>/g, '<p style="margin:6px 0;">')
+                // Separatori
+                .replace(/<hr>/g, '<hr style="border:none;border-top:1px solid #ddd;margin:10px 0;">')
+                // Tabelle
+                .replace(/<table>/g, '<table style="border-collapse:collapse;width:100%;margin:8px 0;">')
+                .replace(/<th>/g, '<th style="background:#e8f5e9;padding:6px 10px;border:1px solid #c8e6c9;text-align:left;font-weight:bold;">')
+                .replace(/<td>/g, '<td style="padding:5px 10px;border:1px solid #ddd;">');
+            return html;
+        }
+
+        // Copia HTML negli appunti e apre mailto come fallback
+        function copyEmailAndOpenMailto(subject, htmlBody, plainBody) {
+            const blob = new Blob([htmlBody], { type: 'text/html' });
+            const clipboardItem = new ClipboardItem({
+                'text/html': blob,
+                'text/plain': new Blob([plainBody], { type: 'text/plain' })
+            });
+            navigator.clipboard.write([clipboardItem]).then(() => {
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
+                window.location.href = mailtoLink;
+                setTimeout(() => {
+                    alert('✅ Il contenuto formattato è stato copiato negli appunti.\n\nNel client email:\n• Usa Ctrl+V per incollare la versione formattata con il Markdown');
+                }, 500);
+            }).catch(() => {
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
+                window.location.href = mailtoLink;
+            });
+        }
+
+        function sendMeetingEmail() {
+            const date = document.getElementById('meetingDate').value;
+            const subject = document.getElementById('meetingSubject').value.trim();
+            const participants = document.getElementById('meetingParticipants').value.trim();
+            const topics = document.getElementById('meetingTopics').value;
+
+            if (!subject) { alert('⚠️ Inserisci almeno l\'argomento prima di inviare l\'email'); return; }
+
+            const project = projects.find(p => p.id === currentProjectId);
+            const projectName = project ? `${project.client} (${project.code})` : 'N/A';
+
+            const dateParts = date ? date.split('-') : [];
+            const dateFormatted = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : (date || 'N/D');
+
+            const topicsHtml = markdownToEmailHtml(topics);
+
+            const emailSubject = `Verbale Riunione: ${subject} - ${dateFormatted}`;
+
+            const htmlBody = `
+                <div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:14px;color:#333;">
+                    <h2 style="border-bottom:2px solid #4CAF50;padding-bottom:6px;">📋 Verbale di Riunione</h2>
+                    <table style="border-collapse:collapse;margin:10px 0;">
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Progetto:</td><td>${projectName}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Data:</td><td>${dateFormatted}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Argomento:</td><td>${subject}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Partecipanti:</td><td>${participants || 'N/D'}</td></tr>
+                    </table>
+                    <h3 style="margin:12px 0 6px;">Argomenti Discussi</h3>
+                    <div style="background:#f9f9f9;border-left:3px solid #4CAF50;padding:8px 12px;margin:6px 0;">${topicsHtml}</div>
+                </div>`;
+
+            const plainBody = `VERBALE DI RIUNIONE\n${'='.repeat(40)}\n\n` +
+                `Progetto: ${projectName}\n` +
+                `Data: ${dateFormatted}\n` +
+                `Argomento: ${subject}\n` +
+                `Partecipanti: ${participants || 'N/D'}\n\n` +
+                `Argomenti Discussi:\n${topics || 'Nessun argomento'}`;
+
+            copyEmailAndOpenMailto(emailSubject, htmlBody, plainBody);
+        }
+
+        function sendGlobalMeetingEmail() {
+            const date = document.getElementById('globalMeetingDate').value;
+            const time = document.getElementById('globalMeetingTime').value;
+            const subject = document.getElementById('globalMeetingSubject').value.trim();
+            const tags = document.getElementById('globalMeetingTags').value.trim();
+            const expectedDuration = document.getElementById('globalMeetingExpectedDuration').value;
+            const actualDuration = document.getElementById('globalMeetingActualDuration').value;
+            const description = document.getElementById('globalMeetingDescription').value;
+            const minutes = document.getElementById('globalMeetingMinutes').value;
+
+            if (!subject) { alert('⚠️ Inserisci almeno l\'oggetto prima di inviare l\'email'); return; }
+
+            const dateParts = date ? date.split('-') : [];
+            const dateFormatted = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : (date || 'N/D');
+            const dateTime = time ? `${dateFormatted} ${time}` : dateFormatted;
+
+            // Risorse selezionate
+            const selectedResources = [];
+            resources.forEach(r => {
+                const cb = document.getElementById('meetingRes_' + r.id);
+                if (cb && cb.checked) selectedResources.push(`${r.firstName} ${r.lastName}`);
+            });
+
+            const descriptionHtml = markdownToEmailHtml(description);
+            const minutesHtml = markdownToEmailHtml(minutes);
+
+            const emailSubject = `Verbale Riunione: ${subject} - ${dateFormatted}`;
+
+            const resourcesRow = selectedResources.length
+                ? `<tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Partecipanti:</td><td>${selectedResources.join(', ')}</td></tr>`
+                : '';
+            const tagsRow = tags
+                ? `<tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Tag:</td><td>${tags}</td></tr>`
+                : '';
+            const durationRows = (expectedDuration || actualDuration)
+                ? `${expectedDuration ? `<tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Durata Prevista:</td><td>${expectedDuration}</td></tr>` : ''}
+                   ${actualDuration ? `<tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Durata Reale:</td><td>${actualDuration}</td></tr>` : ''}`
+                : '';
+
+            const descSection = description
+                ? `<h3 style="margin:12px 0 6px;">Descrizione</h3><div style="background:#f9f9f9;border-left:3px solid #2196F3;padding:8px 12px;margin:6px 0;">${descriptionHtml}</div>`
+                : '';
+            const minutesSection = minutes
+                ? `<h3 style="margin:12px 0 6px;">Resoconto</h3><div style="background:#f9f9f9;border-left:3px solid #4CAF50;padding:8px 12px;margin:6px 0;">${minutesHtml}</div>`
+                : '';
+
+            const htmlBody = `
+                <div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:14px;color:#333;">
+                    <h2 style="border-bottom:2px solid #2196F3;padding-bottom:6px;">👥 Verbale di Riunione</h2>
+                    <table style="border-collapse:collapse;margin:10px 0;">
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Data:</td><td>${dateTime}</td></tr>
+                        <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Oggetto:</td><td>${subject}</td></tr>
+                        ${resourcesRow}${tagsRow}${durationRows}
+                    </table>
+                    ${descSection}${minutesSection}
+                </div>`;
+
+            const plainBody = `VERBALE DI RIUNIONE\n${'='.repeat(40)}\n\n` +
+                `Data: ${dateTime}\n` +
+                `Oggetto: ${subject}\n` +
+                (selectedResources.length ? `Partecipanti: ${selectedResources.join(', ')}\n` : '') +
+                (tags ? `Tag: ${tags}\n` : '') +
+                (expectedDuration ? `Durata Prevista: ${expectedDuration}\n` : '') +
+                (actualDuration ? `Durata Reale: ${actualDuration}\n` : '') +
+                (description ? `\nDescrizione:\n${description}\n` : '') +
+                (minutes ? `\nResoconto:\n${minutes}` : '');
+
+            copyEmailAndOpenMailto(emailSubject, htmlBody, plainBody);
         }
 
         function openTemplateModal(id = null) {
@@ -8423,16 +8744,8 @@
             const filterLastName = (document.getElementById('resourceFilterLastName')?.value || '').toLowerCase();
             const filterType = (document.getElementById('resourceFilterType')?.value || '').toLowerCase();
 
-            const typeLabels = {
-                'programmatore-robot': 'Programmatore Robot',
-                'programmatore-plc': 'Programmatore PLC',
-                'programmatore-visione': 'Programmatore Visione',
-                'meccanico': 'Meccanico',
-                'elettricista': 'Elettricista',
-                'project-manager': 'Project Manager',
-                'esterno': 'Esterno',
-                'responsabile': 'Responsabile'
-            };
+            const typeLabels = {};
+            resourceTypes.forEach(rt => { typeLabels[rt.value] = rt.label; });
 
             resources.forEach((resource, index) => {
                 const typeLabel = resource.type ? typeLabels[resource.type] || resource.type : '-';
@@ -13130,7 +13443,8 @@
                 projects,
                 templates,
                 meetings,
-                plants
+                plants,
+                resourceTypes
             };
 
             const dataStr = JSON.stringify(data, null, 2);
@@ -13684,17 +13998,8 @@
         }
 
         function getResourceTypeLabel(type) {
-            const typeLabels = {
-                'programmatore-robot': 'Programmatore Robot',
-                'programmatore-plc': 'Programmatore PLC',
-                'programmatore-visione': 'Programmatore Visione',
-                'meccanico': 'Meccanico',
-                'elettricista': 'Elettricista',
-                'project-manager': 'Project Manager',
-                'esterno': 'Esterno',
-                'responsabile': 'Responsabile'
-            };
-            return type ? typeLabels[type] || type : '-';
+            const found = resourceTypes.find(rt => rt.value === type);
+            return type ? (found ? found.label : type) : '-';
         }
 
         function generateGanttForResourceProject(project, tasks, resource, globalMinDate, globalMaxDate) {
@@ -13933,6 +14238,10 @@
                     templates = data.templates || [];
                     meetings = data.meetings || [];
                     plants = data.plants || [];
+                    if (data.resourceTypes && Array.isArray(data.resourceTypes) && data.resourceTypes.length > 0) {
+                        resourceTypes = data.resourceTypes;
+                        saveResourceTypes();
+                    }
                     
                     saveToIndexedDBAll();
                     calculateHolidays();
@@ -14011,6 +14320,16 @@
                             p.id = Date.now() + Math.random();
                             plants.push(p);
                         });
+                    }
+                    
+                    // Unisci tipi risorsa (aggiungi solo quelli nuovi)
+                    if (data.resourceTypes && Array.isArray(data.resourceTypes)) {
+                        data.resourceTypes.forEach(rt => {
+                            if (!resourceTypes.some(existing => existing.value === rt.value)) {
+                                resourceTypes.push(rt);
+                            }
+                        });
+                        saveResourceTypes();
                     }
                     
                     saveToIndexedDBAll();
@@ -14110,6 +14429,9 @@
                 // Carica holidays (calcolato, non salvato)
                 const savedHolidays = localStorage.getItem('projectPlanner_holidays');
                 if (savedHolidays) holidays = JSON.parse(savedHolidays);
+                
+                // Carica tipi risorsa personalizzati
+                await loadResourceTypes();
             } catch (error) {
                 console.error('Errore caricamento IndexedDB:', error);
             }
