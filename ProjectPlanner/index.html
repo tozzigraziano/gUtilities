@@ -1565,6 +1565,151 @@
             background-image: linear-gradient(rgba(255, 152, 0, 0.2), rgba(255, 152, 0, 0.2)) !important;
         }
 
+        /* Resource Status Badge */
+        .resource-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 9px;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 8px;
+            margin-left: 6px;
+            white-space: nowrap;
+            line-height: 1.4;
+            flex-shrink: 0;
+        }
+        .resource-status-badge.status-available {
+            background: rgba(189, 189, 189, 0.25);
+            color: #9e9e9e;
+        }
+        .resource-status-badge.status-light {
+            background: rgba(102, 156, 122, 0.2);
+            color: #4a8c5c;
+        }
+        .resource-status-badge.status-busy {
+            background: rgba(212, 185, 95, 0.25);
+            color: #b89f2e;
+        }
+        .resource-status-badge.status-overloaded {
+            background: rgba(255, 107, 107, 0.2);
+            color: #d32f2f;
+        }
+        .resource-status-badge.status-absence {
+            background: rgba(211, 47, 47, 0.15);
+            color: #d32f2f;
+        }
+        [data-theme="dark"] .resource-status-badge.status-available {
+            color: #bdbdbd;
+        }
+        [data-theme="dark"] .resource-status-badge.status-light {
+            color: #81c784;
+        }
+        [data-theme="dark"] .resource-status-badge.status-busy {
+            color: #ffd54f;
+        }
+        [data-theme="dark"] .resource-status-badge.status-overloaded {
+            color: #ff6b6b;
+        }
+        [data-theme="dark"] .resource-status-badge.status-absence {
+            color: #ef9a9a;
+        }
+
+        .resource-status-projects {
+            font-size: 9px;
+            color: var(--text-tertiary);
+            margin-left: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Project Summary Badge (project view) */
+        .project-summary-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            margin-left: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .project-summary-badge .ps-item {
+            padding: 1px 4px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .ps-item.ps-completed { background: rgba(107, 156, 123, 0.25); color: #4a8c5c; }
+        .ps-item.ps-in-corso { background: rgba(91, 141, 184, 0.25); color: #5b8db8; }
+        .ps-item.ps-in-ritardo { background: rgba(255, 107, 107, 0.25); color: #d32f2f; }
+        .ps-item.ps-pausa { background: rgba(212, 185, 95, 0.25); color: #b89f2e; }
+        .ps-item.ps-none { background: rgba(189, 189, 189, 0.2); color: #9e9e9e; }
+        [data-theme="dark"] .ps-item.ps-completed { color: #81c784; }
+        [data-theme="dark"] .ps-item.ps-in-corso { color: #90caf9; }
+        [data-theme="dark"] .ps-item.ps-in-ritardo { color: #ef9a9a; }
+        [data-theme="dark"] .ps-item.ps-pausa { color: #ffd54f; }
+        [data-theme="dark"] .ps-item.ps-none { color: #bdbdbd; }
+
+        /* Gantt Summary Stats Bar */
+        .gantt-summary-bar {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .gantt-summary-bar .gs-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .gantt-summary-bar .gs-value {
+            font-weight: 700;
+        }
+
+        /* Today vertical line overlay */
+        .gantt-today-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #ff5722, #ff9800);
+            z-index: 20;
+            pointer-events: none;
+            box-shadow: 0 0 6px rgba(255, 87, 34, 0.5);
+        }
+
+        /* Compact mode */
+        .gantt-chart.compact-mode .gantt-row {
+            min-height: 18px !important;
+        }
+        .gantt-chart.compact-mode .gantt-row[data-row-type="resource"] {
+            min-height: 30px !important;
+            height: 30px !important;
+        }
+        .gantt-chart.compact-mode .gantt-row-label {
+            font-size: 9px;
+            padding: 1px 6px;
+        }
+        .gantt-chart.compact-mode .gantt-bar {
+            height: 14px;
+            top: 2px;
+            font-size: 8px;
+        }
+        .gantt-chart.compact-mode .resource-status-badge {
+            font-size: 8px;
+        }
+
+        /* Project color left border for resource-project rows */
+        .gantt-row[data-row-type="resource-project"] {
+            border-left: 3px solid transparent;
+        }
+
         /* Resource View Styles */
         .resource-card {
             background: var(--bg-tertiary);
@@ -4754,6 +4899,12 @@
                     <label>
                         <input type="checkbox" id="ganttHideOutOfPeriod" onchange="renderGantt()">
                         Nascondi attività fuori dal periodo selezionato
+                    </label>
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="checkbox" id="ganttCompactMode" onchange="toggleGanttCompactMode()">
+                        Modalità compatta
                     </label>
                 </div>
                 <button onclick="renderGantt()" class="secondary">🔄 Aggiorna</button>
@@ -14156,6 +14307,10 @@
             
             if (!container) return;
             
+            // Rimuovi barra riepilogativa precedente se presente
+            const oldSummary = container.parentElement?.querySelector('.gantt-summary-bar');
+            if (oldSummary) oldSummary.remove();
+            
             container.innerHTML = '';
 
             // Trova il range di date
@@ -14421,6 +14576,28 @@
             } else {
                 renderGanttByResources(container, filteredProjects, days, minDate, maxDate);
             }
+            
+            // Aggiungi linea verticale "Oggi"
+            const todayDate = new Date();
+            todayDate.setHours(0, 0, 0, 0);
+            const todayIndex = days.findIndex(d => {
+                const dd = new Date(d); dd.setHours(0, 0, 0, 0);
+                return dd.getTime() === todayDate.getTime();
+            });
+            if (todayIndex >= 0) {
+                const dayWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gantt-day-width'));
+                const todayLine = document.createElement('div');
+                todayLine.className = 'gantt-today-line';
+                todayLine.style.left = `${250 + todayIndex * dayWidth}px`;
+                todayLine._todayIndex = todayIndex;
+                container.style.position = 'relative';
+                container.appendChild(todayLine);
+            }
+            
+            // Applica modalità compatta se attiva
+            if (document.getElementById('ganttCompactMode')?.checked) {
+                container.classList.add('compact-mode');
+            }
         }
 
         function setupGanttInteractions(container) {
@@ -14534,6 +14711,12 @@
                     }
                 }
             });
+            
+            // Aggiorna posizione linea oggi
+            const todayLine = container.querySelector('.gantt-today-line');
+            if (todayLine && todayLine._todayIndex !== undefined) {
+                todayLine.style.left = `${250 + todayLine._todayIndex * dayWidth}px`;
+            }
         }
 
         function renderGanttByProjects(container, filteredProjects, days, minDate, maxDate) {
@@ -14579,6 +14762,34 @@
                 
                 // Row per progetto
                 const projectRow = createGanttRow(`📁 ${project.client} - ${project.code}${workFlagsStr}`, days, 'project', project.id);
+                
+                // Badge riepilogativo stato task sul progetto
+                if (project.tasks && project.tasks.length > 0) {
+                    const visibleTasks = project.tasks.filter(t => t.startDate && t.endDate);
+                    const counts = { completed: 0, inCorso: 0, inRitardo: 0, pausa: 0, none: 0 };
+                    visibleTasks.forEach(t => {
+                        if (t.status === 'completata' || t.completion === 100) counts.completed++;
+                        else if (t.status === 'in-ritardo') counts.inRitardo++;
+                        else if (t.status === 'pausa') counts.pausa++;
+                        else if (t.status === 'in-corso') counts.inCorso++;
+                        else counts.none++;
+                    });
+                    const total = visibleTasks.length;
+                    if (total > 0) {
+                        const badge = document.createElement('span');
+                        badge.className = 'project-summary-badge';
+                        let items = [];
+                        if (counts.completed > 0) items.push(`<span class="ps-item ps-completed">✓${counts.completed}</span>`);
+                        if (counts.inCorso > 0) items.push(`<span class="ps-item ps-in-corso">▶${counts.inCorso}</span>`);
+                        if (counts.inRitardo > 0) items.push(`<span class="ps-item ps-in-ritardo">⚠${counts.inRitardo}</span>`);
+                        if (counts.pausa > 0) items.push(`<span class="ps-item ps-pausa">⏸${counts.pausa}</span>`);
+                        if (counts.none > 0) items.push(`<span class="ps-item ps-none">○${counts.none}</span>`);
+                        badge.innerHTML = items.join('');
+                        const projLabelDiv = projectRow.querySelector('.gantt-row-label');
+                        projLabelDiv.appendChild(badge);
+                    }
+                }
+                
                 container.appendChild(projectRow);
 
                 // Calcola barra progetto (dall'inizio alla fine)
@@ -14707,6 +14918,70 @@
                 }
             });
 
+            // Palette colori per distinguere i progetti nella vista risorsa
+            const projectColorPalette = [
+                '#5b8db8', '#6b9c7b', '#d4b95f', '#c9885f', '#9b7db8',
+                '#5bb8a9', '#b85b7d', '#7db85b', '#b8955b', '#5b6fb8',
+                '#b85ba9', '#5bb87d', '#b8b35b', '#5b9eb8', '#b86b5b',
+                '#8b5bb8'
+            ];
+            const projectColorMap = {};
+            let colorIndex = 0;
+            
+            // Pre-assegna colori ai progetti
+            Object.values(resourceTasks).forEach(rd => {
+                Object.values(rd.projectGroups).forEach(pg => {
+                    if (!projectColorMap[pg.project.id]) {
+                        projectColorMap[pg.project.id] = projectColorPalette[colorIndex % projectColorPalette.length];
+                        colorIndex++;
+                    }
+                });
+            });
+
+            // Calcola statistiche riassuntive per la barra di riepilogo
+            const todayStr = formatDateLocal(new Date());
+            let totalResourcesShown = 0;
+            let resourcesOverloaded = 0;
+            let resourcesOnAbsence = 0;
+
+            // Pre-scan per statistiche
+            resources.filter(r => !r.hidden).forEach(resource => {
+                const resourceData = resourceTasks[resource.id];
+                if (!resourceData) return;
+                totalResourcesShown++;
+                
+                const allT = Object.values(resourceData.projectGroups).flatMap(pg => pg.tasks);
+                const asgn = allT.map(task => ({
+                    task, percentage: task.percentage, resourceId: resource.id,
+                    startDate: task.startDate,
+                    endDate: getEffectiveEndDateForResource(task, resource.id)
+                }));
+                const ov = calculateResourceOverload(asgn, minDate, maxDate);
+                if ((ov.dailyLoad[todayStr] || 0) > 100) resourcesOverloaded++;
+                
+                if (resource.absences && resource.absences.length > 0) {
+                    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+                    const isAbsent = resource.absences.some(a => {
+                        const s = new Date(a.start); s.setHours(0, 0, 0, 0);
+                        const e = new Date(a.end); e.setHours(0, 0, 0, 0);
+                        return todayDate >= s && todayDate <= e;
+                    });
+                    if (isAbsent) resourcesOnAbsence++;
+                }
+            });
+
+            // Barra riepilogativa
+            if (totalResourcesShown > 0) {
+                const summaryBar = document.createElement('div');
+                summaryBar.className = 'gantt-summary-bar';
+                summaryBar.innerHTML = `
+                    <div class="gs-item">👥 Risorse: <span class="gs-value">${totalResourcesShown}</span></div>
+                    <div class="gs-item">🔴 Sovraccariche: <span class="gs-value" style="color: ${resourcesOverloaded > 0 ? '#d32f2f' : 'inherit'}">${resourcesOverloaded}</span></div>
+                    <div class="gs-item">🏖️ In assenza: <span class="gs-value" style="color: ${resourcesOnAbsence > 0 ? '#e65100' : 'inherit'}">${resourcesOnAbsence}</span></div>
+                `;
+                container.parentElement.insertBefore(summaryBar, container);
+            }
+
             // Renderizza per risorsa e progetto, mantenendo l'ordine dell'array resources
             // Filtra risorse nascoste
             resources.filter(r => !r.hidden).forEach(resource => {
@@ -14734,6 +15009,20 @@
                 };
                 labelDiv.insertBefore(expandIcon, labelDiv.firstChild);
                 
+                // --- Status Badge ---
+                const todayDate = new Date();
+                todayDate.setHours(0, 0, 0, 0);
+                let currentAbsenceType = null;
+                if (resource.absences && resource.absences.length > 0) {
+                    resource.absences.forEach(absence => {
+                        const absStart = new Date(absence.start); absStart.setHours(0, 0, 0, 0);
+                        const absEnd = new Date(absence.end); absEnd.setHours(0, 0, 0, 0);
+                        if (todayDate >= absStart && todayDate <= absEnd) {
+                            currentAbsenceType = absence.type;
+                        }
+                    });
+                }
+                
                 // Calcola e aggiungi barra di carico direttamente sulla riga della risorsa
                 const assignments = allTasks.map(task => ({
                     task,
@@ -14743,6 +15032,74 @@
                     endDate: getEffectiveEndDateForResource(task, resource.id)
                 }));
                 const overload = calculateResourceOverload(assignments, minDate, maxDate);
+                
+                // Calcola status badge
+                const todayLoad = overload.dailyLoad[todayStr] || 0;
+                const statusBadge = document.createElement('span');
+                statusBadge.className = 'resource-status-badge';
+                
+                if (currentAbsenceType) {
+                    const absLabels = { 'vacation': '🏖️ In ferie', 'sick': '🤒 Malattia', 'planned_intervention': '🏥 Intervento' };
+                    statusBadge.textContent = absLabels[currentAbsenceType] || '🏖️ Assente';
+                    statusBadge.classList.add('status-absence');
+                } else if (todayLoad === 0) {
+                    statusBadge.textContent = '⚪ Disponibile';
+                    statusBadge.classList.add('status-available');
+                } else if (todayLoad <= 80) {
+                    statusBadge.textContent = `🟢 ${todayLoad.toFixed(0)}%`;
+                    statusBadge.classList.add('status-light');
+                } else if (todayLoad <= 100) {
+                    statusBadge.textContent = `🟡 ${todayLoad.toFixed(0)}%`;
+                    statusBadge.classList.add('status-busy');
+                } else {
+                    statusBadge.textContent = `🔴 ${todayLoad.toFixed(0)}%`;
+                    statusBadge.classList.add('status-overloaded');
+                }
+                labelDiv.appendChild(statusBadge);
+                
+                // Contatore progetti attivi
+                const activeProjects = Object.keys(projectGroups).length;
+                const activeTasks = allTasks.filter(t => t.status !== 'completata' && t.status !== 'annullata').length;
+                const projectsInfo = document.createElement('span');
+                projectsInfo.className = 'resource-status-projects';
+                projectsInfo.textContent = `${activeProjects}P/${activeTasks}T`;
+                labelDiv.appendChild(projectsInfo);
+                
+                // --- Tooltip ricco ---
+                let tooltipLines = [`${resource.firstName} ${resource.lastName}`];
+                tooltipLines.push('');
+                if (currentAbsenceType) {
+                    const absNames = { 'vacation': 'In ferie', 'sick': 'Malattia', 'planned_intervention': 'Intervento pianificato' };
+                    tooltipLines.push(`⚠ Stato: ${absNames[currentAbsenceType] || 'Assente'}`);
+                } else {
+                    tooltipLines.push(`Carico oggi: ${todayLoad.toFixed(0)}%`);
+                }
+                tooltipLines.push(`Progetti: ${activeProjects} | Task: ${activeTasks}`);
+                tooltipLines.push('');
+                Object.values(projectGroups).forEach(({ project, tasks: pTasks }) => {
+                    const activeCount = pTasks.filter(t => t.status !== 'completata' && t.status !== 'annullata').length;
+                    const dates = pTasks.reduce((acc, t) => {
+                        if (!acc.min || t.startDate < acc.min) acc.min = t.startDate;
+                        const eEnd = getEffectiveEndDate(t);
+                        if (!acc.max || eEnd > acc.max) acc.max = eEnd;
+                        return acc;
+                    }, { min: null, max: null });
+                    tooltipLines.push(`📁 ${project.code} — ${activeCount} task (${dates.min} → ${dates.max})`);
+                });
+                // Prossima assenza entro 30 giorni
+                if (!currentAbsenceType && resource.absences && resource.absences.length > 0) {
+                    const futureLimit = new Date(todayDate);
+                    futureLimit.setDate(futureLimit.getDate() + 30);
+                    const nextAbs = resource.absences
+                        .filter(a => new Date(a.start) > todayDate && new Date(a.start) <= futureLimit)
+                        .sort((a, b) => a.start.localeCompare(b.start))[0];
+                    if (nextAbs) {
+                        const absNames = { 'vacation': 'Ferie', 'sick': 'Malattia', 'planned_intervention': 'Intervento' };
+                        tooltipLines.push('');
+                        tooltipLines.push(`⏭ Prossima assenza: ${absNames[nextAbs.type] || 'Assenza'} dal ${nextAbs.start} al ${nextAbs.end}`);
+                    }
+                }
+                labelDiv.title = tooltipLines.join('\n');
                 
                 // Sostituisci il contenuto di gantt-row-bars con la barra di carico
                 const barsDiv = resourceRow.querySelector('.gantt-row-bars');
@@ -14769,6 +15126,43 @@
                     const dayOfWeek = day.getDay();
                     if (dayOfWeek === 0 || dayOfWeek === 6) {
                         dayDiv.classList.add('weekend');
+                    }
+                    
+                    // Evidenzia assenze sulla riga risorsa
+                    if (resource.absences && resource.absences.length > 0) {
+                        const dayDate = new Date(day);
+                        dayDate.setHours(0, 0, 0, 0);
+                        resource.absences.forEach(absence => {
+                            const absStart = new Date(absence.start); absStart.setHours(0, 0, 0, 0);
+                            const absEnd = new Date(absence.end); absEnd.setHours(0, 0, 0, 0);
+                            if (dayDate >= absStart && dayDate <= absEnd) {
+                                if (absence.type === 'sick') {
+                                    dayDiv.classList.add('absence-sick');
+                                } else if (absence.type === 'planned_intervention') {
+                                    dayDiv.classList.add('absence-planned-intervention');
+                                } else {
+                                    dayDiv.classList.add('absence');
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Evidenzia festivi
+                    const year = day.getFullYear();
+                    const month = String(day.getMonth() + 1).padStart(2, '0');
+                    const dayOfMonth = String(day.getDate()).padStart(2, '0');
+                    const holDateStr = `${year}-${month}-${dayOfMonth}`;
+                    const holiday = holidays.find(h => h.date === holDateStr);
+                    if (holiday) {
+                        dayDiv.classList.add('holiday');
+                        dayDiv.title = holiday.name;
+                    }
+                    
+                    // Evidenzia oggi
+                    const checkDay = new Date(day);
+                    checkDay.setHours(0, 0, 0, 0);
+                    if (checkDay.getTime() === todayDate.getTime()) {
+                        dayDiv.classList.add('today');
                     }
                     
                     const dateStr = formatDateLocal(day);
@@ -14802,6 +15196,10 @@
                     projectRow.dataset.projectId = project.id;
                     projectRow.style.backgroundColor = 'var(--bg-tertiary)';
                     projectRow.style.fontWeight = '600';
+                    
+                    // Colore progetto su bordo sinistro
+                    const pColor = projectColorMap[project.id] || '#5b8db8';
+                    projectRow.style.borderLeft = `3px solid ${pColor}`;
                     
                     // Icona expand/collapse per progetto
                     const projectLabelDiv = projectRow.querySelector('.gantt-row-label');
@@ -15136,6 +15534,17 @@
                 }
             }
             return task.endDate;
+        }
+
+        function toggleGanttCompactMode() {
+            const container = document.querySelector('.gantt-chart');
+            if (!container) return;
+            const isCompact = document.getElementById('ganttCompactMode')?.checked || false;
+            if (isCompact) {
+                container.classList.add('compact-mode');
+            } else {
+                container.classList.remove('compact-mode');
+            }
         }
 
         function getEffectiveEndDateForResource(task, resourceId) {
