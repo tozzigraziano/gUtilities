@@ -3224,6 +3224,133 @@
             font-style: italic;
         }
 
+        /* Pulsante espandi note a tutto schermo */
+        .expand-note-btn {
+            margin-left: auto;
+            padding: 3px 8px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1;
+            transition: background 0.15s, color 0.15s;
+        }
+        .expand-note-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* Modal note a tutto schermo */
+        #fullscreenNoteModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 9999;
+            align-items: stretch;
+            justify-content: stretch;
+        }
+        #fullscreenNoteModal.active {
+            display: flex;
+        }
+        #fullscreenNoteModal .fmd-content {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            width: 96vw;
+            height: 92vh;
+            margin: auto;
+            border-radius: 8px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        #fullscreenNoteModal .fmd-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        #fullscreenNoteModal .fmd-header h3 {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        #fullscreenNoteModal .fmd-header .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0 4px;
+            line-height: 1;
+        }
+        #fullscreenNoteModal .fmd-header .modal-close:hover {
+            color: var(--text-primary);
+        }
+        .fmd-layout {
+            display: flex;
+            flex: 1;
+            gap: 0;
+            overflow: hidden;
+        }
+        .fmd-col {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+        .fmd-col:first-child {
+            border-right: 1px solid var(--border-color);
+        }
+        .fmd-col-header {
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        #fmdTextarea {
+            flex: 1;
+            resize: none;
+            border: none;
+            outline: none;
+            padding: 14px;
+            font-family: 'Courier New', Consolas, monospace;
+            font-size: 13px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-y: auto;
+        }
+        #fmdPreview {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 20px;
+            max-height: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        #fullscreenNoteModal .fmd-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
         /* Location Type Badges */
         .location-badge {
             display: block;
@@ -6008,6 +6135,30 @@
         </div>
     </div>
 
+    <!-- Modal Note a Tutto Schermo -->
+    <div id="fullscreenNoteModal">
+        <div class="fmd-content">
+            <div class="fmd-header">
+                <h3 id="fmdTitle">📝 Note</h3>
+                <button class="modal-close" onclick="closeFullscreenNoteEditor()" title="Chiudi (ESC)">&times;</button>
+            </div>
+            <div class="fmd-layout">
+                <div class="fmd-col">
+                    <div class="fmd-col-header">✏️ Modifica</div>
+                    <textarea id="fmdTextarea" placeholder="Scrivi qui in Markdown..."></textarea>
+                </div>
+                <div class="fmd-col">
+                    <div class="fmd-col-header">👁️ Anteprima</div>
+                    <div id="fmdPreview" class="markdown-preview"></div>
+                </div>
+            </div>
+            <div class="fmd-footer">
+                <button onclick="closeFullscreenNoteEditor()" class="secondary">✖ Chiudi</button>
+                <button onclick="saveAndCloseFullscreenNoteEditor()">💾 Salva e Chiudi</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // === INDEXEDDB SETUP ===
         const DB_NAME = 'ProjectPlannerDB';
@@ -6228,6 +6379,9 @@
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
+                // Se il fullscreen note editor è aperto, ha la precedenza
+                const fmdModal = document.getElementById('fullscreenNoteModal');
+                if (fmdModal && fmdModal.classList.contains('active')) return;
                 const activeModal = document.querySelector('.modal.active');
                 if (activeModal) {
                     e.preventDefault();
@@ -6285,6 +6439,24 @@
                 <button class="markdown-tab ${startInPreview ? '' : 'active'}" onclick="switchMarkdownTab('${textareaId}', 'edit')">✏️ Modifica</button>
                 <button class="markdown-tab ${startInPreview ? 'active' : ''}" onclick="switchMarkdownTab('${textareaId}', 'preview')">👁️ Anteprima</button>
             `;
+
+            // Pulsante espandi a tutto schermo
+            const expandBtn = document.createElement('button');
+            expandBtn.type = 'button';
+            expandBtn.className = 'expand-note-btn';
+            expandBtn.title = 'Apri editor a tutto schermo';
+            expandBtn.textContent = '⛶';
+            // Determina il titolo dal form-group padre
+            let _fmdLabel = '';
+            const _fmdFormGroup = textarea.closest('.form-group');
+            if (_fmdFormGroup) {
+                const _fmdLabelEl = _fmdFormGroup.querySelector('label');
+                if (_fmdLabelEl) _fmdLabel = _fmdLabelEl.textContent.trim().replace(/:$/, '').trim();
+            }
+            if (!_fmdLabel) _fmdLabel = textarea.placeholder || 'Note';
+            expandBtn.addEventListener('click', () => openFullscreenNoteEditor(textareaId, _fmdLabel));
+            tabsDiv.appendChild(expandBtn);
+
             container.insertBefore(tabsDiv, textarea);
 
             // Crea l'area di preview
@@ -6335,6 +6507,84 @@
                 tabs[1].classList.add('active');
             }
         }
+
+        // === EDITOR NOTE A TUTTO SCHERMO ===
+        let _fmdSourceId = null;  // id del textarea sorgente
+
+        function openFullscreenNoteEditor(textareaId, label) {
+            const source = document.getElementById(textareaId);
+            if (!source) return;
+            _fmdSourceId = textareaId;
+
+            // Titolo modal
+            const titleEl = document.getElementById('fmdTitle');
+            if (titleEl) titleEl.textContent = '📝 ' + (label || 'Note');
+
+            // Copia contenuto nel textarea fullscreen
+            const fmdTextarea = document.getElementById('fmdTextarea');
+            fmdTextarea.value = source.value;
+
+            // Preview iniziale
+            const fmdPreview = document.getElementById('fmdPreview');
+            fmdPreview.innerHTML = fmdTextarea.value ? marked.parse(fmdTextarea.value) : '<em style="color:var(--text-tertiary)">Nessun contenuto ancora.</em>';
+
+            // Sincronizzazione live: aggiorna la preview ad ogni digitazione
+            fmdTextarea.oninput = function() {
+                fmdPreview.innerHTML = this.value ? marked.parse(this.value) : '<em style="color:var(--text-tertiary)">Nessun contenuto ancora.</em>';
+            };
+
+            // Mostra il modal
+            const modal = document.getElementById('fullscreenNoteModal');
+            modal.classList.add('active');
+            document.body.classList.add('modal-open');
+
+            // Focus sulla textarea
+            setTimeout(() => fmdTextarea.focus(), 50);
+        }
+
+        function _syncFullscreenBack() {
+            if (!_fmdSourceId) return;
+            const source = document.getElementById(_fmdSourceId);
+            const fmdTextarea = document.getElementById('fmdTextarea');
+            if (!source || !fmdTextarea) return;
+
+            // Scrivi il contenuto aggiornato nel textarea originale
+            source.value = fmdTextarea.value;
+
+            // Triggera eventuali handler oninput (es. saveProjectGeneralInfo)
+            source.dispatchEvent(new Event('input', { bubbles: true }));
+
+            // Aggiorna la preview nel markdown editor originale se visibile
+            const previewEl = document.getElementById(_fmdSourceId + '_preview');
+            if (previewEl) {
+                previewEl.innerHTML = fmdTextarea.value ? marked.parse(fmdTextarea.value) : '';
+            }
+        }
+
+        function closeFullscreenNoteEditor() {
+            _syncFullscreenBack();
+            const modal = document.getElementById('fullscreenNoteModal');
+            modal.classList.remove('active');
+            document.body.classList.remove('modal-open');
+            const fmdTextarea = document.getElementById('fmdTextarea');
+            if (fmdTextarea) fmdTextarea.oninput = null;
+            _fmdSourceId = null;
+        }
+
+        function saveAndCloseFullscreenNoteEditor() {
+            closeFullscreenNoteEditor();
+        }
+
+        // Chiusura con ESC per il fullscreen modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const fmd = document.getElementById('fullscreenNoteModal');
+                if (fmd && fmd.classList.contains('active')) {
+                    e.preventDefault();
+                    closeFullscreenNoteEditor();
+                }
+            }
+        });
 
         // Inizializzazione
         document.addEventListener('DOMContentLoaded', async function() {
