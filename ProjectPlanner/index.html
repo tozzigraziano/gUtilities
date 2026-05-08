@@ -16120,18 +16120,29 @@
         }
 
         function getEffectiveEndDateForResource(task, resourceId) {
-            // Come getEffectiveEndDate, ma controlla il completamento per-risorsa
-            if (task.status === 'in-ritardo' && task.completion < 100 && task.endDate) {
+            // Come getEffectiveEndDate, ma controlla il completamento per-risorsa.
+            // Se una risorsa ha completato al 100% la propria parte, la consideriamo libera da oggi.
+            if (!task.endDate) return task.endDate;
+
+            const res = task.resources && task.resources.find(r => r.resourceId == resourceId);
+            const resCompletion = res ? (parseInt(res.completion, 10) || 0) : (parseInt(task.completion, 10) || 0);
+
+            if (resCompletion >= 100 && task.completion < 100) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = formatDateLocal(yesterday);
+                return task.endDate > yesterdayStr ? yesterdayStr : task.endDate;
+            }
+
+            if (task.status === 'in-ritardo' && task.completion < 100) {
                 const today = formatDateLocal(new Date());
                 if (task.endDate < today) {
-                    // Se la risorsa specifica ha completamento 100%, non estendere
-                    const res = task.resources && task.resources.find(r => r.resourceId == resourceId);
-                    if (res && res.completion >= 100) {
-                        return task.endDate;
-                    }
                     return today;
                 }
             }
+
             return task.endDate;
         }
 
@@ -18161,7 +18172,8 @@
                                     // Se ha risorse assegnate, mostra solo per quelle risorse
                                     if (hasAssignedResources(task)) {
                                         const res = task.resources.find(r => r.resourceId == resource.id);
-                                        if (res) {
+                                        const resCompletion = res ? (parseInt(res.completion, 10) || 0) : 0;
+                                        if (res && resCompletion < 100) {
                                             flexibleTasks.push({
                                                 project,
                                                 task,
@@ -18677,7 +18689,8 @@
                                     // Se ha risorse assegnate, mostra solo per quelle risorse
                                     if (hasAssignedResources(task)) {
                                         const res = task.resources.find(r => r.resourceId == resource.id);
-                                        if (res) {
+                                        const resCompletion = res ? (parseInt(res.completion, 10) || 0) : 0;
+                                        if (res && resCompletion < 100) {
                                             flexibleTasks.push({
                                                 project,
                                                 task,
