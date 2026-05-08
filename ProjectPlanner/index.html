@@ -3692,6 +3692,7 @@
             <button class="tab" onclick="switchTab('plants')">🏭 Stabilimenti</button>
             <button class="tab" onclick="switchTab('activityMap')">🗺️ Mappa Attività</button>
             <button class="tab" onclick="switchTab('annotations')">📌 Annotazioni</button>
+            <button class="tab" onclick="switchTab('quickNotes')">🗒️ Appunti</button>
             <button class="tab" onclick="switchTab('checkpointCalendar')">📅 Calendario Controlli</button>
             <button class="tab" onclick="switchTab('help')">❓ Guida</button>
             <button class="tab" onclick="switchTab('data')">Import/Export</button>
@@ -4424,6 +4425,73 @@
                         <th>Data Inizio</th>
                         <th>📌 Annotazione</th>
                         <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB APPUNTI CALENDARIO -->
+        <div id="quickNotes" class="tab-content">
+            <h2>🗒️ Appunti Calendario</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">Inserisci appunti con data/ora, tag e conferma. Ordinamento in stile calendario, dai più vicini ai più lontani.</p>
+
+            <div style="margin-bottom: 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; align-items: end;">
+                    <div>
+                        <label for="quickNoteText">Appunto *</label>
+                        <input type="text" id="quickNoteText" placeholder="Es. Chiamare cliente per conferma collaudo" maxlength="200">
+                    </div>
+                    <div>
+                        <label for="quickNoteDate">Data *</label>
+                        <input type="date" id="quickNoteDate">
+                    </div>
+                    <div>
+                        <label for="quickNoteTime">Ora *</label>
+                        <input type="time" id="quickNoteTime" step="300">
+                    </div>
+                    <div>
+                        <label for="quickNoteTags">Tag</label>
+                        <input type="text" id="quickNoteTags" placeholder="es: cliente, urgente, call">
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="addQuickNote()">➕ Aggiungi</button>
+                        <button onclick="clearQuickNoteForm()" class="secondary">Pulisci</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-bar" style="margin-bottom: 10px;">
+                <button onclick="renderQuickNotes()">🔄 Aggiorna</button>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <label for="quickNoteFilterStatus" style="width: auto;">Stato:</label>
+                    <select id="quickNoteFilterStatus" onchange="renderQuickNotes()" style="width: 180px;">
+                        <option value="all">Tutti</option>
+                        <option value="pending" selected>Da confermare</option>
+                        <option value="confirmed">Confermati</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <label for="quickNoteFilterTag" style="width: auto;">Tag:</label>
+                    <select id="quickNoteFilterTag" onchange="renderQuickNotes()" style="width: 190px;">
+                        <option value="">Tutti i tag</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <label for="quickNoteFilterText" style="width: auto;">Testo:</label>
+                    <input type="text" id="quickNoteFilterText" placeholder="Filtra appunto..." onkeyup="renderQuickNotes()" style="width: 200px;">
+                </div>
+            </div>
+
+            <table id="quickNotesTable">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Confermato</th>
+                        <th style="width: 145px;">Data/Ora</th>
+                        <th>Appunto</th>
+                        <th style="width: 230px;">Tag</th>
+                        <th style="width: 120px;">Stato</th>
+                        <th style="width: 80px;">Azioni</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -6162,7 +6230,7 @@
     <script>
         // === INDEXEDDB SETUP ===
         const DB_NAME = 'ProjectPlannerDB';
-        const DB_VERSION = 3;
+        const DB_VERSION = 4;
         let db = null;
 
         // Inizializza IndexedDB
@@ -6200,6 +6268,9 @@
                     }
                     if (!db.objectStoreNames.contains('plants')) {
                         db.createObjectStore('plants', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('quickNotes')) {
+                        db.createObjectStore('quickNotes', { keyPath: 'id' });
                     }
                 };
             });
@@ -6302,6 +6373,7 @@
         let templates = [];
         let meetings = []; // Riunioni globali
         let plants = []; // Stabilimenti clienti
+        let quickNotes = []; // Appunti calendario
         // Tipi risorsa configurabili (caricati da settings, con default)
         let resourceTypes = [
             { value: 'programmatore-robot', label: 'Programmatore Robot' },
@@ -6687,6 +6759,10 @@
             // Renderizza le Annotazioni quando si apre la tab
             if (tabName === 'annotations') {
                 renderAnnotations();
+            }
+            // Renderizza gli Appunti quando si apre la tab
+            if (tabName === 'quickNotes') {
+                renderQuickNotes();
             }
             // Renderizza la Dashboard quando si apre la tab
             if (tabName === 'dashboard') {
@@ -13694,6 +13770,7 @@
                 templates,
                 meetings,
                 plants,
+                quickNotes,
                 resourceTypes
             };
 
@@ -14488,6 +14565,7 @@
                     templates = data.templates || [];
                     meetings = data.meetings || [];
                     plants = data.plants || [];
+                    quickNotes = data.quickNotes || [];
                     if (data.resourceTypes && Array.isArray(data.resourceTypes) && data.resourceTypes.length > 0) {
                         resourceTypes = data.resourceTypes;
                         saveResourceTypes();
@@ -14501,6 +14579,7 @@
                     renderProjects();
                     renderTemplates();
                     renderGlobalMeetings();
+                    renderQuickNotes();
                     updateResourceSelects();
                     updateProjectSelects();
                     updateTemplateSelects();
@@ -14571,6 +14650,13 @@
                             plants.push(p);
                         });
                     }
+
+                    if (data.quickNotes) {
+                        data.quickNotes.forEach(note => {
+                            note.id = Date.now() + Math.random();
+                            quickNotes.push(note);
+                        });
+                    }
                     
                     // Unisci tipi risorsa (aggiungi solo quelli nuovi)
                     if (data.resourceTypes && Array.isArray(data.resourceTypes)) {
@@ -14590,6 +14676,7 @@
                     renderProjects();
                     renderTemplates();
                     renderGlobalMeetings();
+                    renderQuickNotes();
                     updateResourceSelects();
                     updateProjectSelects();
                     updateTemplateSelects();
@@ -14613,6 +14700,7 @@
                 await saveToIndexedDB('templates', templates);
                 await saveToIndexedDB('meetings', meetings);
                 await saveToIndexedDB('plants', plants);
+                await saveToIndexedDB('quickNotes', quickNotes);
             } catch (error) {
                 console.error('Errore salvataggio IndexedDB:', error);
             }
@@ -14638,6 +14726,7 @@
                 projects = await loadFromIndexedDB('projects');
                 templates = await loadFromIndexedDB('templates');
                 meetings = await loadFromIndexedDB('meetings');
+                quickNotes = await loadFromIndexedDB('quickNotes');
                 // Migra durate riunioni dal formato numerico (ore) al formato hh:mm
                 let meetingsNeedsSave = false;
                 meetings.forEach(m => {
@@ -14654,6 +14743,35 @@
                     await saveToIndexedDB('meetings', meetings);
                 }
                 plants = await loadFromIndexedDB('plants');
+
+                // Migrazione retrocompatibile appunti calendario
+                let quickNotesNeedsSave = false;
+                quickNotes.forEach(note => {
+                    if (!note.date) {
+                        const fallbackDate = note.createdAt ? note.createdAt.substring(0, 10) : formatDateLocal(new Date());
+                        note.date = fallbackDate;
+                        quickNotesNeedsSave = true;
+                    }
+                    if (!note.time) {
+                        note.time = '09:00';
+                        quickNotesNeedsSave = true;
+                    }
+                    if (!Array.isArray(note.tags)) {
+                        if (typeof note.tags === 'string' && note.tags.trim()) {
+                            note.tags = note.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+                        } else {
+                            note.tags = [];
+                        }
+                        quickNotesNeedsSave = true;
+                    }
+                    if (typeof note.confirmed !== 'boolean') {
+                        note.confirmed = false;
+                        quickNotesNeedsSave = true;
+                    }
+                });
+                if (quickNotesNeedsSave) {
+                    await saveToIndexedDB('quickNotes', quickNotes);
+                }
                 
                 // Migra completamento per-risorsa (retrocompatibilità)
                 let projectsNeedsSave = false;
@@ -17255,6 +17373,229 @@
             openTaskModal(taskId);
         }
 
+        // === APPUNTI CALENDARIO ===
+        function normalizeQuickNoteTags(tagsInput) {
+            if (!tagsInput) return [];
+            return tagsInput
+                .split(',')
+                .map(tag => tag.trim().replace(/^#+/, '').toLowerCase())
+                .filter(Boolean)
+                .filter((tag, idx, arr) => arr.indexOf(tag) === idx)
+                .slice(0, 12);
+        }
+
+        function clearQuickNoteForm() {
+            const textEl = document.getElementById('quickNoteText');
+            const dateEl = document.getElementById('quickNoteDate');
+            const timeEl = document.getElementById('quickNoteTime');
+            const tagsEl = document.getElementById('quickNoteTags');
+            if (!textEl || !dateEl || !timeEl || !tagsEl) return;
+
+            textEl.value = '';
+            dateEl.value = formatDateLocal(new Date());
+            timeEl.value = '09:00';
+            tagsEl.value = '';
+        }
+
+        function ensureQuickNoteFormDefaults() {
+            const dateEl = document.getElementById('quickNoteDate');
+            const timeEl = document.getElementById('quickNoteTime');
+            if (dateEl && !dateEl.value) dateEl.value = formatDateLocal(new Date());
+            if (timeEl && !timeEl.value) timeEl.value = '09:00';
+        }
+
+        function updateQuickNoteTagFilterOptions() {
+            const select = document.getElementById('quickNoteFilterTag');
+            if (!select) return;
+
+            const currentValue = select.value;
+            const tagsSet = new Set();
+            quickNotes.forEach(note => {
+                (note.tags || []).forEach(tag => {
+                    if (tag) tagsSet.add(tag.toLowerCase());
+                });
+            });
+
+            select.innerHTML = '<option value="">Tutti i tag</option>';
+            Array.from(tagsSet).sort().forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag;
+                option.textContent = '#' + tag;
+                select.appendChild(option);
+            });
+
+            if (currentValue && Array.from(select.options).some(opt => opt.value === currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        function addQuickNote() {
+            const textEl = document.getElementById('quickNoteText');
+            const dateEl = document.getElementById('quickNoteDate');
+            const timeEl = document.getElementById('quickNoteTime');
+            const tagsEl = document.getElementById('quickNoteTags');
+            if (!textEl || !dateEl || !timeEl || !tagsEl) return;
+
+            const text = textEl.value.trim();
+            const date = dateEl.value;
+            const time = timeEl.value;
+            const tags = normalizeQuickNoteTags(tagsEl.value);
+
+            if (!text) {
+                alert('Inserisci il testo dell\'appunto.');
+                textEl.focus();
+                return;
+            }
+            if (!date) {
+                alert('Inserisci la data dell\'appunto.');
+                dateEl.focus();
+                return;
+            }
+            if (!time) {
+                alert('Inserisci l\'orario dell\'appunto.');
+                timeEl.focus();
+                return;
+            }
+
+            quickNotes.push({
+                id: Date.now() + Math.random(),
+                text: text.substring(0, 200),
+                date,
+                time,
+                tags,
+                confirmed: false,
+                createdAt: new Date().toISOString()
+            });
+
+            saveToIndexedDBAll();
+            clearQuickNoteForm();
+            renderQuickNotes();
+            renderDashboard();
+        }
+
+        function deleteQuickNote(noteId) {
+            if (!confirm('Eliminare questo appunto?')) return;
+            quickNotes = quickNotes.filter(note => note.id !== noteId);
+            saveToIndexedDBAll();
+            renderQuickNotes();
+            renderDashboard();
+        }
+
+        function toggleQuickNoteConfirmed(noteId, checked) {
+            const note = quickNotes.find(item => item.id === noteId);
+            if (!note) return;
+            note.confirmed = !!checked;
+            saveToIndexedDBAll();
+            renderQuickNotes();
+            renderDashboard();
+        }
+
+        function formatQuickNoteDateTime(date, time) {
+            const rawDate = date || formatDateLocal(new Date());
+            const rawTime = time || '00:00';
+            const formattedDate = new Date(rawDate + 'T00:00:00').toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            return `${formattedDate} ${rawTime}`;
+        }
+
+        function getQuickNotesForDashboard() {
+            const todayStr = formatDateLocal(new Date());
+            return quickNotes
+                .slice()
+                .sort((a, b) => {
+                    const keyA = `${a.date || ''} ${a.time || ''}`;
+                    const keyB = `${b.date || ''} ${b.time || ''}`;
+                    return keyA.localeCompare(keyB);
+                })
+                .filter(note => {
+                    if (!note.date) return false;
+                    return note.date === todayStr || (!note.confirmed && note.date < todayStr);
+                });
+        }
+
+        function renderQuickNotes() {
+            ensureQuickNoteFormDefaults();
+            updateQuickNoteTagFilterOptions();
+
+            const tbody = document.querySelector('#quickNotesTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const filterStatus = document.getElementById('quickNoteFilterStatus')?.value || 'all';
+            const filterTag = (document.getElementById('quickNoteFilterTag')?.value || '').toLowerCase();
+            const filterText = (document.getElementById('quickNoteFilterText')?.value || '').toLowerCase();
+
+            let filtered = quickNotes.slice();
+            if (filterStatus === 'pending') {
+                filtered = filtered.filter(note => !note.confirmed);
+            } else if (filterStatus === 'confirmed') {
+                filtered = filtered.filter(note => !!note.confirmed);
+            }
+            if (filterTag) {
+                filtered = filtered.filter(note => (note.tags || []).some(tag => tag.toLowerCase() === filterTag));
+            }
+            if (filterText) {
+                filtered = filtered.filter(note => (note.text || '').toLowerCase().includes(filterText));
+            }
+
+            filtered.sort((a, b) => {
+                const keyA = `${a.date || ''} ${a.time || ''}`;
+                const keyB = `${b.date || ''} ${b.time || ''}`;
+                return keyA.localeCompare(keyB);
+            });
+
+            const todayStr = formatDateLocal(new Date());
+
+            filtered.forEach(note => {
+                const tr = document.createElement('tr');
+                if (!note.confirmed && note.date && note.date < todayStr) {
+                    tr.style.backgroundColor = 'rgba(244, 67, 54, 0.08)';
+                }
+
+                const tagsHtml = (note.tags && note.tags.length > 0)
+                    ? note.tags.map(tag => `<span class="dashboard-badge info" style="margin-right:4px;">#${escapeHtml(tag)}</span>`).join('')
+                    : '<span style="color:var(--text-tertiary);">-</span>';
+                const statusHtml = note.confirmed
+                    ? '<span class="dashboard-badge success">Confermato</span>'
+                    : '<span class="dashboard-badge warning">Da confermare</span>';
+
+                tr.innerHTML = `
+                    <td style="text-align:center;">
+                        <input type="checkbox" ${note.confirmed ? 'checked' : ''} onchange="toggleQuickNoteConfirmed(${note.id}, this.checked)" title="Conferma appunto" style="cursor:pointer;">
+                    </td>
+                    <td>${formatQuickNoteDateTime(note.date, note.time)}</td>
+                    <td>${escapeHtml(note.text || '')}</td>
+                    <td>${tagsHtml}</td>
+                    <td>${statusHtml}</td>
+                    <td class="action-buttons">
+                        <button onclick="deleteQuickNote(${note.id})" class="secondary" title="Elimina appunto">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const countMsg = filtered.length === quickNotes.length
+                ? `Trovati ${filtered.length} appunti`
+                : `Mostrati ${filtered.length} di ${quickNotes.length} appunti`;
+
+            const existingCount = document.querySelector('#quickNotes .quick-notes-count');
+            if (existingCount) {
+                existingCount.textContent = countMsg;
+            } else {
+                const countDiv = document.createElement('div');
+                countDiv.className = 'quick-notes-count';
+                countDiv.style.marginBottom = '10px';
+                countDiv.style.color = 'var(--text-secondary)';
+                countDiv.style.fontStyle = 'italic';
+                countDiv.textContent = countMsg;
+                const table = document.getElementById('quickNotesTable');
+                table.parentNode.insertBefore(countDiv, table);
+            }
+        }
+
         // === VISTA RISORSE ===
         function updateResourceViewPeriod() {
             const period = document.getElementById('resourceViewPeriod').value;
@@ -19702,6 +20043,8 @@
             const absentResources = [];
             const inProgressProjects = [];
             const todayMeetings = [];
+            const dashboardQuickNotes = getQuickNotesForDashboard();
+            const pendingQuickNotes = quickNotes.filter(note => !note.confirmed).length;
 
             // Analisi progetti e attività
             projects.forEach(project => {
@@ -19850,6 +20193,7 @@
             html += `<div class="dashboard-stat"><div class="stat-value" style="color: ${(absentResources.length + permitResources.length) > 0 ? '#ff9800' : 'inherit'}">${absentResources.length + permitResources.length}</div><div class="stat-label">Risorse assenti</div></div>`;
             html += `<div class="dashboard-stat"><div class="stat-value">${todayMilestones.length}</div><div class="stat-label">Milestone oggi</div></div>`;
             html += `<div class="dashboard-stat"><div class="stat-value">${todayMeetings.length}</div><div class="stat-label">Riunioni oggi</div></div>`;
+            html += `<div class="dashboard-stat"><div class="stat-value" style="color: ${pendingQuickNotes > 0 ? '#fb8c00' : 'inherit'}">${pendingQuickNotes}</div><div class="stat-label">Appunti da confermare</div></div>`;
             html += '</div>';
 
             html += '<div class="dashboard-grid">';
@@ -19966,6 +20310,38 @@
                 html += '</ul>';
             } else {
                 html += '<p class="dashboard-empty">Nessuna riunione programmata per oggi</p>';
+            }
+            html += '</div>';
+
+            // Card: Appunti calendario (oggi + arretrati non confermati)
+            html += '<div class="dashboard-card">';
+            html += '<h3>🗒️ Appunti calendario</h3>';
+            if (dashboardQuickNotes.length > 0) {
+                html += '<ul class="dashboard-list">';
+                dashboardQuickNotes.slice(0, 20).forEach(note => {
+                    const isOverdue = !note.confirmed && note.date < todayStr;
+                    const statusClass = note.confirmed ? 'success' : isOverdue ? 'danger' : 'warning';
+                    const statusText = note.confirmed ? 'Confermato' : isOverdue ? 'In sospeso' : 'Da confermare';
+                    const tagsText = (note.tags && note.tags.length > 0)
+                        ? note.tags.map(t => '#' + t).join(' ')
+                        : '';
+                    html += `<li${isOverdue ? ' style="background: var(--warning-bg);"' : ''}>
+                        <div>
+                            <strong>${escapeHtml(note.time || '--:--')}</strong> - ${escapeHtml(note.text || '')}<br>
+                            <small style="color: var(--text-tertiary);">${escapeHtml(note.date || '')}${tagsText ? ' - ' + escapeHtml(tagsText) : ''}</small>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="dashboard-badge ${statusClass}">${statusText}</span>
+                            <input type="checkbox" ${note.confirmed ? 'checked' : ''} onchange="toggleQuickNoteConfirmed(${note.id}, this.checked)" title="Conferma appunto" style="cursor:pointer;">
+                        </div>
+                    </li>`;
+                });
+                if (dashboardQuickNotes.length > 20) {
+                    html += `<li class="dashboard-empty">...e altri ${dashboardQuickNotes.length - 20} appunti</li>`;
+                }
+                html += '</ul>';
+            } else {
+                html += '<p class="dashboard-empty">Nessun appunto da mostrare oggi.</p>';
             }
             html += '</div>';
 
