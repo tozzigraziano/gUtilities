@@ -648,8 +648,9 @@
         #projectsTable th:nth-child(5) { width: 9%; }
         #projectsTable th:nth-child(6) { width: 8%; }
         #projectsTable th:nth-child(7) { width: 5%; }
-        #projectsTable th:nth-child(8) { width: 11%; }
-        #projectsTable th:nth-child(9) { width: 12%; }
+        #projectsTable th:nth-child(8) { width: 4%; }
+        #projectsTable th:nth-child(9) { width: 11%; }
+        #projectsTable th:nth-child(10) { width: 8%; }
 
         #taskReviewTable {
             table-layout: fixed;
@@ -3992,6 +3993,7 @@
                         <th></th>
                         <th></th>
                         <th></th>
+                        <th></th>
                     </tr>
                     <tr>
                         <th>Cliente</th>
@@ -4001,6 +4003,7 @@
                         <th>Data Fine</th>
                         <th>Attività Rimaste</th>
                         <th style="width: 40px;">Bug</th>
+                        <th style="width: 1px; white-space: nowrap; text-align: center;">Offerte</th>
                         <th>Completamento</th>
                         <th>Azioni</th>
                     </tr>
@@ -11268,6 +11271,36 @@
                 } else {
                     bugDisplay = '<span style="color: var(--text-tertiary);">-</span>';
                 }
+
+                // Calcola conteggio offerte per stato
+                const offerStatusColors = {
+                    'in-preparazione': '#999',
+                    'inviata': '#2196F3',
+                    'accettata': '#4CAF50',
+                    'rifiutata': '#f44336'
+                };
+                const offerStatusIcons = {
+                    'in-preparazione': '📝',
+                    'inviata': '📤',
+                    'accettata': '✅',
+                    'rifiutata': '❌'
+                };
+                const offerStatusOrder = ['in-preparazione', 'inviata', 'accettata', 'rifiutata'];
+                const totalOffers = project.offers ? project.offers.length : 0;
+                let offerDisplay = '';
+                let offerTitle = 'Offerte';
+                if (totalOffers === 0) {
+                    offerDisplay = '<span style="color: var(--text-tertiary);">-</span>';
+                } else {
+                    const byStatus = offerStatusOrder
+                        .map(s => ({ s, count: project.offers.filter(o => o.status === s).length }))
+                        .filter(x => x.count > 0);
+                    offerTitle = 'Offerte: ' + byStatus.map(x => `${x.s.replace('-',' ')}: ${x.count}`).join(', ');
+                    const partials = byStatus.map(x =>
+                        `<span style="color:${offerStatusColors[x.s]};font-weight:bold;">${x.count}</span>`
+                    ).join(' ');
+                    offerDisplay = `${totalOffers} (${partials})`;
+                }
                 
                 const tr = document.createElement('tr');
                 tr.className = 'project-item';
@@ -11291,6 +11324,7 @@
                         </div>
                     </td>
                     <td style="text-align: center; padding: 8px;" title="Bug critici: rosso=aperti, arancione=in lavorazione">${bugDisplay}</td>
+                    <td style="text-align: center; padding: 2px 4px; white-space: nowrap;" title="${offerTitle}">${offerDisplay}</td>
                     <td>
                         <div class="project-progress-container">
                             <div class="project-progress-fill ${progressClass}" style="width: ${stats.completion}%"></div>
