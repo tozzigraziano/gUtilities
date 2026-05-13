@@ -3332,14 +3332,107 @@
             overflow-y: auto;
         }
         #fmdPreview {
-            display: flex;
-            flex-direction: column;
+            display: block;
             flex: 1;
             overflow-y: auto;
             padding: 14px 20px;
             max-height: none;
+            min-height: 0;
             background: var(--bg-primary);
             color: var(--text-primary);
+        }
+        /* Blocchi codice nel fullscreen: ridimensionabili verticalmente */
+        #fmdPreview pre {
+            min-height: 64px;
+            resize: vertical;
+            overflow: auto;
+        }
+
+        /* Toolbar formattazione */
+        .fmd-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 2px;
+            padding: 4px 8px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .fmd-tb-btn {
+            padding: 3px 7px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            transition: background 0.12s, border-color 0.12s;
+            white-space: nowrap;
+        }
+        .fmd-tb-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        .fmd-tb-sep {
+            display: inline-block;
+            width: 1px;
+            height: 18px;
+            background: var(--border-color);
+            margin: 0 4px;
+        }
+        /* Emoji picker */
+        .fmd-emoji-wrap {
+            position: relative;
+            display: inline-flex;
+        }
+        .fmd-emoji-panel {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            z-index: 10010;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+            padding: 6px;
+            width: 280px;
+        }
+        .fmd-emoji-panel.open {
+            display: block;
+        }
+        .fmd-emoji-cat-label {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 2px 2px;
+            display: block;
+        }
+        .fmd-emoji-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1px;
+            margin-bottom: 4px;
+        }
+        .fmd-emoji-btn {
+            background: none;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 3px 4px;
+            line-height: 1;
+            transition: background 0.1s;
+        }
+        .fmd-emoji-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-color);
         }
         #fullscreenNoteModal .fmd-footer {
             display: flex;
@@ -6213,6 +6306,48 @@
             <div class="fmd-layout">
                 <div class="fmd-col">
                     <div class="fmd-col-header">✏️ Modifica</div>
+                    <div class="fmd-toolbar">
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('bold')" title="Grassetto"><b>B</b></button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('italic')" title="Corsivo"><i>I</i></button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('strike')" title="Barrato"><s>S</s></button>
+                        <span class="fmd-tb-sep"></span>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('h1')" title="Titolo 1">H1</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('h2')" title="Titolo 2">H2</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('h3')" title="Titolo 3">H3</button>
+                        <span class="fmd-tb-sep"></span>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('ul')" title="Lista puntata">• Lista</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('ol')" title="Lista numerata">1. Lista</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('quote')" title="Citazione">❝ Cit.</button>
+                        <span class="fmd-tb-sep"></span>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('code')" title="Codice inline"><code>`c`</code></button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('codeblock')" title="Blocco codice"><code>```</code></button>
+                        <span class="fmd-tb-sep"></span>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('table')" title="Tabella">⊞ Tabella</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('link')" title="Link">🔗 Link</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('hr')" title="Separatore orizzontale">— HR</button>
+                        <span class="fmd-tb-sep"></span>
+                        <div class="fmd-emoji-wrap">
+                            <button type="button" class="fmd-tb-btn" onclick="fmdToggleEmojiPanel(event)" title="Inserisci icona / emoji">😀 Icone</button>
+                            <div id="fmdEmojiPanel" class="fmd-emoji-panel">
+                                <span class="fmd-emoji-cat-label">Stato / Priorità</span>
+                                <div class="fmd-emoji-grid">
+                                    <button class="fmd-emoji-btn" onclick="fmdInsertEmoji('✅')">✅</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('❌')">❌</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⚠️')">⚠️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔴')">🔴</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🟠')">🟠</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🟡')">🟡</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🟢')">🟢</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔵')">🔵</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⭐')">⭐</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🚨')">🚨</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('💡')">💡</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📌')">📌</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📍')">📍</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔒')">🔒</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔓')">🔓</button>
+                                </div>
+                                <span class="fmd-emoji-cat-label">Azioni / Progetto</span>
+                                <div class="fmd-emoji-grid">
+                                    <button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📋')">📋</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📝')">📝</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📊')">📊</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📈')">📈</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📉')">📉</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🗓️')">🗓️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⏰')">⏰</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⏳')">⏳</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔧')">🔧</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🛠️')">🛠️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🚀')">🚀</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🏁')">🏁</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🎯')">🎯</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('💰')">💰</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📦')">📦</button>
+                                </div>
+                                <span class="fmd-emoji-cat-label">Persone / Comunicazione</span>
+                                <div class="fmd-emoji-grid">
+                                    <button class="fmd-emoji-btn" onclick="fmdInsertEmoji('👤')">👤</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('👥')">👥</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📧')">📧</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📞')">📞</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('💬')">💬</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🤝')">🤝</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('👍')">👍</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('👎')">👎</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('❓')">❓</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('❗')">❗</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('ℹ️')">ℹ️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🏢')">🏢</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🏭')">🏭</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📡')">📡</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🖥️')">🖥️</button>
+                                </div>
+                                <span class="fmd-emoji-cat-label">Frecce / Simboli</span>
+                                <div class="fmd-emoji-grid">
+                                    <button class="fmd-emoji-btn" onclick="fmdInsertEmoji('➡️')">➡️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⬅️')">⬅️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⬆️')">⬆️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⬇️')">⬇️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('↩️')">↩️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔄')">🔄</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('▶️')">▶️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⏸️')">⏸️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⏹️')">⏹️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('➕')">➕</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('➖')">➖</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('✏️')">✏️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🗑️')">🗑️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📎')">📎</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔍')">🔍</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <textarea id="fmdTextarea" placeholder="Scrivi qui in Markdown..."></textarea>
                 </div>
                 <div class="fmd-col">
@@ -6582,6 +6717,79 @@
 
         // === EDITOR NOTE A TUTTO SCHERMO ===
         let _fmdSourceId = null;  // id del textarea sorgente
+
+        // Inserisce snippet Markdown nel textarea dell'editor fullscreen alla posizione del cursore
+        function fmdInsert(type) {
+            const ta = document.getElementById('fmdTextarea');
+            if (!ta) return;
+            const start = ta.selectionStart;
+            const end   = ta.selectionEnd;
+            const sel   = ta.value.substring(start, end);
+            let before = '', after = '', fallback = '';
+
+            switch (type) {
+                case 'bold':       before = '**';   after = '**';        fallback = 'testo'; break;
+                case 'italic':     before = '*';    after = '*';         fallback = 'testo'; break;
+                case 'strike':     before = '~~';   after = '~~';        fallback = 'testo'; break;
+                case 'h1':         before = '\n# '; after = '';          fallback = 'Titolo'; break;
+                case 'h2':         before = '\n## ';after = '';          fallback = 'Titolo'; break;
+                case 'h3':         before = '\n### ';after = '';         fallback = 'Titolo'; break;
+                case 'quote':      before = '\n> '; after = '';          fallback = 'citazione'; break;
+                case 'ul':         before = '\n- '; after = '';          fallback = 'elemento'; break;
+                case 'ol':         before = '\n1. ';after = '';          fallback = 'elemento'; break;
+                case 'code':       before = '`';    after = '`';         fallback = 'codice'; break;
+                case 'codeblock':  before = '\n```\n'; after = '\n```';  fallback = 'codice'; break;
+                case 'hr':         before = '\n\n---\n\n'; after = '';   fallback = ''; break;
+                case 'link':       before = '[';    after = '](url)';    fallback = 'testo'; break;
+                case 'table':
+                    before = '\n| Colonna 1 | Colonna 2 | Colonna 3 |\n|-----------|-----------|----------|\n| cella     | cella     | cella     |\n| cella     | cella     | cella     |\n';
+                    after = ''; fallback = ''; break;
+            }
+
+            const text    = sel || fallback;
+            const snippet = before + text + after;
+            ta.value = ta.value.substring(0, start) + snippet + ta.value.substring(end);
+
+            // Posiziona la selezione sul testo inserito (per poterlo sovrascrivere subito)
+            const selStart = start + before.length;
+            const selEnd   = start + before.length + text.length;
+            ta.selectionStart = selStart;
+            ta.selectionEnd   = selEnd;
+
+            // Aggiorna preview live
+            ta.dispatchEvent(new Event('input'));
+            ta.focus();
+        }
+
+        function fmdToggleEmojiPanel(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('fmdEmojiPanel');
+            if (panel) panel.classList.toggle('open');
+        }
+
+        function fmdInsertEmoji(emoji) {
+            const panel = document.getElementById('fmdEmojiPanel');
+            if (panel) panel.classList.remove('open');
+            const ta = document.getElementById('fmdTextarea');
+            if (!ta) return;
+            const start = ta.selectionStart;
+            const end   = ta.selectionEnd;
+            ta.value = ta.value.substring(0, start) + emoji + ta.value.substring(end);
+            ta.selectionStart = ta.selectionEnd = start + emoji.length;
+            ta.dispatchEvent(new Event('input'));
+            ta.focus();
+        }
+
+        // Chiude l'emoji panel cliccando fuori
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('fmdEmojiPanel');
+            if (panel && panel.classList.contains('open')) {
+                if (!panel.closest('.fmd-emoji-wrap').contains(e.target)) {
+                    panel.classList.remove('open');
+                }
+            }
+        });
+
 
         function openFullscreenNoteEditor(textareaId, label) {
             const source = document.getElementById(textareaId);
