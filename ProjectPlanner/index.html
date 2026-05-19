@@ -11394,6 +11394,9 @@
             // Calculate from tasks
             if (project.tasks && project.tasks.length > 0) {
                 project.tasks.forEach(task => {
+                    // Le attività annullate non contribuiscono al calcolo del completamento
+                    if (task.status === 'annullata') return;
+
                     if (task.startDate) {
                         if (!startDate || task.startDate < startDate) startDate = task.startDate;
                     }
