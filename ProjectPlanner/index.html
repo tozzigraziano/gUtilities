@@ -5335,6 +5335,10 @@
                     <span>Nascondi completate</span>
                 </label>
                 <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 15px;">
+                    <input type="checkbox" id="resourceViewHidePaused" onchange="renderResourceView()" style="cursor: pointer;">
+                    <span>Nascondi in pausa</span>
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 15px;">
                     <input type="checkbox" id="resourceViewHideSuggestions" onchange="renderResourceView()" style="cursor: pointer;">
                     <span>Nascondi suggerimenti</span>
                 </label>
@@ -12478,6 +12482,22 @@
             }
         }
 
+        function changeTaskStatus(taskId, newStatus) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+            const task = project.tasks && project.tasks.find(t => t.id === taskId);
+            if (!task) return;
+            task.status = newStatus || undefined;
+            if (newStatus === 'completata') task.completion = 100;
+            saveToIndexedDBAll();
+            renderTasks();
+            renderGantt();
+            const bachecaTab = document.getElementById('bacheca');
+            if (bachecaTab && bachecaTab.classList.contains('active')) {
+                renderBacheca();
+            }
+        }
+
         function deleteTaskFromModal() {
             if (editingTaskId === null) return;
             const taskId = editingTaskId;
@@ -13255,8 +13275,23 @@
                     'in-ritardo': 'In Ritardo',
                     'pausa': 'In Pausa',
                     'completata': 'Completata',
-                    'annullata': 'Annullata'
+                    'annullata': 'Annullata',
+                    'da-avviare': 'Da Avviare',
+                    'nessuno': '-'
                 };
+
+                const statusOptions = [
+                    { value: '', label: '-' },
+                    { value: 'da-avviare', label: 'Da Avviare' },
+                    { value: 'in-corso', label: 'In Corso' },
+                    { value: 'in-ritardo', label: 'In Ritardo' },
+                    { value: 'pausa', label: 'In Pausa' },
+                    { value: 'completata', label: 'Completata' },
+                    { value: 'annullata', label: 'Annullata' }
+                ];
+                const statusSelectHtml = `<select onclick="event.stopPropagation()" onchange="changeTaskStatus(${task.id}, this.value)" style="font-size:12px; padding:2px 4px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); cursor:pointer;">
+                    ${statusOptions.map(o => `<option value="${o.value}"${(task.status || '') === o.value ? ' selected' : ''}>${o.label}</option>`).join('')}
+                </select>`;
 
                 // Costruisci la stringa dei collegamenti
                 let linksStr = '-';
@@ -13364,7 +13399,7 @@
                     <td ${cancelledStyle}>${getLocationBadgeHtml(task)}</td>
                     <td ${cancelledStyle}>${linksStr}</td>
                     <td ${cancelledStyle}>${task.completion}%</td>
-                    <td ${cancelledStyle}>${statusLabels[task.status] || '-'}</td>
+                    <td>${statusSelectHtml}</td>
                     <td class="action-buttons">
                         <button onclick="openTaskModal(${task.id})" class="secondary">✏️ Modifica</button>
                         <button onclick="openSplitTaskModal(${task.id})" class="secondary" title="Spezza o duplica attività">✂️ Spezza/Duplica</button>
@@ -18276,11 +18311,13 @@
 
             // Raccogli tutte le assegnazioni per questa risorsa
             const hideCompleted = document.getElementById('resourceViewHideCompleted')?.checked || false;
+            const hidePaused = document.getElementById('resourceViewHidePaused')?.checked || false;
             const assignments = [];
             projects.forEach(project => {
                 if (project.tasks) {
                     project.tasks.forEach(task => {
                         if (hideCompleted && (task.completion >= 100 || task.status === 'completata')) return;
+                        if (hidePaused && task.status === 'pausa') return;
                         if (task.resources && task.startDate && task.endDate) {
                             const res = task.resources.find(r => r.resourceId == resource.id);
                             if (res) {
