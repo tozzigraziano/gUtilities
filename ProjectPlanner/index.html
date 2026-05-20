@@ -11239,7 +11239,7 @@
             
             // Calcola il massimo numero di attività rimanenti tra tutti i progetti per la scala della barra
             const maxIncompleteTasks = Math.max(...sortedProjects.map(p => {
-                const tasks = p.tasks ? p.tasks.filter(t => t.completion < 100 && t.status !== 'completata').length : 0;
+                const tasks = p.tasks ? p.tasks.filter(t => t.completion < 100 && t.status !== 'completata' && t.status !== 'annullata').length : 0;
                 return tasks;
             }), 1); // Minimo 1 per evitare divisione per 0
             
@@ -11252,7 +11252,7 @@
                     `<span style="color: #ff6b6b; font-weight: bold;" title="${projectDelays.length} attività con ritardi da assenze"> ⚠️ ${projectDelays.length}</span>` : '';
                 
                 const taskCount = project.tasks ? project.tasks.length : 0;
-                const incompleteTasks = project.tasks ? project.tasks.filter(t => t.completion < 100 && t.status !== 'completata').length : 0;
+                const incompleteTasks = project.tasks ? project.tasks.filter(t => t.completion < 100 && t.status !== 'completata' && t.status !== 'annullata').length : 0;
                 const taskCountDisplay = `${incompleteTasks}`;
                 const incompleteBarWidth = maxIncompleteTasks > 0 ? (incompleteTasks / maxIncompleteTasks) * 100 : 0;
                 
