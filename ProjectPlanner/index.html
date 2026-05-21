@@ -18767,7 +18767,9 @@
                 }
                 
                 const start = new Date(assignment.startDate);
+                start.setHours(0, 0, 0, 0); // normalizza a mezzanotte locale (fix timezone UTC+2)
                 const end = new Date(assignment.endDate);
+                end.setHours(0, 0, 0, 0);   // normalizza a mezzanotte locale (fix timezone UTC+2)
                 const calcStart = start < startDate ? new Date(startDate) : new Date(start);
                 const calcEnd = end > endDate ? new Date(endDate) : new Date(end);
                 
@@ -19523,6 +19525,7 @@
                 }
                 
                 const start = new Date(assignment.startDate);
+                start.setHours(0, 0, 0, 0); // normalizza a mezzanotte locale (fix timezone UTC+2)
                 let endDateStr = assignment.endDate;
                 
                 // Per task in ritardo: estendi fino a oggi, ma rispetta il completamento per-risorsa
@@ -19535,6 +19538,7 @@
                 }
                 
                 const end = new Date(endDateStr);
+                end.setHours(0, 0, 0, 0); // normalizza a mezzanotte locale (fix timezone UTC+2)
                 
                 // Limita al periodo visualizzato
                 const calcStart = start < periodStart ? new Date(periodStart) : new Date(start);
