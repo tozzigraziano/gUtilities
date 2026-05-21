@@ -16879,7 +16879,7 @@
                 projects.forEach(project => {
                     if (project.tasks) {
                         project.tasks.forEach(task => {
-                            if (task.resources && task.startDate && task.endDate && task.completion < 100 && task.status !== 'completata' && task.status !== 'pausa') {
+                            if (task.resources && task.startDate && task.endDate && task.completion < 100 && task.status !== 'completata' && task.status !== 'pausa' && task.status !== 'annullata') {
                                 const res = task.resources.find(r => r.resourceId == resource.id);
                                 if (res) {
                                     assignments.push({
@@ -16981,7 +16981,7 @@
             projects.forEach(project => {
                 if (project.tasks) {
                     project.tasks.forEach(task => {
-                        if (task.startDate && task.endDate && task.resources && task.resources.length > 0 && task.completion < 100 && task.status !== 'completata') {
+                        if (task.startDate && task.endDate && task.resources && task.resources.length > 0 && task.completion < 100 && task.status !== 'completata' && task.status !== 'annullata') {
                             let hasAbsences = false;
                             let absenceDays = [];
                             
