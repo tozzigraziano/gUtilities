@@ -18870,30 +18870,40 @@
                     statsDiv.appendChild(permitBadge);
                 }
 
-                // Badge giorni totali assegnati da oggi in avanti (indipendente dal periodo visualizzato)
+                // Badge giorni unici assegnati da oggi in avanti (indipendente dal periodo visualizzato)
                 const todayStr = formatDateLocal(new Date());
-                let totalWorkDaysFromToday = 0;
+                const occupiedDaysSet = new Set();
                 projects.forEach(proj => {
                     if (!proj.tasks) return;
                     proj.tasks.forEach(task => {
                         if (!task.startDate || !task.endDate) return;
-                        if (task.completion >= 100 || task.status === 'completata' || task.status === 'annullata') return;
+                        if (task.completion >= 100 || task.status === 'completata' || task.status === 'annullata' || task.status === 'pausa') return;
                         if (!task.resources) return;
                         const res = task.resources.find(r => r.resourceId == resource.id);
                         if (!res) return;
                         const effectiveEnd = getEffectiveEndDateForResource(task, resource.id);
                         if (effectiveEnd < todayStr) return;
                         const fromDate = task.startDate > todayStr ? task.startDate : todayStr;
-                        totalWorkDaysFromToday += countWorkingDaysBetween(
-                            fromDate, effectiveEnd,
-                            task.saturdayWork, task.sundayWork, task.holidayWork
-                        );
+                        let cur = new Date(fromDate + 'T00:00:00');
+                        const endD = new Date(effectiveEnd + 'T00:00:00');
+                        while (cur <= endD) {
+                            const ds = formatDateLocal(cur);
+                            const dow = cur.getDay();
+                            const isHol = holidays.some(h => h.date === ds);
+                            if ((!task.saturdayWork ? dow !== 6 : true) &&
+                                (!task.sundayWork   ? dow !== 0 : true) &&
+                                (!task.holidayWork  ? !isHol   : true)) {
+                                occupiedDaysSet.add(ds);
+                            }
+                            cur.setDate(cur.getDate() + 1);
+                        }
                     });
                 });
+                const totalWorkDaysFromToday = occupiedDaysSet.size;
                 const fromTodayBadge = document.createElement('span');
                 fromTodayBadge.className = 'resource-stat-badge from-today';
                 fromTodayBadge.textContent = `🗓️ ${totalWorkDaysFromToday} gg da oggi`;
-                fromTodayBadge.title = `Totale giorni-attività assegnati da oggi in avanti (somma durate, le sovrapposizioni contano più volte)`;
+                fromTodayBadge.title = `Giorni lavorativi unici con almeno un\'attività assegnata, da oggi in avanti`;
                 statsDiv.appendChild(fromTodayBadge);
 
                 header.appendChild(statsDiv);
