@@ -3760,6 +3760,56 @@
         .checkpoint-list-view table {
             width: 100%;
         }
+
+        /* === ANALISI RISORSE PER ATTIVITÀ === */
+        #taskSelectionBar {
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent-color);
+            border-radius: 6px;
+            padding: 7px 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        #analyzeResourcesPanel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-top: 10px;
+        }
+        #analyzeResourcesPanel h4 {
+            margin: 0 0 6px 0;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+        .analyze-resource-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+        }
+        .analyze-resource-row:last-child { border-bottom: none; }
+        .analyze-rank { font-weight: bold; width: 20px; color: var(--text-secondary); text-align: right; flex-shrink: 0; }
+        .analyze-name { min-width: 130px; font-weight: 600; flex-shrink: 0; }
+        .analyze-days { min-width: 110px; flex-shrink: 0; }
+        .analyze-bar-wrap { flex: 1; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; min-width: 40px; }
+        .analyze-bar { height: 100%; border-radius: 4px; }
+        .analyze-bar.zero  { background: #4CAF50; }
+        .analyze-bar.low   { background: #8BC34A; }
+        .analyze-bar.mid   { background: #FF9800; }
+        .analyze-bar.high  { background: #f44336; }
+        .resource-stat-badge.from-today {
+            background: #1565c0;
+            color: white;
+        }
+        [data-theme="dark"] .resource-stat-badge.from-today {
+            background: #1e88e5;
+        }
     </style>
 </head>
 <body>
@@ -4040,13 +4090,21 @@
 
                 <!-- Attività -->
                 <h3>Attività</h3>
-                
+
+                <!-- Barra selezione attività per analisi risorse -->
+                <div id="taskSelectionBar" style="display:none;">
+                    <span id="taskSelectionCount" style="font-size:12px; color:var(--text-secondary);">0 attività selezionate</span>
+                    <button onclick="analizzaRisorsePerAttivita()" style="font-size:12px; padding:4px 10px;">🔍 Analizza Risorse</button>
+                    <button onclick="clearTaskAnalysisSelection()" class="secondary" style="font-size:12px; padding:4px 10px;">✖ Deseleziona tutto</button>
+                </div>
+
                 <!-- Riepilogo Giorni Progetto -->
                 <div id="projectDaysSummary" style="display: flex; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;"></div>
                 
                 <table id="tasksTable">
                     <thead>
                         <tr>
+                            <th style="width:22px;"></th>
                             <th>Nome</th>
                             <th>Risorse</th>
                             <th>Data Inizio</th>
@@ -4065,6 +4123,9 @@
                 <div class="action-bar">
                     <button onclick="openTaskModal()">➕ Nuova Attività</button>
                 </div>
+
+                <!-- Pannello Analisi Risorse -->
+                <div id="analyzeResourcesPanel" style="display:none;"></div>
 
                 <!-- Info Generali -->
                 <h3>📝 Info Generali</h3>
@@ -6576,6 +6637,7 @@
         let suggestedStartDate = null; // Data suggerita dal click su attività flessibile
         let suggestedResourceId = null; // Risorsa suggerita dal click su attività non assegnata
         let collapsedResources = {}; // Salva lo stato di collapse per ogni risorsa
+        let selectedTasksForAnalysis = new Set(); // IDs attività selezionate per analisi risorse
 
         // Helper per formattare date in locale (evita problemi UTC)
         function formatDateLocal(date) {
@@ -9774,6 +9836,12 @@
 
         function openProjectDetails(id) {
             projectListScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+            // Pulisci selezione attività per analisi quando si apre un progetto diverso
+            selectedTasksForAnalysis.clear();
+            const selBar = document.getElementById('taskSelectionBar');
+            if (selBar) selBar.style.display = 'none';
+            const anPanel = document.getElementById('analyzeResourcesPanel');
+            if (anPanel) anPanel.style.display = 'none';
             currentProjectId = id;
             const project = projects.find(p => p.id === id);
             if (!project) return;
@@ -13296,7 +13364,7 @@
                 tr.className = rowClass;
                 tr.style.cursor = 'pointer';
                 tr.onclick = function(e) {
-                    if (!e.target.closest('.action-buttons')) {
+                    if (!e.target.closest('.action-buttons') && e.target.tagName !== 'INPUT') {
                         openTaskModal(task.id);
                     }
                 };
@@ -13432,8 +13500,15 @@
 
                 // Stile per attività annullate
                 const cancelledStyle = task.status === 'annullata' ? 'style="text-decoration: line-through; color: #666;"' : '';
+
+                // Checkbox per analisi risorse (solo attività senza risorse assegnate valide)
+                const isUnassigned = !task.resources || task.resources.length === 0 ||
+                    !task.resources.some(r => r.resourceId && resources.some(res => res.id == r.resourceId));
+                const checkboxCell = isUnassigned
+                    ? `<td style="text-align:center; padding:3px; width:22px;" onclick="event.stopPropagation()"><input type="checkbox" ${selectedTasksForAnalysis.has(task.id) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleTaskAnalysisSelection(${task.id}, this.checked)" title="Seleziona per analisi risorse" style="cursor:pointer;"></td>`
+                    : '<td></td>';
                 
-                tr.innerHTML = `
+                tr.innerHTML = checkboxCell + `
                     <td ${cancelledStyle}>${task.name} ${delayIndicator}${flexibleIndicator}${notesIndicator}</td>
                     <td ${cancelledStyle}>${resourcesStr}</td>
                     <td ${cancelledStyle}>${task.startDate || '-'}</td>
@@ -13455,6 +13530,143 @@
             
             // Aggiorna riepilogo giorni progetto
             renderProjectDaysSummary();
+            // Aggiorna barra selezione (preserva selezione corrente)
+            updateTaskSelectionBar();
+        }
+
+        // === ANALISI RISORSE PER ATTIVITÀ NON ASSEGNATE ===
+
+        function toggleTaskAnalysisSelection(taskId, checked) {
+            if (checked) {
+                selectedTasksForAnalysis.add(taskId);
+            } else {
+                selectedTasksForAnalysis.delete(taskId);
+            }
+            updateTaskSelectionBar();
+        }
+
+        function updateTaskSelectionBar() {
+            const bar = document.getElementById('taskSelectionBar');
+            const countEl = document.getElementById('taskSelectionCount');
+            const panel = document.getElementById('analyzeResourcesPanel');
+            if (!bar) return;
+            const count = selectedTasksForAnalysis.size;
+            if (count > 0) {
+                bar.style.display = 'flex';
+                countEl.textContent = `${count} attività selezionat${count === 1 ? 'a' : 'e'}`;
+            } else {
+                bar.style.display = 'none';
+                if (panel) panel.style.display = 'none';
+            }
+        }
+
+        function clearTaskAnalysisSelection() {
+            selectedTasksForAnalysis.clear();
+            updateTaskSelectionBar();
+            renderTasks();
+        }
+
+        function analizzaRisorsePerAttivita() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            const selectedTasks = [...selectedTasksForAnalysis]
+                .map(id => project.tasks && project.tasks.find(t => t.id === id))
+                .filter(t => t && t.startDate && t.endDate);
+
+            if (selectedTasks.length === 0) {
+                alert('Seleziona almeno un\'attività con date definite (inizio e fine) per l\'analisi.');
+                return;
+            }
+
+            // Risorse visibili
+            const visibleResources = resources.filter(r => !r.hidden);
+            if (visibleResources.length === 0) {
+                alert('Nessuna risorsa visibile. Rendi visibili le risorse nella tab Risorse.');
+                return;
+            }
+
+            // Per ogni risorsa visibile calcola i giorni in cui ha già attività nel range delle task selezionate
+            const results = visibleResources.map(resource => {
+                let overlapDays = 0;
+
+                selectedTasks.forEach(task => {
+                    let current = new Date(task.startDate + 'T00:00:00');
+                    const end = new Date(task.endDate + 'T00:00:00');
+
+                    while (current <= end) {
+                        const dateStr = formatDateLocal(current);
+                        const dow = current.getDay();
+                        const isHoliday = holidays.some(h => h.date === dateStr);
+
+                        // Salta giorni non lavorativi del task selezionato
+                        if ((dow === 6 && !task.saturdayWork) ||
+                            (dow === 0 && !task.sundayWork) ||
+                            (isHoliday && !task.holidayWork)) {
+                            current.setDate(current.getDate() + 1);
+                            continue;
+                        }
+
+                        // Controlla se la risorsa ha già un'attività attiva in questo giorno
+                        const hasAssignment = projects.some(proj =>
+                            proj.tasks && proj.tasks.some(ot => {
+                                if (!ot.startDate || !ot.endDate) return false;
+                                if (ot.completion >= 100 || ot.status === 'completata' || ot.status === 'annullata') return false;
+                                if (!ot.resources) return false;
+                                const res = ot.resources.find(r => r.resourceId == resource.id);
+                                if (!res) return false;
+                                return dateStr >= ot.startDate && dateStr <= ot.endDate;
+                            })
+                        );
+
+                        if (hasAssignment) overlapDays++;
+                        current.setDate(current.getDate() + 1);
+                    }
+                });
+
+                return { resource, overlapDays };
+            });
+
+            // Ordina per giorni di sovrapposizione crescente
+            results.sort((a, b) => a.overlapDays - b.overlapDays);
+            const maxOverlap = Math.max(...results.map(r => r.overlapDays), 1);
+
+            const taskNames = selectedTasks.map(t => escapeHtml(t.name)).join(', ');
+            const taskDates = selectedTasks.map(t => `${t.startDate} → ${t.endDate}`).join(' | ');
+
+            let html = `<h4>🔍 Analisi sovrapposizioni per: <em>${taskNames}</em></h4>`;
+            html += `<div style="font-size:11px; color:var(--text-secondary); margin-bottom:5px;">Periodo: ${taskDates}</div>`;
+            html += `<div style="font-size:11px; color:var(--text-secondary); margin-bottom:10px;">Risorse visibili ordinate per sovrapposizione crescente — 0 = completamente libera nel periodo</div>`;
+
+            const medals = ['🥇', '🥈', '🥉'];
+            results.forEach((r, i) => {
+                const pct = maxOverlap > 0 ? (r.overlapDays / maxOverlap) * 100 : 0;
+                const barClass = r.overlapDays === 0 ? 'zero' : pct < 35 ? 'low' : pct < 70 ? 'mid' : 'high';
+                const rankLabel = i < 3 ? medals[i] : `${i + 1}.`;
+                const daysLabel = r.overlapDays === 0
+                    ? '<span style="color:#4CAF50;font-weight:bold;">✅ Libera</span>'
+                    : `<span style="color:var(--text-secondary);">⚡ ${r.overlapDays} gg sovrapp.</span>`;
+                html += `<div class="analyze-resource-row">
+                    <span class="analyze-rank">${rankLabel}</span>
+                    <span class="analyze-name">${escapeHtml(r.resource.firstName + ' ' + r.resource.lastName)}</span>
+                    <span class="analyze-days">${daysLabel}</span>
+                    <div class="analyze-bar-wrap"><div class="analyze-bar ${barClass}" style="width:${Math.max(pct, r.overlapDays > 0 ? 3 : 0)}%"></div></div>
+                </div>`;
+            });
+
+            html += `<div style="margin-top:10px; text-align:right;">
+                <button onclick="closeAnalyzeResourcesPanel()" class="secondary" style="font-size:11px; padding:3px 8px;">✖ Chiudi</button>
+            </div>`;
+
+            const panel = document.getElementById('analyzeResourcesPanel');
+            panel.innerHTML = html;
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function closeAnalyzeResourcesPanel() {
+            const panel = document.getElementById('analyzeResourcesPanel');
+            if (panel) panel.style.display = 'none';
         }
 
         // === GESTIONE TEMPLATE ===
@@ -18657,6 +18869,32 @@
                     permitBadge.title = `${permitDaysInPeriod} giorni con permesso nel periodo`;
                     statsDiv.appendChild(permitBadge);
                 }
+
+                // Badge giorni totali assegnati da oggi in avanti (indipendente dal periodo visualizzato)
+                const todayStr = formatDateLocal(new Date());
+                let totalWorkDaysFromToday = 0;
+                projects.forEach(proj => {
+                    if (!proj.tasks) return;
+                    proj.tasks.forEach(task => {
+                        if (!task.startDate || !task.endDate) return;
+                        if (task.completion >= 100 || task.status === 'completata' || task.status === 'annullata') return;
+                        if (!task.resources) return;
+                        const res = task.resources.find(r => r.resourceId == resource.id);
+                        if (!res) return;
+                        const effectiveEnd = getEffectiveEndDateForResource(task, resource.id);
+                        if (effectiveEnd < todayStr) return;
+                        const fromDate = task.startDate > todayStr ? task.startDate : todayStr;
+                        totalWorkDaysFromToday += countWorkingDaysBetween(
+                            fromDate, effectiveEnd,
+                            task.saturdayWork, task.sundayWork, task.holidayWork
+                        );
+                    });
+                });
+                const fromTodayBadge = document.createElement('span');
+                fromTodayBadge.className = 'resource-stat-badge from-today';
+                fromTodayBadge.textContent = `🗓️ ${totalWorkDaysFromToday} gg da oggi`;
+                fromTodayBadge.title = `Totale giorni-attività assegnati da oggi in avanti (somma durate, le sovrapposizioni contano più volte)`;
+                statsDiv.appendChild(fromTodayBadge);
 
                 header.appendChild(statsDiv);
             }
