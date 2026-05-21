@@ -19897,8 +19897,8 @@
             const todayStr = formatDateLocal(new Date());
 
             assignments.forEach(assignment => {
-                // Escludi attività completate al 100%, con stato 'completata' o in pausa
-                if (assignment.task.completion >= 100 || assignment.task.status === 'completata' || assignment.task.status === 'pausa') {
+                // Escludi attività completate al 100%, con stato 'completata', in pausa o annullata
+                if (assignment.task.completion >= 100 || assignment.task.status === 'completata' || assignment.task.status === 'pausa' || assignment.task.status === 'annullata') {
                     return;
                 }
                 
