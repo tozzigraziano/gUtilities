@@ -1,0 +1,2688 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pianificazione Risorse e Progetti v2</title>
+    <!-- Marked.js per il supporto Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        const codeRenderer = {
+            code(token) {
+                const lang = token.lang || '';
+                const escaped = token.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const lines = escaped.split('\n');
+                if (lines.length > 1 && lines[lines.length - 1].trim() === '') lines.pop();
+                const numberedLines = lines.map(line => `<span class="code-line">${line}</span>`).join('');
+                const langLabel = lang ? lang : 'code';
+                return `<pre><div class="code-header">${langLabel}</div><code>${numberedLines}</code></pre>`;
+            },
+            codespan(token) {
+                const escaped = token.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                return `<code class="inline-code">${escaped}</code>`;
+            }
+        };
+        marked.use({ renderer: codeRenderer });
+    </script>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' style='width: 1.2em; height: 1.2em; vertical-align: middle; margin-right: 0.3em;'><rect x='10' y='20' width='30' height='8' rx='2' fill='currentColor'/><rect x='45' y='20' width='45' height='8' rx='2' fill='currentColor'/><rect x='10' y='38' width='50' height='8' rx='2' fill='currentColor'/><rect x='10' y='56' width='35' height='8' rx='2' fill='currentColor'/><rect x='50' y='56' width='30' height='8' rx='2' fill='currentColor'/><rect x='10' y='74' width='40' height='8' rx='2' fill='currentColor'/><line x1='5' y1='15' x2='5' y2='90' stroke='currentColor' stroke-width='2'/><line x1='5' y1='90' x2='95' y2='90' stroke='currentColor' stroke-width='2'/></svg>
+            Pianificazione Risorse e Progetti
+            <span id="dbStatusIndicator" class="db-status offline" title="Connessione database">●</span>            <button class="theme-toggle" onclick="toggleTheme()" title="Cambia tema">🌓</button>
+        </h1>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="switchTab('resources')">Risorse</button>
+            <button class="tab" onclick="switchTab('holidays')">Festività</button>
+            <button class="tab" onclick="switchTab('projects')">Progetti</button>
+            <button class="tab" onclick="switchTab('templates')">Template</button>
+            <button class="tab" onclick="switchTab('meetings')">👥 Riunioni</button>
+            <button class="tab" onclick="switchTab('bacheca')">📋 Bacheca</button>
+            <button class="tab" onclick="switchTab('offerte')">💼 Offerte</button>
+            <button class="tab" onclick="switchTab('gantt')">Gantt</button>
+            <button class="tab" onclick="switchTab('resourceView')">Vista Risorse</button>
+            <button class="tab" onclick="switchTab('warnings')">⚠️ Avvisi</button>
+            <button class="tab" onclick="switchTab('taskReview')">🔍 Revisione Attività</button>
+            <button class="tab" onclick="switchTab('plants')">🏭 Stabilimenti</button>
+            <button class="tab" onclick="switchTab('activityMap')">🗺️ Mappa Attività</button>
+            <button class="tab" onclick="switchTab('annotations')">📌 Annotazioni</button>
+            <button class="tab" onclick="switchTab('quickNotes')">🗒️ Appunti</button>
+            <button class="tab" onclick="switchTab('checkpointCalendar')">📅 Calendario Controlli</button>
+            <button class="tab" onclick="switchTab('help')">❓ Guida</button>
+            <button class="tab" onclick="switchTab('data')">Import/Export</button>
+        </div>
+
+        <!-- TAB RISORSE -->
+        <div id="resources" class="tab-content">
+            <h2>Gestione Risorse</h2>
+            
+            <div class="action-bar">
+                <button onclick="openResourceModal()">➕ Nuova Risorsa</button>
+                <button onclick="exportVacationPlanPDF()">📅 Esporta Piano Ferie PDF</button>
+                <button onclick="openResourceTypesSettings()" class="secondary">⚙️ Tipi Risorsa</button>
+            </div>
+
+            <h3>Elenco Risorse</h3>
+            <table id="resourcesTable">
+                <thead>
+                    <tr class="filter-row">
+                        <th></th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="resourceFilterFirstName" placeholder="Filtra nome" onkeyup="renderResources()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('resourceFilterFirstName').value=''; renderResources();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="resourceFilterLastName" placeholder="Filtra cognome" onkeyup="renderResources()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('resourceFilterLastName').value=''; renderResources();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="resourceFilterType" placeholder="Filtra tipo" onkeyup="renderResources()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('resourceFilterType').value=''; renderResources();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <th style="width: 80px;">Ordine</th>
+                        <th>Nome</th>
+                        <th>Cognome</th>
+                        <th>Tipo Risorsa</th>
+                        <th>Assenze</th>
+                        <th style="width: 100px;">Visibilità</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB FESTIVITÀ -->
+        <div id="holidays" class="tab-content">
+            <h2>Festività</h2>
+            
+            <div class="holidays-info">
+                <strong>ℹ️ Festività Italiane</strong><br>
+                Le festività italiane standard vengono calcolate automaticamente in base ai progetti inseriti (dalla data più vecchia a quella più recente).
+                Puoi aggiungere festività locali ricorrenti (es. Santo Patrono).
+            </div>
+
+            <div class="action-bar">
+                <button onclick="openLocalHolidayModal()">➕ Nuova Festività Locale</button>
+            </div>
+
+            <h3>Festività Locali Ricorrenti</h3>
+            <table id="localHolidaysTable">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Data</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h3>Festività Caricate</h3>
+            <table id="holidaysTable">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Festività</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB OFFERTE -->
+        <div id="offerte" class="tab-content">
+            <h2>💼 Riepilogo Offerte</h2>
+
+            <table id="offersOverviewTable">
+                <thead>
+                    <tr class="filter-row">
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="offerFilterClient" placeholder="Filtra cliente" onkeyup="renderOffersOverview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('offerFilterClient').value=''; renderOffersOverview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="offerFilterProjectCode" placeholder="Filtra codice" onkeyup="renderOffersOverview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('offerFilterProjectCode').value=''; renderOffersOverview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="offerFilterCode" placeholder="Filtra ID" onkeyup="renderOffersOverview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('offerFilterCode').value=''; renderOffersOverview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="offerFilterTitle" placeholder="Filtra titolo" onkeyup="renderOffersOverview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('offerFilterTitle').value=''; renderOffersOverview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th>
+                            <select id="offerFilterStatus" onchange="renderOffersOverview()" style="width: 100%; box-sizing: border-box;">
+                                <option value="">Tutti</option>
+                                <option value="in-preparazione">📝 In Preparazione</option>
+                                <option value="inviata">📤 Inviata</option>
+                                <option value="accettata">✅ Accettata</option>
+                                <option value="rifiutata">❌ Rifiutata</option>
+                            </select>
+                        </th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Codice Progetto</th>
+                        <th>ID Offerta</th>
+                        <th>Titolo Offerta</th>
+                        <th>Data</th>
+                        <th>Stima Tempi</th>
+                        <th>Valore</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB PROGETTI -->
+        <div id="projects" class="tab-content">
+            <h2>Gestione Progetti</h2>
+            
+            <div class="action-bar">
+                <button onclick="openProjectModal()">➕ Nuovo Progetto</button>
+                <button onclick="showProjectsStatistics()" class="secondary">📊 Statistiche Generali</button>
+                <div style="display: flex; gap: 15px; align-items: center; margin-left: auto; flex-wrap: nowrap;">
+                    <label style="white-space: nowrap;">
+                        Ordina per:
+                        <select id="projectSortBy" onchange="renderProjects()" style="width: 80px;">
+                            <option value="code">Codice</option>
+                            <option value="client">Cliente</option>
+                        </select>
+                    </label>
+                    <label style="white-space: nowrap;">
+                        <input type="checkbox" id="hideCompletedProjects" onchange="renderProjects()">
+                        Nascondi completati
+                    </label>
+                </div>
+            </div>
+
+            <h3>Elenco Progetti</h3>
+            
+            <table id="projectsTable">
+                <thead>
+                    <tr class="filter-row">
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="projectFilterClient" placeholder="Filtra cliente" onkeyup="renderProjects()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('projectFilterClient').value=''; renderProjects();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="projectFilterCode" placeholder="Filtra codice" onkeyup="renderProjects()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('projectFilterCode').value=''; renderProjects();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="projectFilterDescription" placeholder="Filtra descrizione" onkeyup="renderProjects()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('projectFilterDescription').value=''; renderProjects();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Codice</th>
+                        <th>Descrizione</th>
+                        <th>Data Inizio</th>
+                        <th>Data Fine</th>
+                        <th>Attività Rimaste</th>
+                        <th style="width: 40px;">Bug</th>
+                        <th style="width: 1px; white-space: nowrap; text-align: center;">Offerte</th>
+                        <th>Completamento</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <input type="hidden" id="selectedProjectId">
+
+            <!-- Sezione Punti di Controllo e Attività -->
+            <div id="projectDetails" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <button onclick="closeProjectDetails(true)" class="secondary">← Torna ai Progetti</button>
+                    <button onclick="exportProjectMarkdown()" style="background-color: #ff9800;">📄 Esporta in Markdown</button>
+                </div>
+                <h2>Dettagli Progetto: <span id="currentProjectName"></span></h2>
+                
+                <!-- Punti di Controllo -->
+                <h3>Punti di Controllo</h3>
+                <table id="milestonesTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Data</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <div class="action-bar">
+                    <button onclick="openMilestoneModal()">➕ Nuovo Punto di Controllo</button>
+                </div>
+
+                <!-- Attività -->
+                <h3>Attività</h3>
+
+                <!-- Barra selezione attività per analisi risorse -->
+                <div id="taskSelectionBar" style="display:none;">
+                    <span id="taskSelectionCount" style="font-size:12px; color:var(--text-secondary);">0 attività selezionate</span>
+                    <button onclick="analizzaRisorsePerAttivita()" style="font-size:12px; padding:4px 10px;">🔍 Analizza Risorse</button>
+                    <button onclick="clearTaskAnalysisSelection()" class="secondary" style="font-size:12px; padding:4px 10px;">✖ Deseleziona tutto</button>
+                </div>
+
+                <!-- Riepilogo Giorni Progetto -->
+                <div id="projectDaysSummary" style="display: flex; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;"></div>
+                
+                <table id="tasksTable">
+                    <thead>
+                        <tr>
+                            <th style="width:22px;"></th>
+                            <th>Nome</th>
+                            <th>Risorse</th>
+                            <th>Data Inizio</th>
+                            <th>Data Fine</th>
+                            <th>Durata</th>
+                            <th>Luogo</th>
+                            <th>Collegamenti</th>
+                            <th>Completamento</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <div class="action-bar">
+                    <button onclick="openTaskModal()">➕ Nuova Attività</button>
+                </div>
+
+                <!-- Pannello Analisi Risorse -->
+                <div id="analyzeResourcesPanel" style="display:none;"></div>
+
+                <!-- Info Generali -->
+                <h3>📝 Info Generali</h3>
+                <div style="margin-bottom: 20px;">
+                    <div id="projectGeneralInfoContainer">
+                        <textarea id="projectGeneralInfo" placeholder="Note, informazioni generali sul progetto..." style="min-height: 150px;" oninput="saveProjectGeneralInfo()"></textarea>
+                    </div>
+                </div>
+
+                <!-- Aggiornamenti -->
+                <h3>📋 Aggiornamenti</h3>
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <input type="text" id="updateText" placeholder="Descrizione aggiornamento..." style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary);">
+                        <input type="text" id="updateTags" placeholder="Tag (separati da virgola, es: #cliente, #bug)" style="flex: 1; min-width: 150px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary);">
+                        <button onclick="addProjectUpdate()">➕ Aggiungi</button>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <select id="updateSearchTags" onchange="renderProjectUpdates()" style="width: 250px; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary);">
+                            <option value="">-- Tutto --</option>
+                        </select>
+                    </div>
+                    <table id="projectUpdatesTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 150px;">Data/Ora</th>
+                                <th>Aggiornamento</th>
+                                <th style="width: 200px;">Tag</th>
+                                <th style="width: 80px;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Offerte -->
+                <h3>💼 Offerte</h3>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="openOfferModal()" style="margin-bottom: 10px;">➕ Nuova Offerta</button>
+                    <table id="projectOffersTable">
+                        <thead>
+                            <tr>
+                                <th>ID Offerta</th>
+                                <th>Titolo</th>
+                                <th>Data</th>
+                                <th>Stima Tempi</th>
+                                <th>Valore</th>
+                                <th>Stato</th>
+                                <th style="width: 120px;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Issue Tracker -->
+                <h3>🐛 Problemi / Issue</h3>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="openIssueModal()" style="margin-bottom: 10px;">➕ Nuovo Issue</button>
+                    <table id="projectIssuesTable">
+                        <thead>
+                            <tr>
+                                <th>Titolo</th>
+                                <th>Priorità</th>
+                                <th>Assegnatario</th>
+                                <th>Stato</th>
+                                <th>Data Creazione</th>
+                                <th style="width: 120px;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Riunioni/Verbali -->
+                <h3>👥 Riunioni e Verbali</h3>
+                <div style="margin-bottom: 20px;">
+                    <button onclick="openMeetingModal()" style="margin-bottom: 10px;">➕ Nuova Riunione</button>
+                    <table id="projectMeetingsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">Data</th>
+                                <th>Argomento</th>
+                                <th>Partecipanti</th>
+                                <th style="width: 120px;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAB TEMPLATE -->
+        <div id="templates" class="tab-content">
+            <h2>Template Progetti</h2>
+            
+            <div class="action-bar">
+                <button onclick="openTemplateModal()">➕ Nuovo Template</button>
+            </div>
+
+            <h3>Template Disponibili</h3>
+            <table id="templatesTable">
+                <thead>
+                    <tr>
+                        <th>Nome Template</th>
+                        <th>Milestone</th>
+                        <th>Attività</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <!-- Sezione Dettagli Template -->
+            <div id="templateDetails" style="display: none;">
+                <h2>Dettagli Template: <span id="currentTemplateName"></span></h2>
+                
+                <!-- Punti di Controllo Template -->
+                <h3>Punti di Controllo</h3>
+                <table id="templateMilestonesTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Posizionamento</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <div class="action-bar">
+                    <button onclick="openTemplateMilestoneModal()">➕ Nuovo Punto di Controllo</button>
+                </div>
+
+                <!-- Attività Template -->
+                <h3>Attività</h3>
+                <table id="templateTasksTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Posizionamento</th>
+                            <th>Durata</th>
+                            <th>Luogo</th>
+                            <th>Sab</th>
+                            <th>Dom</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <div class="action-bar">
+                    <button onclick="openTemplateTaskModal()">➕ Nuova Attività</button>
+                </div>
+
+                <button onclick="closeTemplateDetails()" class="secondary">← Torna ai Template</button>
+            </div>
+        </div>
+
+        <!-- TAB RIUNIONI -->
+        <div id="meetings" class="tab-content">
+            <h2>👥 Gestione Riunioni</h2>
+            
+            <div class="action-bar">
+                <button onclick="openGlobalMeetingModal()">➕ Nuova Riunione</button>
+            </div>
+
+            <h3>Elenco Riunioni</h3>
+            <table id="globalMeetingsTable">
+                <thead>
+                    <tr class="filter-row">
+                        <th></th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="meetingFilterSubject" placeholder="Filtra oggetto" onkeyup="renderGlobalMeetings()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('meetingFilterSubject').value=''; renderGlobalMeetings();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="meetingFilterTag" placeholder="Filtra tag" onkeyup="renderGlobalMeetings()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('meetingFilterTag').value=''; renderGlobalMeetings();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="meetingFilterResource" placeholder="Filtra risorsa" onkeyup="renderGlobalMeetings()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('meetingFilterResource').value=''; renderGlobalMeetings();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <th style="width: 120px;">Data</th>
+                        <th>Oggetto</th>
+                        <th>Tag</th>
+                        <th>Risorse</th>
+                        <th style="width: 100px;">Durata Prev.</th>
+                        <th style="width: 100px;">Durata Reale</th>
+                        <th style="width: 120px;">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB BACHECA -->
+        <div id="bacheca" class="tab-content">
+            <h2>📋 Bacheca Attività</h2>
+            
+            <div class="bacheca-container" id="bachecaContainer">
+                <!-- Contenuto generato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- TAB BACHECA -->
+        <div id="bacheca" class="tab-content">
+            <h2>📋 Bacheca Attività</h2>
+            
+            <div class="bacheca-container" id="bachecaContainer">
+                <!-- Contenuto generato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- TAB BACHECA -->
+        <div id="bacheca" class="tab-content">
+            <h2>📋 Bacheca Attività</h2>
+            
+            <div class="bacheca-container" id="bachecaContainer">
+                <!-- Contenuto generato dinamicamente -->
+            </div>
+        </div>
+
+        <!-- TAB AVVISI -->
+        <div id="warnings" class="tab-content">
+            <h2>⚠️ Avvisi e Problemi</h2>
+            
+            <div class="action-bar">
+                <button onclick="renderWarnings()">🔄 Aggiorna Avvisi</button>
+                <button onclick="toggleWarningFiltersPanel()" class="secondary">⚙️ Configura Tipi</button>
+            </div>
+
+            <div id="warningFiltersPanel" style="display:none; margin-bottom:14px; padding:12px 16px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:6px;">
+                <strong style="display:block; margin-bottom:10px;">Tipi di avvisi abilitati:</strong>
+                <table style="border-collapse:collapse; width:100%;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border-color); color:var(--text-tertiary); font-size:0.85em;">
+                            <th style="text-align:left; padding:4px 10px;">Abilitato</th>
+                            <th style="text-align:left; padding:4px 10px;">Tipo avviso</th>
+                            <th style="text-align:left; padding:4px 10px;">Categoria</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_sovraccarico" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">🔴 Sovraccarico risorse</td><td style="padding:5px 10px; color:#ee5a52;">Critico</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_ritardo" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">⏰ Attività in ritardo</td><td style="padding:5px 10px; color:#ee5a52;">Critico / Avviso</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_assenze" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">📅 Assenze durante attività</td><td style="padding:5px 10px; color:#fb8c00;">Avviso</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_nessuna_risorsa" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">👤 Nessuna risorsa assegnata</td><td style="padding:5px 10px; color:#fb8c00;">Avviso</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_senza_date" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">📅 Attività senza date</td><td style="padding:5px 10px; color:#fb8c00;">Avviso</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_progetto_vuoto" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">📋 Progetto senza attività</td><td style="padding:5px 10px; color:#1e88e5;">Informativo</td></tr>
+                        <tr><td style="padding:5px 10px;"><input type="checkbox" id="wf_pausa" onchange="saveWarningFilters()" checked></td><td style="padding:5px 10px;">⏸️ Attività in pausa</td><td style="padding:5px 10px; color:#1e88e5;">Informativo</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="warningsContainer">
+                <!-- Gli avvisi verranno caricati dinamicamente -->
+            </div>
+        </div>
+
+        <!-- TAB REVISIONE ATTIVITÀ -->
+        <div id="taskReview" class="tab-content">
+            <h2>🔍 Revisione Attività</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">Visualizza tutte le attività con data flessibile o in pausa</p>
+            
+            <div class="action-bar">
+                <button onclick="renderTaskReview()">🔄 Aggiorna</button>
+                <label style="margin-left: 20px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="checkbox" id="taskReviewHidePaused" onchange="renderTaskReview()" style="cursor: pointer;">
+                    <span>Nascondi attività in pausa</span>
+                </label>
+            </div>
+
+            <table id="taskReviewTable">
+                <thead>
+                    <tr class="filter-row">
+                        <th></th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="taskReviewFilterClient" placeholder="Filtra cliente" onkeyup="renderTaskReview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('taskReviewFilterClient').value=''; renderTaskReview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="taskReviewFilterCode" placeholder="Filtra codice" onkeyup="renderTaskReview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('taskReviewFilterCode').value=''; renderTaskReview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="taskReviewFilterDescription" placeholder="Filtra descrizione" onkeyup="renderTaskReview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('taskReviewFilterDescription').value=''; renderTaskReview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="taskReviewFilterTaskName" placeholder="Filtra attività" onkeyup="renderTaskReview()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('taskReviewFilterTaskName').value=''; renderTaskReview();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <select id="taskReviewFilterResource" onchange="renderTaskReview()" style="width: 100%; box-sizing: border-box;">
+                                <option value="">Tutte le risorse</option>
+                            </select>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <th style="width: 40px;"><input type="checkbox" id="taskReviewSelectAll" onchange="toggleAllTaskReviewSelection()" title="Seleziona/Deseleziona tutto"></th>
+                        <th>Cliente</th>
+                        <th>Codice Lavoro</th>
+                        <th>Descrizione Progetto</th>
+                        <th>Attività</th>
+                        <th>Risorse</th>
+                        <th>Carico</th>
+                        <th>Durata</th>
+                        <th>Tipo</th>
+                        <th>Sede</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB STABILIMENTI -->
+        <div id="plants" class="tab-content">
+            <h2>🏭 Gestione Stabilimenti</h2>
+            <p style="margin-bottom: 10px; color: var(--text-tertiary);">Gestisci gli stabilimenti dei clienti dove si svolgono le attività. Gli stabilimenti vengono suggeriti automaticamente nella creazione delle attività.</p>
+            
+            <div class="action-bar">
+                <button onclick="openPlantModal()">➕ Nuovo Stabilimento</button>
+            </div>
+
+            <table id="plantsTable">
+                <thead>
+                    <tr class="filter-row">
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="plantFilterName" placeholder="Filtra nome" onkeyup="renderPlants()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('plantFilterName').value=''; renderPlants();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="plantFilterClient" placeholder="Filtra cliente" onkeyup="renderPlants()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('plantFilterClient').value=''; renderPlants();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="plantFilterAddress" placeholder="Filtra indirizzo" onkeyup="renderPlants()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('plantFilterAddress').value=''; renderPlants();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <th>Nome Stabilimento</th>
+                        <th>Cliente</th>
+                        <th>Indirizzo</th>
+                        <th>Coordinate</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB MAPPA ATTIVITÀ -->
+        <div id="activityMap" class="tab-content">
+            <h2>🗺️ Mappa Attività presso Cliente</h2>
+            <p style="margin-bottom: 10px; color: var(--text-tertiary);">Visualizzazione delle attività a data flessibile presso cliente, raggruppate per stabilimento e zona geografica.</p>
+            
+            <div class="map-legend">
+                <div class="map-legend-item"><span class="map-legend-dot" style="background: #e65100;"></span> Attività flessibili presso cliente</div>
+                <div class="map-legend-item"><span class="map-legend-dot" style="background: #1565c0;"></span> Stabilimento senza attività flessibili</div>
+                <div class="map-legend-item"><span class="map-legend-dot" style="background: #4CAF50;"></span> Attività attive presso cliente</div>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+                <button onclick="renderActivityMap()">🔄 Aggiorna Mappa</button>
+                <label style="margin-left: 15px; width: auto;">
+                    <input type="checkbox" id="mapShowAllPlants" checked onchange="renderActivityMap()"> Mostra tutti gli stabilimenti
+                </label>
+                <label style="margin-left: 15px; width: auto;">
+                    <input type="checkbox" id="mapShowActiveTasks" onchange="renderActivityMap()"> Mostra attività attive presso cliente
+                </label>
+            </div>
+            
+            <div id="mapContainer"></div>
+        </div>
+
+        <!-- TAB ANNOTAZIONI -->
+        <div id="annotations" class="tab-content">
+            <h2>📌 Annotazioni Attività</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">Elenco delle attività con annotazioni da verificare, ordinate per data di inizio (più urgenti in alto).</p>
+            
+            <div class="action-bar">
+                <button onclick="renderAnnotations()">🔄 Aggiorna</button>
+            </div>
+
+            <table id="annotationsTable">
+                <thead>
+                    <tr class="filter-row">
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="annotationsFilterClient" placeholder="Filtra cliente" onkeyup="renderAnnotations()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('annotationsFilterClient').value=''; renderAnnotations();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="annotationsFilterCode" placeholder="Filtra codice" onkeyup="renderAnnotations()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('annotationsFilterCode').value=''; renderAnnotations();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th>
+                            <div style="position: relative;">
+                                <input type="text" id="annotationsFilterText" placeholder="Filtra annotazione" onkeyup="renderAnnotations()" style="width: 100%; box-sizing: border-box; padding-right: 25px;">
+                                <button onclick="document.getElementById('annotationsFilterText').value=''; renderAnnotations();" style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-tertiary); padding: 0 5px;" title="Pulisci filtro">×</button>
+                            </div>
+                        </th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Codice Lavoro</th>
+                        <th>Descrizione Progetto</th>
+                        <th>Attività</th>
+                        <th>Data Inizio</th>
+                        <th>📌 Annotazione</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB APPUNTI CALENDARIO -->
+        <div id="quickNotes" class="tab-content">
+            <h2>🗒️ Appunti Calendario</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">Inserisci appunti con data/ora, tag e conferma. Ordinamento in stile calendario, dai più vicini ai più lontani.</p>
+
+            <div style="margin-bottom: 14px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-secondary);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; align-items: end;">
+                    <div>
+                        <label for="quickNoteText">Appunto *</label>
+                        <input type="text" id="quickNoteText" placeholder="Es. Chiamare cliente per conferma collaudo" maxlength="200">
+                    </div>
+                    <div>
+                        <label for="quickNoteDate">Data *</label>
+                        <input type="date" id="quickNoteDate">
+                    </div>
+                    <div>
+                        <label for="quickNoteTime">Ora *</label>
+                        <input type="time" id="quickNoteTime" step="300">
+                    </div>
+                    <div>
+                        <label for="quickNoteTags">Tag</label>
+                        <input type="text" id="quickNoteTags" placeholder="es: cliente, urgente, call">
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="addQuickNote()">➕ Aggiungi</button>
+                        <button onclick="clearQuickNoteForm()" class="secondary">Pulisci</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-bar" style="margin-bottom: 10px;">
+                <button onclick="renderQuickNotes()">🔄 Aggiorna</button>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <label for="quickNoteFilterStatus" style="width: auto;">Stato:</label>
+                    <select id="quickNoteFilterStatus" onchange="renderQuickNotes()" style="width: 180px;">
+                        <option value="all">Tutti</option>
+                        <option value="pending" selected>Da confermare</option>
+                        <option value="confirmed">Confermati</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <label for="quickNoteFilterTag" style="width: auto;">Tag:</label>
+                    <select id="quickNoteFilterTag" onchange="renderQuickNotes()" style="width: 190px;">
+                        <option value="">Tutti i tag</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <label for="quickNoteFilterText" style="width: auto;">Testo:</label>
+                    <input type="text" id="quickNoteFilterText" placeholder="Filtra appunto..." onkeyup="renderQuickNotes()" style="width: 200px;">
+                </div>
+            </div>
+
+            <table id="quickNotesTable">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Confermato</th>
+                        <th style="width: 145px;">Data/Ora</th>
+                        <th>Appunto</th>
+                        <th style="width: 230px;">Tag</th>
+                        <th style="width: 120px;">Stato</th>
+                        <th style="width: 80px;">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- TAB DASHBOARD -->
+        <div id="dashboard" class="tab-content active">
+            <h2>📊 Dashboard Giornaliera</h2>
+            <div class="action-bar" style="margin-bottom: 10px;">
+                <button onclick="renderDashboard()">🔄 Aggiorna</button>
+                <span id="dashboardDate" style="margin-left: 15px; font-weight: 600; font-size: 1.1em;"></span>
+            </div>
+            <div id="dashboardContainer"></div>
+        </div>
+
+        <!-- TAB CALENDARIO CONTROLLI -->
+        <div id="checkpointCalendar" class="tab-content">
+            <h2>📅 Calendario Punti di Controllo</h2>
+            <div class="action-bar" style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button onclick="renderCheckpointCalendar()">🔄 Aggiorna</button>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <label style="width: auto;">Vista:</label>
+                    <select id="checkpointCalendarView" onchange="renderCheckpointCalendar()" style="width: 160px;">
+                        <option value="week">Settimanale</option>
+                        <option value="month" selected>Mensile</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <button onclick="navigateCheckpointCalendar(-1)" style="padding: 2px 8px;">◀</button>
+                    <span id="checkpointCalendarLabel" style="font-weight: 600; min-width: 160px; text-align: center;"></span>
+                    <button onclick="navigateCheckpointCalendar(1)" style="padding: 2px 8px;">▶</button>
+                    <button onclick="navigateCheckpointCalendar(0)" class="secondary" style="margin-left: 5px;">Oggi</button>
+                </div>
+                <div class="filter-group" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <label style="width: auto;">Cliente:</label>
+                    <input type="text" id="checkpointFilterClient" placeholder="Filtra cliente..." onkeyup="renderCheckpointCalendar()" style="width: 150px;">
+                </div>
+            </div>
+            <div id="checkpointCalendarContainer"></div>
+        </div>
+
+        <!-- TAB GUIDA -->
+        <div id="help" class="tab-content">
+            <div class="help-container">
+                <h1 class="help-title">📖 Guida al Project Planner</h1>
+                <p class="help-intro">Benvenuto nel Project Planner! Questa guida completa descrive tutte le funzionalità disponibili per gestire progetti, risorse, attività, riunioni, offerte e molto altro in modo efficiente.</p>
+                
+                <!-- RISORSE -->
+                <div class="help-section">
+                    <h2 class="help-section-title">👥 Gestione Risorse</h2>
+                    <div class="help-content">
+                        <p>Le risorse rappresentano i membri del team che lavoreranno sui progetti. Si gestiscono nella tab <strong>Risorse</strong>.</p>
+                        <h3>Creare e Modificare Risorse</h3>
+                        <ul>
+                            <li><strong>Nuova Risorsa:</strong> Click su "➕ Nuova Risorsa" per aggiungere un membro. Compila Nome, Cognome e Tipo Risorsa (Programmatore Robot, Programmatore PLC, Programmatore Visione, Meccanico, Elettricista, Project Manager, Esterno, Responsabile).</li>
+                            <li><strong>Modifica/Elimina:</strong> Usa i pulsanti ✏️ ed 🗑️ nella tabella per gestire le risorse esistenti.</li>
+                            <li><strong>Ordinamento:</strong> Usa le frecce ⬆️ e ⬇️ per riordinare le risorse nella tabella. L'ordine viene rispettato anche nel Gantt e nella Vista Risorse.</li>
+                            <li><strong>Visibilità:</strong> Usa il pulsante ● / ○ per nascondere o mostrare una risorsa nel Gantt e nella Vista Risorse senza eliminarla.</li>
+                        </ul>
+                        <h3>Gestione Assenze</h3>
+                        <p>Per ogni risorsa puoi definire periodi di assenza con tipologia:</p>
+                        <ul>
+                            <li>🏖️ <strong>Ferie:</strong> Assenze pianificate per riposo.</li>
+                            <li>🤒 <strong>Malattia:</strong> Assenze per motivi di salute.</li>
+                            <li>🏥 <strong>Intervento Pianificato:</strong> Interventi medici programmati.</li>
+                        </ul>
+                        <p>Le assenze vengono mostrate in rosso nel Gantt e nella Vista Risorse con icone specifiche. Quando inserisci un'assenza che si sovrappone ad attività attive, il sistema ti avvisa e ricalcola automaticamente le date di fine delle attività coinvolte.</p>
+                        <h3>Esporta Riepilogo Markdown</h3>
+                        <ul>
+                            <li>Il pulsante <strong>📄 Esporta MD</strong> genera un riepilogo in Markdown di tutte le attività assegnate alla risorsa, con dettagli su progetti, date, stato e completamento.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- FESTIVITÀ -->
+                <div class="help-section">
+                    <h2 class="help-section-title">🎄 Festività</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Festività</strong> mostra e gestisce i giorni non lavorativi.</p>
+                        <h3>Festività Nazionali</h3>
+                        <p>Le festività italiane (Capodanno, Epifania, Pasqua, Pasquetta, 25 Aprile, 1 Maggio, 2 Giugno, Ferragosto, 1 Novembre, 8 Dicembre, Natale, Santo Stefano) vengono calcolate automaticamente per tutti gli anni coperti dai progetti.</p>
+                        <h3>Festività Locali Ricorrenti</h3>
+                        <ul>
+                            <li>Usa "➕ Nuova Festività Locale" per aggiungere festività ricorrenti (es. patrono della città).</li>
+                            <li>Specifica nome, giorno e mese: la festività verrà applicata automaticamente a tutti gli anni.</li>
+                        </ul>
+                        <h3>Effetti sulle Attività</h3>
+                        <ul>
+                            <li>Le festività <strong>non contano</strong> nel calcolo della durata lavorativa delle attività.</li>
+                            <li>Appaiono evidenziate nel Gantt e nella Vista Risorse.</li>
+                            <li>Ogni attività può avere l'opzione <strong>"Festivi Lavorativi"</strong> per ignorare le festività.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- PROGETTI E ATTIVITÀ -->
+                <div class="help-section">
+                    <h2 class="help-section-title">📁 Progetti e Attività</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Progetti</strong> è il cuore dell'applicazione. Ogni progetto contiene attività, milestone, offerte, issue, riunioni e aggiornamenti.</p>
+
+                        <h3>Creare un Progetto</h3>
+                        <ul>
+                            <li>Click su "➕ Nuovo Progetto" e compila: <strong>Cliente</strong>, <strong>Codice Lavoro</strong> e <strong>Descrizione</strong> (supporta Markdown).</li>
+                            <li>Al momento della creazione puoi selezionare un <strong>Template</strong> per pre-popolare le attività.</li>
+                            <li>Il campo Cliente suggerisce automaticamente i nomi già utilizzati in altri progetti o stabilimenti.</li>
+                        </ul>
+                        <h3>Contenuti del Progetto</h3>
+                        <p>Una volta aperto un progetto, hai accesso a diverse sotto-sezioni:</p>
+                        <ul>
+                            <li><strong>Attività:</strong> L'elenco di tutte le attività del progetto con azioni rapide.</li>
+                            <li><strong>Milestone:</strong> Punti di controllo con data, visibili nel Gantt come diamanti.</li>
+                            <li><strong>Offerte:</strong> Offerte commerciali collegate al progetto.</li>
+                            <li><strong>Issue:</strong> Segnalazioni di problemi con priorità e assegnatario.</li>
+                            <li><strong>Riunioni:</strong> Riunioni specifiche del progetto.</li>
+                            <li><strong>Aggiornamenti:</strong> Diario delle novità e aggiornamenti sul progetto.</li>
+                            <li><strong>Informazioni Generali:</strong> Note generali in Markdown.</li>
+                        </ul>
+                        <h3>Statistiche Progetto</h3>
+                        <p>Nella vista progetto è presente un riepilogo con: totale attività, completate, in corso, in pausa, percentuale media di completamento e barre di progresso per stato.</p>
+
+                        <h3>Gestire le Attività</h3>
+                        <ul>
+                            <li><strong>Nuova Attività:</strong> Click su "➕ Nuova Attività" nel progetto aperto.</li>
+                            <li><strong>Nome:</strong> Identifica chiaramente l'attività.</li>
+                            <li><strong>Metodo Calcolo:</strong> Scegli tra "Inizio + Durata" o "Fine + Durata" per il calcolo automatico date.</li>
+                            <li><strong>Durata:</strong> Numero di giorni lavorativi necessari.</li>
+                            <li><strong>Date Inizio/Fine:</strong> Calcolate automaticamente in base al metodo scelto, alla durata e tenendo conto di weekend, festività e assenze delle risorse.</li>
+                            <li><strong>Stato:</strong> Nessuno, In Corso, In Ritardo, In Pausa, Completata, Annullata.</li>
+                            <li><strong>Completamento:</strong> Percentuale di avanzamento (0-100%).</li>
+                            <li><strong>Risorse:</strong> Assegna una o più risorse con percentuale di impegno ciascuna.</li>
+                            <li><strong>Note:</strong> Campo di testo con supporto Markdown (titoli, grassetto, corsivo, elenchi, link, codice, citazioni). L'editor offre le tab ✏️ Modifica e 👁️ Anteprima.</li>
+                            <li><strong>📌 Annotazione:</strong> Breve nota testuale (max 200 caratteri) per segnarsi cose da verificare sull'attività. Le annotazioni sono visibili nella tab dedicata "Annotazioni".</li>
+                        </ul>
+
+                        <h3>📋 Checklist</h3>
+                        <p>Ogni attività ha un pannello laterale <strong>Checklist</strong> per gestire sotto-attività:</p>
+                        <ul>
+                            <li>Clicca "➕ Aggiungi Elemento" per aggiungere voci.</li>
+                            <li>Ogni voce ha una checkbox per segnare il completamento e un pulsante 🗑️ per rimuoverla.</li>
+                            <li>Solo le voci con testo vengono salvate.</li>
+                        </ul>
+
+                        <h3>Opzioni Giornate Lavorative</h3>
+                        <ul>
+                            <li><strong>Sabato Lavorativo:</strong> Include il sabato nel calcolo della durata.</li>
+                            <li><strong>Domenica Lavorativa:</strong> Include la domenica nel calcolo della durata.</li>
+                            <li><strong>Festivi Lavorativi:</strong> Include le festività nel calcolo della durata.</li>
+                        </ul>
+
+                        <h3>🔗 Collegamento Date (Date Collegate)</h3>
+                        <p>Puoi collegare la data di inizio o di fine di un'attività alla fine o all'inizio di un'altra attività dello stesso progetto:</p>
+                        <ul>
+                            <li><strong>Data Inizio collegata a (Dopo):</strong> L'attività inizia dopo la fine di un'altra, con un offset in giorni opzionale (positivo = dopo, negativo = prima).</li>
+                            <li><strong>Data Fine collegata a (Prima):</strong> L'attività finisce in relazione all'inizio di un'altra, con offset.</li>
+                            <li>Quando un collegamento è attivo, i campi data e l'altro collegamento sono disabilitati automaticamente.</li>
+                            <li>Le date collegate vengono ricalcolate automaticamente quando l'attività di riferimento cambia.</li>
+                        </ul>
+
+                        <h3>📍 Luogo Attività</h3>
+                        <p>Ogni attività ha un campo <strong>Luogo</strong> che indica dove si svolge:</p>
+                        <ul>
+                            <li>🏢 <strong>In Sede:</strong> L'attività si svolge in sede aziendale (default).</li>
+                            <li>🏭 <strong>Presso Cliente:</strong> Seleziona uno stabilimento del cliente dal menu a tendina. Vengono mostrati gli stabilimenti associati allo stesso cliente del progetto. Se lo stabilimento ha coordinate, viene mostrato un badge con indirizzo.</li>
+                            <li>📡 <strong>Da Remoto:</strong> L'attività si svolge da remoto.</li>
+                        </ul>
+
+                        <h3>💡 Data Flessibile</h3>
+                        <ul>
+                            <li>Attiva la checkbox <strong>"Data Flessibile"</strong> per attività non ancora pianificate con data certa.</li>
+                            <li>Quando attivata, i campi data e collegamento vengono disabilitati.</li>
+                            <li>Le attività flessibili appaiono come <span style="color: #28a745; font-weight: bold;">suggerimenti verdi</span> nella Vista Risorse.</li>
+                            <li>Click su un suggerimento per pianificare l'attività automaticamente a quella data e risorsa.</li>
+                            <li>Le attività flessibili <strong>senza risorsa</strong> appaiono con <span style="border: 2px solid #28a745;">bordo verde</span>.</li>
+                            <li>I suggerimenti che causerebbero sovrapposizioni hanno <span style="color: #ffc107;">testo giallo</span>.</li>
+                            <li>La data flessibile si rimuove automaticamente quando l'attività viene completata al 100%.</li>
+                        </ul>
+
+                        <h3>📋 Copia Attività su Altri Progetti</h3>
+                        <ul>
+                            <li>Nella lista attività, il pulsante <strong>📋 Copia</strong> apre un modal per copiare l'attività su uno o più progetti.</li>
+                            <li>Puoi scegliere se copiare le <strong>date</strong> e/o le <strong>risorse assegnate</strong>.</li>
+                            <li>I progetti destinazione sono filtrabili per cliente e descrizione.</li>
+                            <li>Se il cliente del progetto di destinazione coincide con quello di origine, viene copiato anche lo stabilimento.</li>
+                        </ul>
+
+                        <h3>✂️ Spezza/Duplica Attività</h3>
+                        <ul>
+                            <li>Il pulsante <strong>✂️ Spezza</strong> apre un modal con due modalità:
+                                <ul>
+                                    <li><strong>Spezza in due:</strong> Divide l'attività in due parti a una data scelta. La prima parte conserva il nome originale con "(Parte 1)", la seconda "(Parte 2)". Risorse, checklist, note vengono duplicate.</li>
+                                    <li><strong>Duplica:</strong> Crea una copia identica dell'attività con completamento azzerato e senza collegamenti.</li>
+                                </ul>
+                            </li>
+                            <li>Un'anteprima mostra le date risultanti prima di confermare.</li>
+                        </ul>
+
+                        <h3>📧 Invia Email Attività</h3>
+                        <ul>
+                            <li>Nel modal di un'attività, il pulsante <strong>📧 Invia Email</strong> apre il client email con un riepilogo completo dell'attività: nome, progetto, date, sede, stato, risorse, checklist e note.</li>
+                        </ul>
+
+                        <h3>💾 Salva come Template</h3>
+                        <ul>
+                            <li>Nella vista progetto, il pulsante <strong>"💾 Salva come Template"</strong> salva la struttura del progetto come template riutilizzabile.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- TEMPLATE -->
+                <div class="help-section">
+                    <h2 class="help-section-title">📝 Template</h2>
+                    <div class="help-content">
+                        <p>I template permettono di salvare strutture di progetto riutilizzabili. Si gestiscono nella tab <strong>Template</strong>.</p>
+                        <h3>Creare un Template</h3>
+                        <ul>
+                            <li><strong>Da un progetto:</strong> Nella tab Progetti, apri un progetto e usa "💾 Salva come Template".</li>
+                            <li><strong>Manualmente:</strong> Nella tab Template, usa "➕ Nuovo Template" per creare un template vuoto, poi aggiungi attività e milestone con offset in giorni dall'inizio.</li>
+                        </ul>
+                        <h3>Applicare un Template</h3>
+                        <ul>
+                            <li>Alla creazione di un nuovo progetto, seleziona un template dal menu a tendina.</li>
+                            <li>Le attività del template vengono create con le durate e gli offset definiti.</li>
+                        </ul>
+                        <h3>Cosa viene salvato / non salvato</h3>
+                        <ul>
+                            <li><strong>Salvato:</strong> Struttura attività, nomi, durate, offset in giorni, opzioni sabato/domenica lavorativi, milestone.</li>
+                            <li><strong>NON salvato:</strong> Date specifiche, risorse assegnate, completamento, stato.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- RIUNIONI -->
+                <div class="help-section">
+                    <h2 class="help-section-title">👥 Riunioni</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Riunioni</strong> gestisce le riunioni globali del team, indipendenti dai singoli progetti.</p>
+                        <h3>Creare una Riunione</h3>
+                        <ul>
+                            <li>Click su "➕ Nuova Riunione" e compila: <strong>Data</strong>, <strong>Ora</strong> (opzionale, con step di 5 minuti), <strong>Oggetto</strong>, <strong>Tag</strong> (es. Planning, Review, Technical), <strong>Risorse partecipanti</strong>.</li>
+                            <li><strong>Durata Prevista / Durata Reale:</strong> Campi orari per confrontare la durata stimata con quella effettiva.</li>
+                            <li><strong>Descrizione e Resoconto:</strong> Campi di testo con supporto Markdown completo.</li>
+                        </ul>
+                        <h3>Riunioni Ricorsive</h3>
+                        <ul>
+                            <li>Attiva la checkbox <strong>"Riunione Ricorsiva"</strong> per creare più riunioni in automatico.</li>
+                            <li>Specifica: <strong>Data Fine Ricorrenza</strong>, <strong>Ogni quante settimane</strong> e <strong>Giorni della Settimana</strong> (Lun-Dom).</li>
+                            <li>Ogni occorrenza viene creata come riunione separata con lo stesso oggetto e risorse.</li>
+                        </ul>
+                        <h3>Filtri e Visualizzazione</h3>
+                        <ul>
+                            <li>Tag e risorse sono filtrabili per trovare rapidamente le riunioni desiderate.</li>
+                            <li>I tag suggeriti vengono popolati automaticamente dai tag già utilizzati.</li>
+                        </ul>
+                        <h3>Riunioni di Progetto</h3>
+                        <p>Oltre alle riunioni globali, ogni progetto ha una sotto-sezione dedicata per le riunioni specifiche a quel progetto, con campi: Data, Argomento, Partecipanti e Argomenti Discussi.</p>
+                    </div>
+                </div>
+
+                <!-- BACHECA KANBAN -->
+                <div class="help-section">
+                    <h2 class="help-section-title">📋 Bacheca Kanban</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Bacheca</strong> mostra una vista Kanban delle attività organizzate per stato.</p>
+                        <ul>
+                            <li><strong>Colonne:</strong> Da Fare → In Corso → Completata. Le attività sono raggruppate automaticamente in base al loro stato.</li>
+                            <li><strong>Filtri:</strong> Filtra per progetto e/o risorsa per focalizzarti su un sottoinsieme.</li>
+                            <li><strong>Card:</strong> Ogni card mostra nome attività, progetto, date, risorse assegnate e percentuale di completamento.</li>
+                            <li><strong>Click su card:</strong> Apre il modal dell'attività per modificarla.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- OFFERTE -->
+                <div class="help-section">
+                    <h2 class="help-section-title">💼 Offerte</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Offerte</strong> fornisce una vista riepilogativa di tutte le offerte commerciali inserite nei vari progetti.</p>
+                        <h3>Creare un'Offerta</h3>
+                        <p>Le offerte si creano dall'interno di un progetto, nella sotto-sezione "Offerte":</p>
+                        <ul>
+                            <li><strong>Titolo Offerta</strong> (obbligatorio)</li>
+                            <li><strong>Data</strong> (obbligatoria)</li>
+                            <li><strong>Stima Tempi</strong> (es. "40 ore", "2 settimane", "3 mesi")</li>
+                            <li><strong>Valore €</strong> (opzionale)</li>
+                            <li><strong>Stato:</strong> In Preparazione, Inviata, Accettata, Rifiutata</li>
+                            <li><strong>Note</strong> (opzionale)</li>
+                        </ul>
+                        <h3>Riepilogo Offerte</h3>
+                        <ul>
+                            <li>La tab Offerte globale mostra una tabella con tutte le offerte di tutti i progetti.</li>
+                            <li>Puoi filtrare per <strong>stato</strong>, <strong>cliente</strong> e <strong>codice progetto</strong>.</li>
+                            <li>Lo stato è identificato da colori: giallo per "In Preparazione", blu per "Inviata", verde per "Accettata", rosso per "Rifiutata".</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- GANTT -->
+                <div class="help-section">
+                    <h2 class="help-section-title">📊 Vista Gantt</h2>
+                    <div class="help-content">
+                        <p>Il diagramma di Gantt mostra tutte le attività distribuite su una timeline visuale.</p>
+                        <h3>Filtri e Opzioni</h3>
+                        <ul>
+                            <li><strong>Filtro Progetto:</strong> Visualizza tutti i progetti o solo uno specifico.</li>
+                            <li><strong>Filtro Periodo:</strong> Settimana, Mese, Trimestre, Anno o Tutti.</li>
+                            <li><strong>Vista:</strong> Organizza il Gantt <strong>Per Progetto</strong> o <strong>Per Risorsa</strong>.</li>
+                            <li><strong>Nascondi completati:</strong> Nasconde le attività con stato "Completata".</li>
+                            <li><strong>Nascondi fuori periodo:</strong> Nasconde le attività che non ricadono nel periodo selezionato.</li>
+                            <li><strong>Collapse/Expand All:</strong> Comprimi o espandi tutti i raggruppamenti.</li>
+                        </ul>
+                        <h3>Legenda Colori Barre</h3>
+                        <ul>
+                            <li><strong>Grigio:</strong> Stato "Nessuno" (da fare)</li>
+                            <li><strong>Verde:</strong> Completata</li>
+                            <li><strong>Blu:</strong> In corso</li>
+                            <li><strong>Rosso:</strong> In ritardo</li>
+                            <li><strong>Giallo:</strong> In pausa</li>
+                            <li><strong>Marrone:</strong> Non assegnata (senza risorse)</li>
+                            <li><strong>Nero:</strong> Annullata</li>
+                            <li><strong>◆ Diamante:</strong> Milestone (punto di controllo)</li>
+                        </ul>
+                        <h3>Legenda Giorni</h3>
+                        <ul>
+                            <li><strong>Arancione/Rosso:</strong> Giorno corrente (Oggi)</li>
+                            <li><strong>Righe diagonali grigie:</strong> Weekend</li>
+                            <li><strong>Sfondo giallo:</strong> Festività</li>
+                            <li><strong>Righe diagonali rosse:</strong> Ferie / Malattia / Intervento Pianificato</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- VISTA RISORSE -->
+                <div class="help-section">
+                    <h2 class="help-section-title">👥 Vista Risorse</h2>
+                    <div class="help-content">
+                        <p>Visualizza il carico di lavoro delle risorse nel tempo, evidenziando sovraccarichi e disponibilità.</p>
+                        <h3>Tipi di Periodo</h3>
+                        <ul>
+                            <li><strong>Giorno:</strong> Dettaglio di un singolo giorno con navigazione ◀ ▶ e indicazione del giorno della settimana.</li>
+                            <li><strong>Settimana:</strong> Mostra 7 giorni con dettaglio per giorno. Navigazione settimana per settimana.</li>
+                            <li><strong>Mese:</strong> Vista mensile del carico. Navigazione mese per mese.</li>
+                            <li><strong>Trimestre:</strong> Vista su 3 mesi.</li>
+                            <li><strong>Anno:</strong> Vista annuale.</li>
+                            <li><strong>Tutto:</strong> Tutte le date coperte dalle attività.</li>
+                            <li><strong>Personalizzato:</strong> Seleziona data inizio e fine a piacere.</li>
+                        </ul>
+                        <p>I pulsanti <strong>📅 Oggi / Corrente</strong> riportano alla data odierna.</p>
+                        <h3>Filtri</h3>
+                        <ul>
+                            <li><strong>Filtra per risorsa:</strong> Mostra solo una risorsa specifica o tutte.</li>
+                            <li><strong>Nascondi suggerimenti:</strong> Nasconde i suggerimenti di attività flessibili.</li>
+                        </ul>
+                        <h3>Indicatori nell'intestazione</h3>
+                        <ul>
+                            <li><strong style="color: var(--accent-color);">📊 X/Y gg lavorativi:</strong> Giorni allocati su giorni lavorativi del periodo (arancione se carico &gt; 100%, rosso se &gt; 150%)</li>
+                            <li><strong style="color: #9c27b0;">📅 N gg extra:</strong> Giorni con lavoro su weekend o festivi (visibile solo se &gt; 0)</li>
+                            <li><strong style="color: var(--danger-color);">🏖️ N gg assenza:</strong> Giorni di assenza nel periodo (visibile solo se &gt; 0)</li>
+                        </ul>
+                        <h3>Suggerimenti Attività Flessibili</h3>
+                        <ul>
+                            <li>Appaiono nei giorni con carico basso (&lt; 80%) come suggerimenti verdi.</li>
+                            <li>Non vengono mostrati per: giorni passati, assenze, weekend, festività.</li>
+                            <li>Click su un suggerimento per assegnare automaticamente l'attività a quella data e risorsa.</li>
+                        </ul>
+                        <h3>Creare Attività dalla Vista Risorse</h3>
+                        <ul>
+                            <li>Nella vista settimanale, <strong>click su un giorno</strong> vuoto apre il modal nuova attività con data e risorsa precompilati.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- AVVISI -->
+                <div class="help-section">
+                    <h2 class="help-section-title">⚠️ Avvisi</h2>
+                    <div class="help-content">
+                        <p>Dashboard centralizzata per identificare problemi e anomalie nei progetti.</p>
+                        <h3>Tipi di Avvisi</h3>
+                        <ul>
+                            <li><strong>🔴 Critici:</strong>
+                                <ul>
+                                    <li>Sovraccarichi risorse (&gt; 100%)</li>
+                                    <li>Attività in ritardo non iniziate</li>
+                                </ul>
+                            </li>
+                            <li><strong>⚠️ Avvisi:</strong>
+                                <ul>
+                                    <li>Attività in ritardo parzialmente completate</li>
+                                    <li>Assenze durante attività pianificate</li>
+                                    <li>Attività senza risorse assegnate</li>
+                                    <li>Attività senza date</li>
+                                </ul>
+                            </li>
+                            <li><strong>ℹ️ Informativi:</strong>
+                                <ul>
+                                    <li>Progetti senza attività</li>
+                                    <li>Attività in pausa</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <h3>Configurazione Avvisi</h3>
+                        <ul>
+                            <li>Il pulsante <strong>⚙️ Configura Tipi</strong> mostra una tabella dove puoi abilitare o disabilitare singoli tipi di avviso.</li>
+                            <li>Le preferenze vengono salvate automaticamente.</li>
+                        </ul>
+                        <p><strong>💡 Suggerimento:</strong> Click su un avviso per navigare direttamente al problema!</p>
+                    </div>
+                </div>
+
+                <!-- REVISIONE ATTIVITÀ -->
+                <div class="help-section">
+                    <h2 class="help-section-title">🔍 Revisione Attività</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Revisione Attività</strong> mostra una tabella con tutte le attività a <strong>data flessibile</strong> o <strong>in pausa</strong>, permettendo una revisione rapida delle attività che richiedono attenzione.</p>
+                        <ul>
+                            <li><strong>Filtri:</strong> Filtra per cliente, codice lavoro, descrizione progetto, nome attività e risorsa.</li>
+                            <li><strong>Nascondi in pausa:</strong> Checkbox per nascondere le attività in pausa e vedere solo le flessibili.</li>
+                            <li><strong>Selezione multipla:</strong> Checkbox per selezionare più attività.</li>
+                            <li><strong>Colonne:</strong> Cliente, Codice Lavoro, Descrizione, Attività, Risorse, Carico, Durata, Tipo (Flessibile/Pausa), Sede e azioni rapide.</li>
+                            <li><strong>Azioni:</strong> Apri il modal dell'attività per modificarla direttamente.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- STABILIMENTI -->
+                <div class="help-section">
+                    <h2 class="help-section-title">🏭 Stabilimenti</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Stabilimenti</strong> gestisce le sedi dei clienti dove si svolgono le attività.</p>
+                        <h3>Creare uno Stabilimento</h3>
+                        <ul>
+                            <li>Click su "➕ Nuovo Stabilimento" e compila: <strong>Nome</strong>, <strong>Cliente</strong> (con suggerimenti automatici), <strong>Indirizzo</strong> e <strong>Note</strong>.</li>
+                            <li>Il pulsante <strong>📍 Geocodifica Indirizzo</strong> rileva automaticamente le coordinate dall'indirizzo inserito.</li>
+                            <li>Una <strong>mappa interattiva</strong> mostra la posizione. Puoi trascinare il marker o cliccare sulla mappa per regolare la posizione.</li>
+                        </ul>
+                        <h3>Utilizzo negli Task</h3>
+                        <ul>
+                            <li>Quando crei un'attività "Presso Cliente", puoi selezionare uno stabilimento dal menu a tendina.</li>
+                            <li>Vengono mostrati solo gli stabilimenti del cliente del progetto corrente.</li>
+                        </ul>
+                        <h3>Ricerca</h3>
+                        <ul>
+                            <li>Usa il campo di ricerca per filtrare stabilimenti per nome, cliente o indirizzo.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- MAPPA ATTIVITÀ -->
+                <div class="help-section">
+                    <h2 class="help-section-title">🗺️ Mappa Attività</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Mappa Attività</strong> mostra su una mappa interattiva tutte le attività "Presso Cliente" associate a stabilimenti con coordinate.</p>
+                        <h3>Tipo di Marker</h3>
+                        <ul>
+                            <li><span style="color: #e65100;">●</span> <strong>Arancione:</strong> Attività flessibili presso cliente (da pianificare).</li>
+                            <li><span style="color: #1565c0;">●</span> <strong>Blu:</strong> Stabilimenti senza attività flessibili.</li>
+                            <li><span style="color: #4CAF50;">●</span> <strong>Verde:</strong> Attività attive presso cliente (in corso o pianificate con data).</li>
+                        </ul>
+                        <h3>Opzioni</h3>
+                        <ul>
+                            <li><strong>Mostra tutti gli stabilimenti:</strong> Visualizza anche gli stabilimenti senza attività flessibili.</li>
+                            <li><strong>Mostra attività attive:</strong> Visualizza anche le attività non flessibili presso cliente.</li>
+                        </ul>
+                        <p>Cliccando sui marker si visualizzano i dettagli dell'attività e dello stabilimento.</p>
+                    </div>
+                </div>
+
+                <!-- ANNOTAZIONI -->
+                <div class="help-section">
+                    <h2 class="help-section-title">📌 Annotazioni</h2>
+                    <div class="help-content">
+                        <p>La tab <strong>Annotazioni</strong> raccoglie in una tabella tutte le attività che hanno un'annotazione compilata.</p>
+                        <ul>
+                            <li><strong>Ordinamento:</strong> Le attività sono ordinate per <strong>data di inizio</strong> crescente, mostrando prima quelle più urgenti.</li>
+                            <li><strong>Evidenziazione:</strong> Le attività con data di inizio passata vengono evidenziate con uno sfondo rosso tenue per richiamare l'attenzione.</li>
+                            <li><strong>Filtri:</strong> Puoi filtrare per cliente, codice lavoro e testo dell'annotazione.</li>
+                            <li><strong>Colonne:</strong> Cliente, Codice Lavoro, Descrizione Progetto, Attività, Data Inizio, Annotazione.</li>
+                            <li><strong>Azioni:</strong> Il pulsante "✏️ Apri" per ogni riga apre il modal dell'attività per modificarla.</li>
+                        </ul>
+                        <p>Le annotazioni si compilano nel campo "📌 Annotazione" del modal attività.</p>
+                    </div>
+                </div>
+
+                <!-- IMPORT/EXPORT -->
+                <div class="help-section">
+                    <h2 class="help-section-title">💾 Import/Export Dati</h2>
+                    <div class="help-content">
+                        <p>Tutti i dati sono salvati automaticamente nel browser tramite <strong>IndexedDB</strong>.</p>
+                        <h3>Esportazione</h3>
+                        <ul>
+                            <li><strong>💾 Esporta Tutti i Dati:</strong> Scarica un file JSON con tutti i dati (risorse, progetti, festività locali, template, riunioni, stabilimenti).</li>
+                        </ul>
+                        <h3>Importazione</h3>
+                        <ul>
+                            <li><strong>📂 Importa Dati:</strong> <span style="color: var(--danger-color);">Sostituisce completamente</span> tutti i dati correnti con quelli del file JSON.</li>
+                            <li><strong>📂 Importa e Unisci:</strong> Aggiunge i dati importati a quelli esistenti, senza cancellare nulla.</li>
+                        </ul>
+                        <p><strong>⚠️ Attenzione:</strong> Cancellare i dati del browser (cache, dati siti) elimina tutti i progetti! Effettua backup regolari.</p>
+                    </div>
+                </div>
+
+                <!-- TEMA -->
+                <div class="help-section">
+                    <h2 class="help-section-title">🎨 Tema Chiaro/Scuro</h2>
+                    <div class="help-content">
+                        <p>L'applicazione supporta sia il tema <strong>chiaro</strong> che il tema <strong>scuro</strong>.</p>
+                        <ul>
+                            <li>Usa il pulsante <strong>🌙 / ☀️</strong> nell'header per cambiare tema.</li>
+                            <li>La preferenza viene salvata e mantenuta tra le sessioni.</li>
+                            <li>Al primo avvio, il tema viene impostato in base alla preferenza del sistema operativo.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- SCORCIATOIE -->
+                <div class="help-section">
+                    <h2 class="help-section-title">⌨️ Scorciatoie e Suggerimenti</h2>
+                    <div class="help-content">
+                        <ul>
+                            <li><strong>Chiudi modal con ESC:</strong> Premi il tasto <strong>Esc</strong> per chiudere qualsiasi modal aperto.</li>
+                            <li><strong>Click su giorno (Vista Risorse):</strong> Nella vista settimanale, click su un giorno vuoto apre il modal nuova attività con data e risorsa precompilati.</li>
+                            <li><strong>Avvisi cliccabili:</strong> Click su un avviso ti porta direttamente al problema da risolvere.</li>
+                            <li><strong>Suggerimenti verdi:</strong> Nella Vista Risorse, click su un suggerimento verde pianifica automaticamente l'attività flessibile.</li>
+                            <li><strong>Completamento automatico:</strong> Impostare il completamento al 100% rimuove automaticamente la data flessibile.</li>
+                            <li><strong>Calcolo automatico date:</strong> Le date di fine vengono calcolate considerando weekend, festività e assenze delle risorse assegnate.</li>
+                            <li><strong>Suggerimenti clienti:</strong> I campi "Cliente" suggeriscono automaticamente i nomi già utilizzati in altri progetti o stabilimenti.</li>
+                            <li><strong>Markdown:</strong> I campi Note attività, Descrizione progetto, Descrizione riunione e Resoconto riunione supportano la sintassi Markdown con anteprima integrata.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="help-footer">
+                    <p><strong>🎯 Buon lavoro con il tuo Project Planner!</strong></p>
+                    <p>Per qualsiasi domanda o problema, consulta questa guida o verifica la pagina Avvisi per identificare eventuali problemi.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB IMPORT/EXPORT -->
+        <div id="data" class="tab-content">
+            <h2>Import/Export Dati</h2>
+            
+            <div class="form-section">
+                <h3>Esporta Dati</h3>
+                <p>Esporta tutti i dati (risorse, progetti, festività locali, template) in un file JSON.</p>
+                <button onclick="exportData()">💾 Esporta Tutti i Dati</button>
+            </div>
+
+            <div class="form-section">
+                <h3>Importa Dati</h3>
+                <p>Importa dati da un file JSON precedentemente esportato.</p>
+                <input type="file" id="importFile" accept=".json" style="margin-bottom: 10px;">
+                <br>
+                <button onclick="importData()">📂 Importa Dati</button>
+                <button onclick="importDataMerge()" class="secondary">📂 Importa e Unisci</button>
+            </div>
+
+            <div class="holidays-info">
+                <strong>⚠️ Attenzione</strong><br>
+                <strong>Importa Dati</strong>: sostituisce completamente tutti i dati correnti.<br>
+                <strong>Importa e Unisci</strong>: aggiunge i dati importati a quelli esistenti.
+            </div>
+        </div>
+
+        <!-- TAB GANTT -->
+        <div id="gantt" class="tab-content">
+            <h2>Diagramma di Gantt</h2>
+
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label>Progetto:</label>
+                    <select id="ganttProjectFilter" onchange="renderGantt()">
+                        <option value="">Tutti i Progetti</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Periodo:</label>
+                    <select id="ganttPeriodFilter" onchange="renderGantt()">
+                        <option value="week">Settimana</option>
+                        <option value="month">Mese</option>
+                        <option value="quarter">Trimestre</option>
+                        <option value="year">Anno</option>
+                        <option value="all" selected>Tutti</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Vista:</label>
+                    <select id="ganttViewFilter" onchange="renderGantt()">
+                        <option value="projects">Per Progetto</option>
+                        <option value="resources">Per Risorsa</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="checkbox" id="ganttHideCompleted" onchange="renderGantt()">
+                        Nascondi completati
+                    </label>
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="checkbox" id="ganttHideOutOfPeriod" onchange="renderGantt()">
+                        Nascondi attività fuori dal periodo selezionato
+                    </label>
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="checkbox" id="ganttCompactMode" onchange="toggleGanttCompactMode()">
+                        Modalità compatta
+                    </label>
+                </div>
+                <button onclick="renderGantt()" class="secondary">🔄 Aggiorna</button>
+                <button onclick="collapseAllGanttProjects()" class="secondary">▶ Collapse All</button>
+                <button onclick="expandAllGanttProjects()" class="secondary">▼ Expand All</button>
+            </div>
+
+            <div class="gantt-legend">
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <strong style="font-size: 11px; color: var(--text-tertiary);">STATO:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #bdbdbd;"></div>
+                        <span>Nessuno</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #6b9c7b;"></div>
+                        <span>Completata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #5b8db8;"></div>
+                        <span>In corso</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>In ritardo</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #d4b95f;"></div>
+                        <span>In pausa</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #c9885f;"></div>
+                        <span>Non assegnata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #333333;"></div>
+                        <span>Annullata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--info-color); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
+                        <span>Milestone</span>
+                    </div>
+                    <span style="border-left: 2px solid var(--border-color); height: 20px; margin: 0 5px;"></span>
+                    <strong style="font-size: 11px; color: var(--text-tertiary);">GIORNI:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #ff5722, #ff9800);"></div>
+                        <span>🔴 Oggi</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, var(--bg-secondary), var(--bg-secondary) 4px, rgba(0,0,0,0.08) 4px, rgba(0,0,0,0.08) 8px);"></div>
+                        <span>Weekend</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--warning-bg);"></div>
+                        <span>🎉 Festività</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🏖️ Ferie</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🤒 Malattia</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🏥 Intervento Pianificato</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gantt-container">
+                <div id="ganttChart" class="gantt-chart"></div>
+            </div>
+        </div>
+
+        <!-- TAB VISTA RISORSE -->
+        <div id="resourceView" class="tab-content">
+            <h2>Vista Risorse e Carico di Lavoro</h2>
+
+            <div class="filter-section" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div class="filter-group">
+                    <label>Risorsa:</label>
+                    <select id="resourceViewFilter" onchange="renderResourceView()">
+                        <option value="">Tutte le Risorse</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Periodo:</label>
+                    <select id="resourceViewPeriod" onchange="updateResourceViewPeriod()">
+                        <option value="day">Giorno</option>
+                        <option value="week" selected>Settimana</option>
+                        <option value="month">Mese</option>
+                        <option value="quarter">Trimestre</option>
+                        <option value="year">Anno</option>
+                        <option value="all">Tutto</option>
+                        <option value="custom">Personalizzato</option>
+                    </select>
+                </div>
+                <div class="filter-group" id="specificDayRange" style="display: none;">
+                    <button onclick="navigateResourceView(-1)" title="Giorno precedente">◀</button>
+                    <input type="date" id="resourceViewSpecificDay" onchange="updateDayOfWeekLabel(); renderResourceView()" style="width: 150px;">
+                    <span id="dayOfWeekLabel" style="font-weight: bold; margin-left: 8px; width: 100px; color: var(--text-secondary);"></span>
+                    <button onclick="navigateResourceView(1)" title="Giorno successivo">▶</button>
+                    <button onclick="goToCurrentPeriod()" title="Vai a oggi">📅 Oggi</button>
+                </div>
+                <div class="filter-group" id="specificWeekRange" style="display: none;">
+                    <button onclick="navigateResourceView(-1)" title="Settimana precedente">◀</button>
+                    <select id="resourceViewSpecificWeek" onchange="renderResourceView()">
+                    </select>
+                    <button onclick="navigateResourceView(1)" title="Settimana successiva">▶</button>
+                    <button onclick="goToCurrentPeriod()" title="Vai a settimana corrente">📅 Corrente</button>
+                </div>
+                <div class="filter-group" id="specificMonthRange" style="display: none;">
+                    <button onclick="navigateResourceView(-1)" title="Mese precedente">◀</button>
+                    <select id="resourceViewSpecificMonth" onchange="renderResourceView()">
+                    </select>
+                    <button onclick="navigateResourceView(1)" title="Mese successivo">▶</button>
+                    <button onclick="goToCurrentPeriod()" title="Vai a mese corrente">📅 Corrente</button>
+                </div>
+                <div class="filter-group" id="specificYearRange" style="display: none;">
+                    <button onclick="navigateResourceView(-1)" title="Anno precedente">◀</button>
+                    <select id="resourceViewSpecificYear" onchange="renderResourceView()">
+                    </select>
+                    <button onclick="navigateResourceView(1)" title="Anno successivo">▶</button>
+                    <button onclick="goToCurrentPeriod()" title="Vai a anno corrente">📅 Corrente</button>
+                </div>
+                <div class="filter-group" id="customDateRange" style="display: none;">
+                    <label>Da:</label>
+                    <input type="date" id="resourceViewStartDate" onchange="renderResourceView()">
+                    <label>A:</label>
+                    <input type="date" id="resourceViewEndDate" onchange="renderResourceView()">
+                </div>
+                <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 15px;">
+                    <input type="checkbox" id="resourceViewHideCompleted" onchange="renderResourceView()" style="cursor: pointer;" checked>
+                    <span>Nascondi completate</span>
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 15px;">
+                    <input type="checkbox" id="resourceViewHidePaused" onchange="renderResourceView()" style="cursor: pointer;">
+                    <span>Nascondi in pausa</span>
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-left: 15px;">
+                    <input type="checkbox" id="resourceViewHideSuggestions" onchange="renderResourceView()" style="cursor: pointer;">
+                    <span>Nascondi suggerimenti</span>
+                </label>
+                <button onclick="renderResourceView()" class="secondary">🔄 Aggiorna</button>
+            </div>
+            
+            <div class="gantt-legend" style="margin-top: 10px;">
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <strong style="font-size: 11px; color: var(--text-tertiary);">STATO:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #bdbdbd;"></div>
+                        <span>Nessuno</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #6b9c7b;"></div>
+                        <span>Completata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #5b8db8;"></div>
+                        <span>In corso</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>In ritardo</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #d4b95f;"></div>
+                        <span>In pausa</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #c9885f;"></div>
+                        <span>Non assegnata</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #333333;"></div>
+                        <span>Annullata</span>
+                    </div>
+                    <span style="border-left: 2px solid var(--border-color); height: 20px; margin: 0 5px;"></span>
+                    <strong style="font-size: 11px; color: var(--text-tertiary);">GIORNI:</strong>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #ff5722, #ff9800);"></div>
+                        <span>🔴 Oggi</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, var(--bg-secondary), var(--bg-secondary) 4px, rgba(0,0,0,0.08) 4px, rgba(0,0,0,0.08) 8px);"></div>
+                        <span>Weekend</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--warning-bg);"></div>
+                        <span>🎉 Festività</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🏖️ Ferie</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🤒 Malattia</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
+                        <span>🏥 Intervento Pianificato</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="holidays-info">
+                <strong>📊 Indicatori nell'intestazione risorsa</strong><br>
+                <strong style="color: var(--accent-color);">📊 X/Y gg lavorativi</strong>: Giorni allocati su giorni lavorativi del periodo (arancione se carico > 100%, rosso se > 150%)<br>
+                <strong style="color: #9c27b0;">📅 N gg extra</strong>: Giorni con lavoro su weekend o festivi (visibile solo se > 0)<br>
+                <strong style="color: var(--danger-color);">🏖️ N gg assenza</strong>: Giorni di assenza nel periodo (visibile solo se > 0)
+            </div>
+
+            <div id="resourceViewContainer"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DIALOGS -->
+    
+    <!-- Modal Risorsa -->
+    <div id="resourceModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 id="resourceModalTitle">Nuova Risorsa</h3>
+                <button class="modal-close" onclick="closeResourceModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; gap: 0; padding: 0; overflow: hidden;">
+                <!-- Colonna SX: form con scroll -->
+                <div class="res-modal-left">
+                <div class="form-group">
+                    <label>Nome:</label>
+                    <input type="text" id="resourceFirstName" placeholder="Nome">
+                </div>
+                <div class="form-group">
+                    <label>Cognome:</label>
+                    <input type="text" id="resourceLastName" placeholder="Cognome">
+                </div>
+                <div class="form-group">
+                    <label>Tipo Risorsa:</label>
+                    <select id="resourceType">
+                        <option value="">-- Seleziona --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Giorni di Assenza:</label>
+                    <div id="absenceDays">
+                        <!-- Le righe di assenza verranno aggiunte dinamicamente -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ore di Permesso:</label>
+                    <div id="permitDays">
+                        <!-- Le righe di permesso verranno aggiunte dinamicamente -->
+                    </div>
+                </div>
+                </div>
+                <!-- Colonna DX: calendario compatto -->
+                <div class="res-modal-right">
+                    <label style="font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;">📅 Calendario</label>
+                    <div id="resourceCalendarPreview">
+                        <div class="res-cal-nav">
+                            <button type="button" onclick="navigateResourceCalendar(-1)" title="Mese precedente">◀</button>
+                            <span id="resCalMonthLabel"></span>
+                            <button type="button" onclick="navigateResourceCalendar(1)" title="Mese successivo">▶</button>
+                        </div>
+                        <div class="res-cal-legend">
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 2px, #e57373 2px, #e57373 4px);"></span> Ferie</span>
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #d32f2f;"></span> Malattia</span>
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #7b1fa2;"></span> Intervento</span>
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #ff9800;"></span> Permesso</span>
+                        </div>
+                        <div id="resCalGrid" class="res-cal-grid"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeResourceModal()" class="secondary">Annulla</button>
+                <button onclick="saveResource()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Impostazioni Tipi Risorsa -->
+    <div id="resourceTypesSettingsModal" class="modal">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3>⚙️ Gestione Tipi Risorsa</h3>
+                <button class="modal-close" onclick="closeResourceTypesSettings()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 12px;">
+                <div id="resourceTypesListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+                <div style="margin-top: 10px; display: flex; gap: 6px;">
+                    <input type="text" id="newResourceTypeValue" placeholder="valore-tipo (es. tecnico)" style="flex: 1; padding: 5px 8px; font-size: 13px;">
+                    <input type="text" id="newResourceTypeLabel" placeholder="Etichetta (es. Tecnico)" style="flex: 1; padding: 5px 8px; font-size: 13px;">
+                    <button onclick="addResourceType()" style="padding: 5px 12px; font-size: 13px;">➕ Aggiungi</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeResourceTypesSettings()" class="secondary">Chiudi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Festività Locale -->
+    <div id="localHolidayModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="localHolidayModalTitle">Nuova Festività Locale</h3>
+                <button class="modal-close" onclick="closeLocalHolidayModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome Festività:</label>
+                    <input type="text" id="localHolidayName" placeholder="Es: San Giovanni (Patrono)">
+                </div>
+                <div class="form-group">
+                    <label>Giorno:</label>
+                    <input type="number" id="localHolidayDay" min="1" max="31" placeholder="Giorno">
+                </div>
+                <div class="form-group">
+                    <label>Mese:</label>
+                    <select id="localHolidayMonth">
+                        <option value="1">Gennaio</option>
+                        <option value="2">Febbraio</option>
+                        <option value="3">Marzo</option>
+                        <option value="4">Aprile</option>
+                        <option value="5">Maggio</option>
+                        <option value="6">Giugno</option>
+                        <option value="7">Luglio</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Settembre</option>
+                        <option value="10">Ottobre</option>
+                        <option value="11">Novembre</option>
+                        <option value="12">Dicembre</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeLocalHolidayModal()" class="secondary">Annulla</button>
+                <button onclick="saveLocalHoliday()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Progetto -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="projectModalTitle">Nuovo Progetto</h3>
+                <button class="modal-close" onclick="closeProjectModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Cliente:</label>
+                    <input type="text" id="projectClient" placeholder="Nome Cliente" list="clientSuggestions">
+                    <datalist id="clientSuggestions"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Codice Lavoro:</label>
+                    <input type="text" id="projectCode" placeholder="Codice">
+                </div>
+                <div class="form-group">
+                    <label>Descrizione:</label>
+                    <textarea id="projectDescription" placeholder="Descrizione del progetto"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Template (opzionale):</label>
+                    <select id="projectTemplateSelect">
+                        <option value="">-- Nessun Template --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeProjectModal()" class="secondary">Annulla</button>
+                <button onclick="saveProject()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Milestone -->
+    <div id="milestoneModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="milestoneModalTitle">Nuovo Punto di Controllo</h3>
+                <button class="modal-close" onclick="closeMilestoneModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome Milestone:</label>
+                    <input type="text" id="milestoneName" placeholder="Nome del punto di controllo">
+                </div>
+                <div class="form-group">
+                    <label>Data:</label>
+                    <input type="date" id="milestoneDate">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeMilestoneModal()" class="secondary">Annulla</button>
+                <button onclick="saveMilestone()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Task -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="taskModalTitle">Nuova Attività</h3>
+                <button class="modal-close" onclick="closeTaskModal()">&times;</button>
+            </div>
+            <div class="modal-body modal-body-two-columns">
+                <div class="modal-main-column">
+                    <div id="taskProjectBanner" style="display:none; margin-bottom:12px; padding:8px 12px; background-color:var(--accent-color-light); border-left:4px solid var(--accent-color); border-radius:4px; font-size:0.9em;">
+                        <strong>📁 Progetto:</strong> <span id="taskProjectClient"></span> &nbsp;|&nbsp; <span id="taskProjectCode" style="font-family:monospace;"></span>
+                        <span id="taskProjectDescriptionWrap"> &nbsp;|&nbsp; <span id="taskProjectDescription" style="color:var(--text-tertiary);"></span></span>
+                    </div>
+                    <div id="taskCreatedAtDisplay" style="display:none; margin-bottom:8px; font-size:11px; color:var(--text-tertiary);"></div>
+                    <div class="form-group">
+                        <label>📌 Annotazione:</label>
+                        <input type="text" id="taskAnnotation" placeholder="Breve nota da verificare..." maxlength="200">
+                    </div>
+                    <div class="form-group">
+                        <label>Nome Attività:</label>
+                        <input type="text" id="taskName" placeholder="Nome dell'attività">
+                    </div>
+                    <div class="form-group">
+                        <label>Metodo Calcolo:</label>
+                        <div class="inline-group">
+                            <input type="radio" id="calcFromStart" name="calcMethod" value="start" checked>
+                            <label for="calcFromStart">Inizio + Durata</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="radio" id="calcFromEnd" name="calcMethod" value="end">
+                            <label for="calcFromEnd">Fine + Durata</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Inizio:</label>
+                        <div class="inline-group">
+                            <input type="date" id="taskStartDate">
+                            <label style="margin-left: 10px;">oppure collegata a:</label>
+                            <select id="taskStartLinkedTo" style="margin-left: 5px;">
+                                <option value="">-- Nessun Collegamento --</option>
+                            </select>
+                            <label style="margin-left: 5px;">+ offset giorni:</label>
+                            <input type="number" id="taskStartOffset" value="0" min="-365" max="365" style="width: 70px; margin-left: 5px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Fine:</label>
+                        <div class="inline-group">
+                            <input type="date" id="taskEndDate">
+                            <label style="margin-left: 10px;">oppure collegata a:</label>
+                            <select id="taskEndLinkedTo" style="margin-left: 5px;">
+                                <option value="">-- Nessun Collegamento --</option>
+                            </select>
+                            <label style="margin-left: 5px;">+ offset giorni:</label>
+                            <input type="number" id="taskEndOffset" value="0" min="-365" max="365" style="width: 70px; margin-left: 5px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Durata (giorni):</label>
+                        <input type="number" id="taskDuration" min="1" value="1">
+                        <input type="checkbox" id="taskFlexibleDate" onchange="toggleFlexibleDate()">
+                        <label style="width: auto;" for="taskFlexibleDate">Data Flessibile (proposta automatica quando risorsa libera)</label>
+                    </div>
+                    <div class="form-group">
+                        <label></label>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskSaturdayWork">
+                            <label for="taskSaturdayWork">Sabato Lavorativo</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskSundayWork">
+                            <label for="taskSundayWork">Domenica Lavorativa</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="taskHolidayWork">
+                            <label for="taskHolidayWork">Festivi Lavorativi</label>
+                        </div>
+                        <div class="inline-group" style="margin-left: 20px;">
+                            <label for="taskNightWork" style="width: auto;">🌙 Lavoro Notturno:</label>
+                            <input type="text" id="taskNightWork" placeholder="es. 22:00-06:00" style="width: 130px; margin-left: 5px;">
+                        </div>
+                    </div>
+                    <div class="form-group" id="absenceWarningContainer" style="display: none;">
+                        <label></label>
+                        <div style="padding: 10px; background-color: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: 4px; color: var(--text-primary);">
+                            <strong>⚠️ Attenzione:</strong> <span id="absenceWarningText"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Completamento (%):</label>
+                        <input type="number" id="taskCompletion" min="0" max="100" step="10" value="0">
+                    </div>
+                    <div class="form-group" id="taskDatesTrackingContainer">
+                        <label>Tracking:</label>
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; font-size: 0.9em;">
+                            <span style="display: flex; align-items: center; gap: 4px;">🚀 Avviata: <input type="date" id="taskStartedAt" style="padding: 2px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary); font-size: 0.95em;"></span>
+                            <span style="display: flex; align-items: center; gap: 4px;">✅ Completata: <input type="date" id="taskCompletedAt" style="padding: 2px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg); color: var(--text-primary); font-size: 0.95em;"></span>
+                            <span id="taskDaysDiffDisplay"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Stato:</label>
+                        <select id="taskStatus">
+                            <option value="">-- Nessuno --</option>
+                            <option value="in-corso">In Corso</option>
+                            <option value="in-ritardo">In Ritardo</option>
+                            <option value="pausa">In Pausa</option>
+                            <option value="completata">Completata</option>
+                            <option value="annullata">Annullata</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Luogo:</label>
+                        <div class="location-plant-row">
+                            <select id="taskLocationType" onchange="togglePlantSelector()" style="width: 180px;">
+                                <option value="sede">🏢 In Sede</option>
+                                <option value="cliente">🏭 Presso Cliente</option>
+                                <option value="remoto">📡 Da Remoto</option>
+                            </select>
+                            <select id="taskPlantId" style="width: 250px; display: none;">
+                                <option value="">-- Seleziona Stabilimento --</option>
+                            </select>
+                            <span id="taskPlantInfo" class="plant-info-badge" style="display: none;"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Risorse Assegnate:</label>
+                        <div class="resource-allocation" id="taskResources">
+                            <!-- Le risorse verranno aggiunte dinamicamente -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Note:</label>
+                        <textarea id="taskNotes" rows="4" placeholder="Inserisci note aggiuntive sull'attività..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-side-column">
+                    <div class="checklist-panel">
+                        <h4>📋 Checklist</h4>
+                        <div id="taskChecklistContainer" style="margin-bottom: 10px; max-height: 500px; overflow-y: auto;">
+                            <!-- Gli elementi della checklist verranno aggiunti qui -->
+                        </div>
+                        <button type="button" onclick="addChecklistItem()" class="secondary" style="font-size: 0.9em; width: 100%;">+ Aggiungi Elemento</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeTaskModal()" class="secondary">Annulla</button>
+                <button id="taskDeleteBtn" onclick="deleteTaskFromModal()" class="delete" style="display:none;">🗑️ Elimina</button>
+                <button onclick="sendTaskEmail()" class="secondary">📧 Invia Email</button>
+                <span id="taskEmailSentDisplay" style="font-size: 11px; color: var(--text-tertiary); align-self: center;"></span>
+                <button onclick="saveTask()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Stabilimento -->
+    <div id="plantModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="plantModalTitle">Nuovo Stabilimento</h3>
+                <button class="modal-close" onclick="closePlantModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
+                    <label>Nome Stabilimento:</label>
+                    <input type="text" id="plantName" placeholder="Es. Stabilimento Nord, Sede Milano...">
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
+                    <label>Cliente:</label>
+                    <input type="text" id="plantClient" placeholder="Nome del cliente" list="plantClientSuggestions">
+                    <datalist id="plantClientSuggestions"></datalist>
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:15px;">
+                    <label>Indirizzo:</label>
+                    <input type="text" id="plantAddress" placeholder="Indirizzo completo (via, città, nazione...)">
+                </div>
+                <input type="hidden" id="plantLat">
+                <input type="hidden" id="plantLng">
+                <div class="form-group" style="display:flex; align-items:center; gap:15px; flex-wrap: wrap;">
+                    <button type="button" onclick="geocodePlantAddress()" class="secondary" style="white-space: nowrap;">📍 Geocodifica Indirizzo</button>
+                    <span id="geocodeStatus" style="font-size: 12px; color: var(--text-secondary); margin-left: 5px;"></span>
+                </div>
+                <div class="form-group" style="display:flex; align-items:flex-start; gap:15px;">
+                    <label style="padding-top: 4px;">Mappa:</label>
+                    <div style="flex: 1;">
+                        <div id="plantModalMap" style="height: 280px; border-radius: 8px; border: 1px solid var(--border-color); z-index: 1;"></div>
+                        <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">Trascina il marker per regolare la posizione. Clicca sulla mappa per spostarlo.</div>
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex; align-items:flex-start; gap:15px;">
+                    <label>Note:</label>
+                    <textarea id="plantNotes" rows="3" placeholder="Note aggiuntive sullo stabilimento..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closePlantModal()" class="secondary">Annulla</button>
+                <button onclick="savePlant()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Template -->
+    <div id="templateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="templateModalTitle">Nuovo Template</h3>
+                <button class="modal-close" onclick="closeTemplateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome Template:</label>
+                    <input type="text" id="templateName" placeholder="Nome del template">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeTemplateModal()" class="secondary">Annulla</button>
+                <button onclick="saveTemplateStandalone()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Template Milestone -->
+    <div id="templateMilestoneModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="templateMilestoneModalTitle">Nuovo Punto di Controllo</h3>
+                <button class="modal-close" onclick="closeTemplateMilestoneModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome Milestone:</label>
+                    <input type="text" id="templateMilestoneName" placeholder="Nome del punto di controllo">
+                </div>
+                <div class="form-group">
+                    <label>Data:</label>
+                    <div class="inline-group">
+                        <label style="font-size:12px; white-space:nowrap;">Giorno dall'inizio:</label>
+                        <input type="number" id="templateMilestoneDay" min="0" value="0" style="width:60px; margin-left:5px;">
+                        <label style="margin-left:10px; white-space:nowrap;">oppure collegata a:</label>
+                        <select id="templateMilestoneLinkedTo" style="margin-left:5px;">
+                            <option value="">-- Nessun Collegamento --</option>
+                        </select>
+                        <label style="margin-left:5px; white-space:nowrap;">+ offset giorni:</label>
+                        <input type="number" id="templateMilestoneOffset" value="0" min="-365" max="365" style="width:60px; margin-left:5px;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeTemplateMilestoneModal()" class="secondary">Annulla</button>
+                <button onclick="saveTemplateMilestone()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Template Task -->
+    <div id="templateTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="templateTaskModalTitle">Nuova Attività</h3>
+                <button class="modal-close" onclick="closeTemplateTaskModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome Attività:</label>
+                    <input type="text" id="templateTaskName" placeholder="Nome dell'attività">
+                </div>
+                <div class="form-group">
+                    <label>Data Inizio:</label>
+                    <div class="inline-group">
+                        <label style="font-size:12px; white-space:nowrap;">Giorno dall'inizio:</label>
+                        <input type="number" id="templateTaskStartDay" min="0" value="0" style="width:60px; margin-left:5px;">
+                        <label style="margin-left:10px; white-space:nowrap;">oppure collegata a:</label>
+                        <select id="templateTaskStartLinkedTo" style="margin-left:5px;">
+                            <option value="">-- Nessun Collegamento --</option>
+                        </select>
+                        <label style="margin-left:5px; white-space:nowrap;">+ offset giorni:</label>
+                        <input type="number" id="templateTaskStartOffset" value="0" min="-365" max="365" style="width:60px; margin-left:5px;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Data Fine:</label>
+                    <div class="inline-group">
+                        <label style="font-size:12px; white-space:nowrap;">Durata (gg):</label>
+                        <input type="number" id="templateTaskDuration" min="1" value="1" style="width:60px; margin-left:5px;">
+                        <label style="margin-left:10px; white-space:nowrap;">oppure collegata a:</label>
+                        <select id="templateTaskEndLinkedTo" style="margin-left:5px;">
+                            <option value="">-- Nessun Collegamento --</option>
+                        </select>
+                        <label style="margin-left:5px; white-space:nowrap;">+ offset giorni:</label>
+                        <input type="number" id="templateTaskEndOffset" value="0" min="-365" max="365" style="width:60px; margin-left:5px;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Luogo di lavoro:</label>
+                    <select id="templateTaskLocationType">
+                        <option value="">-- Non specificato --</option>
+                        <option value="sede">🏢 Sede</option>
+                        <option value="cliente">🏭 Cliente</option>
+                        <option value="remoto">🌐 Remoto</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label></label>
+                    <div class="inline-group">
+                        <input type="checkbox" id="templateTaskSaturdayWork">
+                        <label for="templateTaskSaturdayWork">Sabato Lavorativo</label>
+                    </div>
+                    <div class="inline-group">
+                        <input type="checkbox" id="templateTaskSundayWork">
+                        <label for="templateTaskSundayWork">Domenica Lavorativa</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeTemplateTaskModal()" class="secondary">Annulla</button>
+                <button onclick="saveTemplateTask()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Copia Attività -->
+    <div id="copyTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 Copia Attività su Altri Progetti</h3>
+                <button class="modal-close" onclick="closeCopyTaskModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label style="font-weight: bold;">Attività:</label>
+                    <span id="copyTaskName" style="color: var(--accent-color);"></span>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold;">Opzioni di copia:</label>
+                    <div style="margin-left: 160px;">
+                        <div class="inline-group">
+                            <input type="checkbox" id="copyTaskDates" checked>
+                            <label for="copyTaskDates">Copia date (inizio e durata)</label>
+                        </div>
+                        <div class="inline-group">
+                            <input type="checkbox" id="copyTaskResources" checked>
+                            <label for="copyTaskResources">Copia assegnazione risorse</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold;">Progetti destinazione:</label>
+                    <div style="max-height: 400px; overflow-y: auto; overflow-x: hidden; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary);">
+                        <table id="copyTaskProjectsTable" style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-secondary); z-index: 1;">
+                                <tr style="background: var(--bg-primary);">
+                                    <th style="padding: 4px; width: 50px;"></th>
+                                    <th style="padding: 4px; width: 100px;"></th>
+                                    <th style="padding: 4px; width: 40%;">
+                                        <input type="text" id="copyTaskFilterClient" placeholder="Filtra cliente..." style="width: 100%; box-sizing: border-box; padding: 4px;" oninput="filterCopyProjects()">
+                                    </th>
+                                    <th style="padding: 4px; width: calc(60% - 150px);">
+                                        <input type="text" id="copyTaskFilterDesc" placeholder="Filtra descrizione..." style="width: 100%; box-sizing: border-box; padding: 4px;" oninput="filterCopyProjects()">
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th style="padding: 8px; text-align: center; border-bottom: 2px solid var(--border-color); width: 50px;">Sel.</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: 100px;">Codice</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: 40%;">Cliente</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: calc(60% - 150px);">Descrizione</th>
+                                </tr>
+                            </thead>
+                            <tbody id="copyTaskProjectsList">
+                                <!-- I progetti verranno inseriti qui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="copyTaskSelectedCount" style="margin-right: auto; color: var(--accent-color); font-weight: bold;">Nessun progetto selezionato</span>
+                <button onclick="closeCopyTaskModal()" class="secondary">Annulla</button>
+                <button onclick="executeCopyTask()">📋 Copia Attività</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Copia Offerta -->
+    <div id="copyOfferModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 Copia Offerta su Altri Progetti</h3>
+                <button class="modal-close" onclick="closeCopyOfferModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label style="font-weight: bold;">Offerta:</label>
+                    <span id="copyOfferName" style="color: var(--accent-color);"></span>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold;">Progetti destinazione:</label>
+                    <div style="max-height: 400px; overflow-y: auto; overflow-x: hidden; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary);">
+                        <table id="copyOfferProjectsTable" style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-secondary); z-index: 1;">
+                                <tr style="background: var(--bg-primary);">
+                                    <th style="padding: 4px; width: 50px;"></th>
+                                    <th style="padding: 4px; width: 100px;"></th>
+                                    <th style="padding: 4px; width: 40%;">
+                                        <input type="text" id="copyOfferFilterClient" placeholder="Filtra cliente..." style="width: 100%; box-sizing: border-box; padding: 4px;" oninput="filterCopyOfferProjects()">
+                                    </th>
+                                    <th style="padding: 4px; width: calc(60% - 150px);">
+                                        <input type="text" id="copyOfferFilterDesc" placeholder="Filtra descrizione..." style="width: 100%; box-sizing: border-box; padding: 4px;" oninput="filterCopyOfferProjects()">
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th style="padding: 8px; text-align: center; border-bottom: 2px solid var(--border-color); width: 50px;">Sel.</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: 100px;">Codice</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: 40%;">Cliente</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid var(--border-color); width: calc(60% - 150px);">Descrizione</th>
+                                </tr>
+                            </thead>
+                            <tbody id="copyOfferProjectsList">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="copyOfferSelectedCount" style="margin-right: auto; color: var(--accent-color); font-weight: bold;">Nessun progetto selezionato</span>
+                <button onclick="closeCopyOfferModal()" class="secondary">Annulla</button>
+                <button onclick="executeCopyOffer()">📋 Copia Offerta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Aggiornamento -->
+    <div id="updateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="updateModalTitle">📋 Visualizza Aggiornamento</h3>
+                <button class="modal-close" onclick="closeUpdateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="updateViewDate">Data/Ora</label>
+                    <input type="text" id="updateViewDate" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="updateViewText">Descrizione</label>
+                    <textarea id="updateViewText" rows="4" disabled></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="updateViewTags">Tag</label>
+                    <input type="text" id="updateViewTags" disabled>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeUpdateModal()" class="secondary">Chiudi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Split/Duplica Attività -->
+    <div id="splitTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✂️ Spezza/Duplica Attività</h3>
+                <button class="modal-close" onclick="closeSplitTaskModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label style="font-weight: bold;">Attività:</label>
+                    <span id="splitTaskName" style="color: var(--accent-color);"></span>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold;">Date attuali:</label>
+                    <div style="margin-left: 160px;">
+                        <span id="splitTaskCurrentDates" style="color: var(--text-secondary);"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="splitTaskMode">Modalità *</label>
+                    <select id="splitTaskMode" onchange="updateSplitTaskUI()">
+                        <option value="split">Spezza in due attività</option>
+                        <option value="duplicate">Duplica attività</option>
+                    </select>
+                </div>
+                <div id="splitDateGroup" class="form-group">
+                    <label for="splitTaskDate">Data di split *</label>
+                    <input type="date" id="splitTaskDate" onchange="updateSplitPreview()">
+                    <small style="margin-left: 160px; color: var(--text-tertiary); display: block;">
+                        La prima attività terminerà il giorno prima di questa data.<br>
+                        La seconda attività inizierà da questa data.
+                    </small>
+                </div>
+                <div id="splitPreview" style="margin-top: 15px; padding: 15px; background: var(--bg-tertiary); border-radius: 4px; display: none;">
+                    <h4 style="margin-bottom: 10px;">Anteprima:</h4>
+                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 15px; align-items: center;">
+                        <strong>Attività 1:</strong>
+                        <span id="splitPreview1"></span>
+                        <strong>Attività 2:</strong>
+                        <span id="splitPreview2"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeSplitTaskModal()" class="secondary">Annulla</button>
+                <button onclick="executeSplitTask()" id="splitTaskExecuteBtn">✂️ Spezza</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Offerta -->
+    <div id="offerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="offerModalTitle">💼 Nuova Offerta</h3>
+                <button class="modal-close" onclick="closeOfferModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="offerCode">ID Offerta</label>
+                    <input type="text" id="offerCode" placeholder="es: OFF-001">
+                </div>
+                <div class="form-group">
+                    <label for="offerTitle">Titolo Offerta *</label>
+                    <input type="text" id="offerTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="offerDate">Data *</label>
+                    <input type="date" id="offerDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="offerEstimate">Stima Tempi *</label>
+                    <input type="text" id="offerEstimate" placeholder="es: 40 ore, 2 settimane, 3 mesi" required>
+                </div>
+                <div class="form-group">
+                    <label for="offerValue">Valore €</label>
+                    <input type="number" id="offerValue" step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="offerStatus">Stato *</label>
+                    <select id="offerStatus" required>
+                        <option value="in-preparazione">In Preparazione</option>
+                        <option value="inviata">Inviata</option>
+                        <option value="accettata">Accettata</option>
+                        <option value="rifiutata">Rifiutata</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="offerNotes">Note</label>
+                    <textarea id="offerNotes" rows="6" placeholder="Note aggiuntive sull'offerta..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeOfferModal()" class="secondary">Annulla</button>
+                <button onclick="saveOffer()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Issue -->
+    <div id="issueModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="issueModalTitle">🐛 Nuovo Issue</h3>
+                <button class="modal-close" onclick="closeIssueModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="issueTitle">Titolo *</label>
+                    <input type="text" id="issueTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="issuePriority">Priorità *</label>
+                    <select id="issuePriority" required>
+                        <option value="bassa">🟢 Bassa</option>
+                        <option value="media" selected>🟡 Media</option>
+                        <option value="alta">🟠 Alta</option>
+                        <option value="critica">🔴 Critica</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issueAssignee">Assegnatario</label>
+                    <select id="issueAssignee">
+                        <option value="">Non assegnato</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issueStatus">Stato *</label>
+                    <select id="issueStatus" required>
+                        <option value="aperto" selected>Aperto</option>
+                        <option value="in-lavorazione">In Lavorazione</option>
+                        <option value="risolto">Risolto</option>
+                        <option value="chiuso">Chiuso</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issueDescription">Descrizione</label>
+                    <textarea id="issueDescription" rows="5"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeIssueModal()" class="secondary">Annulla</button>
+                <button onclick="saveIssue()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Riunione -->
+    <div id="meetingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="meetingModalTitle">👥 Nuova Riunione</h3>
+                <button class="modal-close" onclick="closeMeetingModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="meetingDate">Data *</label>
+                    <input type="date" id="meetingDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="meetingSubject">Argomento *</label>
+                    <input type="text" id="meetingSubject" required>
+                </div>
+                <div class="form-group">
+                    <label for="meetingParticipants">Partecipanti *</label>
+                    <input type="text" id="meetingParticipants" placeholder="es: Mario Rossi, Luigi Verdi" required>
+                </div>
+                <div class="form-group">
+                    <label for="meetingTopics">Argomenti Discussi</label>
+                    <textarea id="meetingTopics" rows="8" placeholder="Cosa si è discusso durante la riunione..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeMeetingModal()" class="secondary">Annulla</button>
+                <button onclick="sendMeetingEmail()" class="secondary">📧 Invia Email</button>
+                <button onclick="saveMeeting()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Riunione Globale -->
+    <div id="globalMeetingModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 id="globalMeetingModalTitle">👥 Nuova Riunione</h3>
+                <button class="modal-close" onclick="closeGlobalMeetingModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="globalMeetingDate">Data Inizio *</label>
+                    <input type="date" id="globalMeetingDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingTime">Ora</label>
+                    <select id="globalMeetingTime">
+                        <option value="">--</option>
+                    </select>
+                </div>
+                <div class="form-group" style="align-items: center;">
+                    <label style="margin: 0;">
+                        <input type="checkbox" id="globalMeetingRecurring" onchange="toggleRecurringFields()" style="cursor: pointer;"> Riunione Ricorsiva
+                    </label>
+                </div>
+                <div id="recurringFieldsContainer" style="display: none; width: 100%;">
+                    <div class="form-group">
+                        <label for="globalMeetingEndDate">Data Fine Ricorrenza *</label>
+                        <input type="date" id="globalMeetingEndDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="globalMeetingWeekInterval">Ogni quante settimane *</label>
+                        <input type="number" id="globalMeetingWeekInterval" min="1" value="1" style="width: 80px;">
+                    </div>
+                    <div class="form-group" style="flex-direction: column; align-items: stretch;">
+                        <label>Giorni della Settimana *</label>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="1" class="recurring-day"> Lunedì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="2" class="recurring-day"> Martedì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="3" class="recurring-day"> Mercoledì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="4" class="recurring-day"> Giovedì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="5" class="recurring-day"> Venerdì
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="6" class="recurring-day"> Sabato
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <input type="checkbox" value="0" class="recurring-day"> Domenica
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingSubject">Oggetto *</label>
+                    <input type="text" id="globalMeetingSubject" placeholder="Oggetto della riunione" required>
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingTags">Tag</label>
+                    <input type="text" id="globalMeetingTags" placeholder="es: Planning, Review, Technical" list="meetingTagsSuggestions">
+                    <datalist id="meetingTagsSuggestions"></datalist>
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingResources">Risorse *</label>
+                    <div id="globalMeetingResourcesContainer" style="flex: 1;">
+                        <!-- Checkboxes generate dinamicamente -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingExpectedDuration">Durata Prevista</label>
+                    <input type="time" id="globalMeetingExpectedDuration" step="300">
+                </div>
+                <div class="form-group">
+                    <label for="globalMeetingActualDuration">Durata Reale</label>
+                    <input type="time" id="globalMeetingActualDuration" step="300">
+                </div>
+                <div class="form-group" style="flex-direction: column; align-items: stretch;">
+                    <label for="globalMeetingDescription">Descrizione</label>
+                    <textarea id="globalMeetingDescription" rows="6" placeholder="Descrizione della riunione (supporta Markdown)"></textarea>
+                </div>
+                <div class="form-group" style="flex-direction: column; align-items: stretch;">
+                    <label for="globalMeetingMinutes">Resoconto</label>
+                    <textarea id="globalMeetingMinutes" rows="8" placeholder="Resoconto della riunione (supporta Markdown)"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeGlobalMeetingModal()" class="secondary">Annulla</button>
+                <button onclick="sendGlobalMeetingEmail()" class="secondary">📧 Invia Email</button>
+                <button onclick="saveGlobalMeeting()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Note a Tutto Schermo -->
+    <div id="fullscreenNoteModal">
+        <div class="fmd-content">
+            <div class="fmd-header">
+                <h3 id="fmdTitle">📝 Note</h3>
+                <button class="modal-close" onclick="closeFullscreenNoteEditor()" title="Chiudi (ESC)">&times;</button>
+            </div>
+            <div class="fmd-layout">
+                <div class="fmd-col">
+                    <div class="fmd-col-header">✏️ Modifica</div>
+                    <div class="fmd-toolbar">
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('bold')" title="Grassetto"><b>B</b></button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('italic')" title="Corsivo"><i>I</i></button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('strike')" title="Barrato"><s>S</s></button>
+                        <span class="fmd-tb-sep"></span>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('h1')" title="Titolo 1">H1</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('h2')" title="Titolo 2">H2</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('h3')" title="Titolo 3">H3</button>
+                        <span class="fmd-tb-sep"></span>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('ul')" title="Lista puntata">• Lista</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('ol')" title="Lista numerata">1. Lista</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('quote')" title="Citazione">❝ Cit.</button>
+                        <span class="fmd-tb-sep"></span>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('code')" title="Codice inline"><code>`c`</code></button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('codeblock')" title="Blocco codice"><code>```</code></button>
+                        <span class="fmd-tb-sep"></span>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('table')" title="Tabella">⊞ Tabella</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('link')" title="Link">🔗 Link</button>
+                        <button type="button" class="fmd-tb-btn" onclick="fmdInsert('hr')" title="Separatore orizzontale">— HR</button>
+                        <span class="fmd-tb-sep"></span>
+                        <div class="fmd-emoji-wrap">
+                            <button type="button" class="fmd-tb-btn" onclick="fmdToggleEmojiPanel(event)" title="Inserisci icona / emoji">😀 Icone</button>
+                            <div id="fmdEmojiPanel" class="fmd-emoji-panel">
+                                <span class="fmd-emoji-cat-label">Stato / Priorità</span>
+                                <div class="fmd-emoji-grid">
+                                    <button class="fmd-emoji-btn" onclick="fmdInsertEmoji('✅')">✅</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('❌')">❌</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⚠️')">⚠️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔴')">🔴</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🟠')">🟠</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🟡')">🟡</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🟢')">🟢</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔵')">🔵</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⭐')">⭐</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🚨')">🚨</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('💡')">💡</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📌')">📌</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📍')">📍</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔒')">🔒</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔓')">🔓</button>
+                                </div>
+                                <span class="fmd-emoji-cat-label">Azioni / Progetto</span>
+                                <div class="fmd-emoji-grid">
+                                    <button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📋')">📋</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📝')">📝</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📊')">📊</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📈')">📈</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📉')">📉</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🗓️')">🗓️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⏰')">⏰</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⏳')">⏳</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔧')">🔧</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🛠️')">🛠️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🚀')">🚀</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🏁')">🏁</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🎯')">🎯</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('💰')">💰</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📦')">📦</button>
+                                </div>
+                                <span class="fmd-emoji-cat-label">Persone / Comunicazione</span>
+                                <div class="fmd-emoji-grid">
+                                    <button class="fmd-emoji-btn" onclick="fmdInsertEmoji('👤')">👤</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('👥')">👥</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📧')">📧</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📞')">📞</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('💬')">💬</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🤝')">🤝</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('👍')">👍</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('👎')">👎</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('❓')">❓</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('❗')">❗</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('ℹ️')">ℹ️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🏢')">🏢</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🏭')">🏭</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📡')">📡</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🖥️')">🖥️</button>
+                                </div>
+                                <span class="fmd-emoji-cat-label">Frecce / Simboli</span>
+                                <div class="fmd-emoji-grid">
+                                    <button class="fmd-emoji-btn" onclick="fmdInsertEmoji('➡️')">➡️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⬅️')">⬅️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⬆️')">⬆️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⬇️')">⬇️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('↩️')">↩️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔄')">🔄</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('▶️')">▶️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⏸️')">⏸️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('⏹️')">⏹️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('➕')">➕</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('➖')">➖</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('✏️')">✏️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🗑️')">🗑️</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('📎')">📎</button><button class="fmd-emoji-btn" onclick="fmdInsertEmoji('🔍')">🔍</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <textarea id="fmdTextarea" placeholder="Scrivi qui in Markdown..."></textarea>
+                </div>
+                <div class="fmd-col">
+                    <div class="fmd-col-header">👁️ Anteprima</div>
+                    <div id="fmdPreview" class="markdown-preview"></div>
+                </div>
+            </div>
+            <div class="fmd-footer">
+                <button onclick="closeFullscreenNoteEditor()" class="secondary">✖ Chiudi</button>
+                <button onclick="saveAndCloseFullscreenNoteEditor()">💾 Salva e Chiudi</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Entry point moduli JS (ES Modules) -->
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>
