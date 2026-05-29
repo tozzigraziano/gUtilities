@@ -27,11 +27,35 @@
     <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
+    <!-- Login overlay -->
+    <div id="loginOverlay" style="display:none; position:fixed; inset:0; background:var(--bg,#f5f5f5); z-index:9999; justify-content:center; align-items:center;">
+        <div class="login-card">
+            <h2>🔐 Accesso</h2>
+            <p style="text-align:center;font-size:0.85em;margin:0;opacity:0.7">ProjectPlanner v2</p>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="loginUsername" placeholder="username" onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <div id="loginError" class="login-error" style="display:none"></div>
+            <button onclick="doLogin()" id="loginBtn" style="width:100%">Accedi</button>
+        </div>
+    </div>
     <div class="container">
         <h1>
             <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' style='width: 1.2em; height: 1.2em; vertical-align: middle; margin-right: 0.3em;'><rect x='10' y='20' width='30' height='8' rx='2' fill='currentColor'/><rect x='45' y='20' width='45' height='8' rx='2' fill='currentColor'/><rect x='10' y='38' width='50' height='8' rx='2' fill='currentColor'/><rect x='10' y='56' width='35' height='8' rx='2' fill='currentColor'/><rect x='50' y='56' width='30' height='8' rx='2' fill='currentColor'/><rect x='10' y='74' width='40' height='8' rx='2' fill='currentColor'/><line x1='5' y1='15' x2='5' y2='90' stroke='currentColor' stroke-width='2'/><line x1='5' y1='90' x2='95' y2='90' stroke='currentColor' stroke-width='2'/></svg>
             Pianificazione Risorse e Progetti
             <span id="dbStatusIndicator" class="db-status offline" title="Connessione database">●</span>            <button class="theme-toggle" onclick="toggleTheme()" title="Cambia tema">🌓</button>
+            <div class="auth-bar" id="authBar">
+                <span id="authUsername" style="font-weight:600"></span>
+                <span id="authRoleBadge" class="role-badge"></span>
+                <button onclick="openChangePasswordModal()" class="secondary" style="font-size:0.85em;padding:3px 10px" title="Cambia password">🔑</button>
+                <button onclick="openUsersModal()" id="btnGestisciUtenti" class="secondary" style="font-size:0.85em;padding:3px 10px;display:none">👥 Utenti</button>
+                <button onclick="authLogout()" class="secondary" style="font-size:0.85em;padding:3px 10px">🚪 Esci</button>
+            </div>
         </h1>
 
         <div class="tabs">
@@ -336,6 +360,7 @@
 
                 <div class="action-bar">
                     <button onclick="openTaskModal()">➕ Nuova Attività</button>
+                    <button onclick="openGroupModal()" class="secondary">📁 Gestisci Gruppi</button>
                 </div>
 
                 <!-- Pannello Analisi Risorse -->
@@ -482,6 +507,7 @@
                     <thead>
                         <tr>
                             <th>Nome</th>
+                            <th>Gruppo</th>
                             <th>Posizionamento</th>
                             <th>Durata</th>
                             <th>Luogo</th>
@@ -495,6 +521,7 @@
 
                 <div class="action-bar">
                     <button onclick="openTemplateTaskModal()">➕ Nuova Attività</button>
+                    <button onclick="openTemplateGroupModal()" class="secondary">📁 Gestisci Gruppi</button>
                 </div>
 
                 <button onclick="closeTemplateDetails()" class="secondary">← Torna ai Template</button>
@@ -1413,7 +1440,7 @@
                 <button onclick="exportData()">💾 Esporta Tutti i Dati</button>
             </div>
 
-            <div class="form-section">
+            <div class="form-section admin-only">
                 <h3>Importa Dati</h3>
                 <p>Importa dati da un file JSON precedentemente esportato.</p>
                 <input type="file" id="importFile" accept=".json" style="margin-bottom: 10px;">
@@ -1422,14 +1449,22 @@
                 <button onclick="importDataMerge()" class="secondary">📂 Importa e Unisci</button>
             </div>
 
-            <div class="holidays-info">
+            <div class="holidays-info admin-only">
                 <strong>⚠️ Attenzione</strong><br>
                 <strong>Importa Dati</strong>: sostituisce completamente tutti i dati correnti.<br>
                 <strong>Importa e Unisci</strong>: aggiunge i dati importati a quelli esistenti.
             </div>
-        </div>
+            <div class="form-section admin-only" style="border-left: 4px solid var(--danger-color);">
+                <h3 style="color: var(--danger-color);">&#9888;&#65039; Operazioni Pericolose</h3>
+                <p>Questa sezione contiene operazioni <strong>irreversibili</strong>. Procedere con estrema cautela.</p>
+                <button onclick="wipeDatabase()" class="delete">🗑️ Pulisci Intero Database</button>
+            </div>
 
-        <!-- TAB GANTT -->
+            <div class="holidays-info admin-only" style="border-left: 4px solid var(--danger-color);">
+                <strong>&#9888;&#65039; Pulisci Intero Database</strong>: elimina definitivamente tutte le risorse, progetti, template, riunioni, festività e impostazioni. Gli utenti non vengono eliminati.
+            </div>
+
+        </div>
         <div id="gantt" class="tab-content">
             <h2>Diagramma di Gantt</h2>
 
@@ -1990,6 +2025,12 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>Gruppo:</label>
+                        <select id="taskGroupId">
+                            <option value="">-- Nessun Gruppo --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>Luogo:</label>
                         <div class="location-plant-row">
                             <select id="taskLocationType" onchange="togglePlantSelector()" style="width: 180px;">
@@ -2030,6 +2071,126 @@
                 <button onclick="sendTaskEmail()" class="secondary">📧 Invia Email</button>
                 <span id="taskEmailSentDisplay" style="font-size: 11px; color: var(--text-tertiary); align-self: center;"></span>
                 <button onclick="saveTask()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gruppo Attività -->
+    <div id="taskGroupModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 id="taskGroupModalTitle">Nuovo Gruppo</h3>
+                <button class="modal-close" onclick="closeGroupModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="taskGroupId_edit">
+                <div class="form-group">
+                    <label>Nome Gruppo:</label>
+                    <input type="text" id="taskGroupName" placeholder="Es. Fase 1 – Progettazione">
+                </div>
+                <div class="form-group">
+                    <label>Colore:</label>
+                    <input type="color" id="taskGroupColor" value="#4a90d9" style="width:60px; height:32px; padding:2px; cursor:pointer;">
+                </div>
+                <div style="margin-top:16px;">
+                    <h4 style="margin-bottom:8px; font-size:0.95em;">Gruppi esistenti</h4>
+                    <div id="taskGroupsList"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeGroupModal()" class="secondary">Chiudi</button>
+                <button onclick="saveGroup()">&#128190; Salva Gruppo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Stabilimento -->
+    <!-- Modale Cambia Password -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>🔑 Cambia Password</h3>
+                <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Password attuale</label>
+                    <input type="password" id="cpCurrentPassword">
+                </div>
+                <div class="form-group">
+                    <label>Nuova password</label>
+                    <input type="password" id="cpNewPassword">
+                </div>
+                <div class="form-group">
+                    <label>Conferma nuova password</label>
+                    <input type="password" id="cpConfirmPassword">
+                </div>
+                <div id="cpError" style="color:#F44336;font-size:0.88em;display:none"></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeChangePasswordModal()" class="secondary">Annulla</button>
+                <button onclick="doChangePassword()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Gestione Utenti -->
+    <div id="usersModal" class="modal">
+        <div class="modal-content" style="max-width:700px;">
+            <div class="modal-header">
+                <h3>👥 Gestione Utenti</h3>
+                <button class="modal-close" onclick="closeUsersModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="usersListContainer" style="margin-bottom:24px;"></div>
+                <hr>
+                <h4 id="userFormTitle" style="margin:16px 0 12px;">Nuovo Utente</h4>
+                <input type="hidden" id="editUserId">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label>Username *</label>
+                        <input type="text" id="userUsername">
+                    </div>
+                    <div class="form-group">
+                        <label>Password <span id="pwHint" style="font-size:0.8em;opacity:0.7">(obbligatoria per nuovo utente)</span></label>
+                        <input type="password" id="userPassword" placeholder="min 4 caratteri">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label>Ruolo *</label>
+                        <select id="userRole" onchange="updateUserFormForRole()">
+                            <option value="viewer">Visualizzatore (sola lettura)</option>
+                            <option value="editor">Editor</option>
+                            <option value="personal">Personale</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display:flex;align-items:center;padding-top:22px;">
+                        <label><input type="checkbox" id="userIsActive" checked> Utente attivo</label>
+                    </div>
+                </div>
+                <!-- Editor: tipi risorsa gestibili -->
+                <div id="editorResourceTypesSection" style="display:none;">
+                    <div class="form-group">
+                        <label>Tipi Risorsa che può gestire</label>
+                        <div id="editorResourceTypesList" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;min-height:36px;"></div>
+                        <small style="opacity:0.7">Nessun tipo selezionato = può gestire tutti i tipi</small>
+                    </div>
+                </div>
+                <!-- Personal: risorsa collegata -->
+                <div id="personalResourceSection" style="display:none;">
+                    <div class="form-group">
+                        <label>Risorsa Collegata (per accesso personale)</label>
+                        <select id="userResourceId">
+                            <option value="">-- Nessuna --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeUsersModal()" class="secondary">Chiudi</button>
+                <button onclick="saveUser()">💾 Salva Utente</button>
             </div>
         </div>
     </div>
@@ -2095,7 +2256,7 @@
             </div>
             <div class="modal-footer">
                 <button onclick="closeTemplateModal()" class="secondary">Annulla</button>
-                <button onclick="saveTemplateStandalone()">💾 Salva</button>
+                <button onclick="saveTemplate()">💾 Salva</button>
             </div>
         </div>
     </div>
@@ -2144,6 +2305,12 @@
                 <div class="form-group">
                     <label>Nome Attività:</label>
                     <input type="text" id="templateTaskName" placeholder="Nome dell'attività">
+                </div>
+                <div class="form-group">
+                    <label>Gruppo:</label>
+                    <select id="templateTaskGroupId">
+                        <option value="">-- Nessun Gruppo --</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Data Inizio:</label>
@@ -2195,6 +2362,35 @@
             <div class="modal-footer">
                 <button onclick="closeTemplateTaskModal()" class="secondary">Annulla</button>
                 <button onclick="saveTemplateTask()">💾 Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gruppo Template -->
+    <div id="templateGroupModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 id="templateGroupModalTitle">Nuovo Gruppo</h3>
+                <button class="modal-close" onclick="closeTemplateGroupModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="templateGroupId_edit">
+                <div class="form-group">
+                    <label>Nome Gruppo:</label>
+                    <input type="text" id="templateGroupName" placeholder="Es. Fase 1 – Progettazione">
+                </div>
+                <div class="form-group">
+                    <label>Colore:</label>
+                    <input type="color" id="templateGroupColor" value="#4a90d9" style="width:60px; height:32px; padding:2px; cursor:pointer;">
+                </div>
+                <div style="margin-top:16px;">
+                    <h4 style="margin-bottom:8px; font-size:0.95em;">Gruppi esistenti</h4>
+                    <div id="templateGroupsList"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeTemplateGroupModal()" class="secondary">Chiudi</button>
+                <button onclick="saveTemplateGroup()">&#128190; Salva Gruppo</button>
             </div>
         </div>
     </div>

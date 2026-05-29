@@ -19,6 +19,7 @@
  */
 
 const { Router } = require('express');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 const {
   getAll, replaceAll,
   getAllSettings, replaceAllSettings
@@ -27,7 +28,7 @@ const {
 const router = Router();
 
 // ─── GET /api/export ──────────────────────────────────────────────────────────
-router.get('/export', (_req, res) => {
+router.get('/export', requireAuth, (_req, res) => {
   const payload = buildExport();
   res
     .setHeader('Content-Type', 'application/json')
@@ -36,7 +37,7 @@ router.get('/export', (_req, res) => {
 });
 
 // ─── POST /api/import  (full replace) ─────────────────────────────────────────
-router.post('/import', (req, res) => {
+router.post('/import', requireAuth, requireAdmin, (req, res) => {
   const data = req.body;
   if (!isValidPayload(data)) return res.status(400).json({ error: 'Payload non valido' });
 
@@ -45,12 +46,20 @@ router.post('/import', (req, res) => {
 });
 
 // ─── POST /api/import/merge  (additive merge, no overwrites) ──────────────────
-router.post('/import/merge', (req, res) => {
+router.post('/import/merge', requireAuth, requireAdmin, (req, res) => {
   const data = req.body;
   if (!isValidPayload(data)) return res.status(400).json({ error: 'Payload non valido' });
 
   const stats = applyImport(data, true);
   res.json({ success: true, message: 'Import con merge completato.', stats });
+});
+
+// ─── DELETE /api/wipe  (cancella tutti i dati, solo admin) ───────────────────
+router.delete('/wipe', requireAuth, requireAdmin, (req, res) => {
+  const TABLES = ['resources', 'projects', 'templates', 'meetings', 'plants', 'local_holidays'];
+  for (const table of TABLES) replaceAll(table, []);
+  replaceAllSettings({});
+  res.json({ success: true, message: 'Database pulito con successo.' });
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -160,11 +160,13 @@ function _addPending(operation) {
 
 /** Sincronizza tutte le operazioni pending con il backend. */
 export async function syncPending() {
-  if (!_isOnline || _pendingSync.length === 0) return;
+  if (!_isOnline) return;
 
   // Carica dal IDB (nel caso siano sopravvissuti a un refresh)
   const stored = await _idbGetAll('_pending');
   const ops = stored.length > 0 ? stored : _pendingSync;
+
+  if (ops.length === 0) return;
 
   let synced = 0;
   for (const op of ops) {
@@ -193,14 +195,27 @@ export async function syncPending() {
 
 // ─── API fetch wrapper ─────────────────────────────────────────────────────────
 
+const _AUTH_TOKEN_KEY = 'pp2_auth_token';
+
 async function apiFetch(path, method = 'GET', body) {
+  const headers = body ? { 'Content-Type': 'application/json' } : {};
+
+  // Aggiungi Bearer token se disponibile
+  const token = localStorage.getItem(_AUTH_TOKEN_KEY);
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const opts = {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : {}
+    headers
   };
   if (body) opts.body = JSON.stringify(body);
 
   const res = await fetch(`${API_BASE}${path}`, opts);
+  if (res.status === 401) {
+    // Sessione scaduta o token non valido: notifica l'app
+    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    throw new Error('Sessione scaduta. Effettua il login.');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || res.statusText);
@@ -406,6 +421,32 @@ export async function importMerge(payload) {
   await _applyMergeToCache(payload);
   _addPending({ action: 'upsert', store: '__import_merge__', data: payload });
   return { success: true, message: 'Import merge salvato offline. Sarà sincronizzato al prossimo avvio del server.' };
+}
+
+/**
+ * Svuota completamente il database (backend + cache IDB).
+ * Richiede connessione online (operazione solo-admin lato server).
+ */
+export async function wipeAll() {
+  if (_isOnline) {
+    await apiFetch('/wipe', 'DELETE');
+  }
+  // Svuota tutti gli store IDB
+  const DATA_STORES = ['resources', 'projects', 'templates', 'meetings', 'plants', 'localHolidays'];
+  for (const store of DATA_STORES) await _idbClearAndPutAll(store, []);
+  await new Promise((resolve, reject) => {
+    const tx = _idb.transaction('settings', 'readwrite');
+    tx.objectStore('settings').clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror    = () => reject(tx.error);
+  });
+  await new Promise((resolve, reject) => {
+    const tx = _idb.transaction('_pending', 'readwrite');
+    tx.objectStore('_pending').clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror    = () => reject(tx.error);
+  });
+  _pendingSync = [];
 }
 
 async function _applyImportToCache(payload) {

@@ -25,6 +25,7 @@
  */
 
 import * as state from '../state.js';
+import * as Auth  from './auth.js';
 import {
     formatDateLocal,
     escapeHtml,
@@ -114,6 +115,15 @@ export function updateResourceViewFilters() {
             if (r.id == currentValue) option.selected = true;
             resourceSelect.appendChild(option);
         });
+
+        // Utente personal: blocca il filtro sulla propria risorsa
+        const _fUser = Auth.getCurrentUser();
+        if (_fUser?.role === 'personal' && _fUser?.resourceId) {
+            resourceSelect.value    = _fUser.resourceId;
+            resourceSelect.disabled = true;
+        } else {
+            resourceSelect.disabled = false;
+        }
     }
 
     const startDateInput = document.getElementById('resourceViewStartDate');
@@ -202,9 +212,27 @@ export function renderResourceView() {
         endDate   = new Date();
     }
 
-    const filteredResources = resourceFilter
-        ? state.resources.filter(r => r.id == resourceFilter)
-        : state.resources.filter(r => !r.hidden);
+    // Filtro risorse per ruolo
+    const _rvUser = Auth.getCurrentUser();
+    const _rvIsPersonal = _rvUser?.role === 'personal' && _rvUser?.resourceId;
+    const _rvIsEditor   = _rvUser?.role === 'editor'
+        && Array.isArray(_rvUser?.allowedResourceTypes)
+        && _rvUser.allowedResourceTypes.length > 0;
+
+    let filteredResources;
+    if (_rvIsPersonal) {
+        filteredResources = state.resources.filter(r => r.id == _rvUser.resourceId);
+    } else if (_rvIsEditor) {
+        const editorTypes = new Set(_rvUser.allowedResourceTypes);
+        const base = resourceFilter
+            ? state.resources.filter(r => r.id == resourceFilter)
+            : state.resources.filter(r => !r.hidden);
+        filteredResources = base.filter(r => editorTypes.has(r.type));
+    } else {
+        filteredResources = resourceFilter
+            ? state.resources.filter(r => r.id == resourceFilter)
+            : state.resources.filter(r => !r.hidden);
+    }
 
     if (filteredResources.length === 0) {
         container.innerHTML = '<p style="padding: 20px; text-align: center;">Nessuna risorsa disponibile.</p>';

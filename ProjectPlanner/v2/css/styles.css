@@ -3533,6 +3533,44 @@
             box-shadow: 0 2px 4px var(--shadow);
         }
 
+        /* ─── Restrizioni UI per ruolo ──────────────────────────────────────────── */
+
+        /*
+         * Admin-only: nasconde elementi riservati agli admin per tutti gli altri ruoli.
+         */
+        body:not([data-user-role="admin"]) .admin-only {
+            display: none !important;
+        }
+
+        /*
+         * Viewer: sola lettura completa.
+         * Nasconde tutti i pulsanti di scrittura ovunque nell'app
+         * (lista risorse, lista progetti, lista attività, festività, template).
+         * Funziona anche dopo re-render perché CSS è reattivo al data-user-role del body.
+         */
+        body[data-user-role="viewer"] button.delete,
+        body[data-user-role="viewer"] button[onclick^="open"][onclick$="Modal()"],
+        body[data-user-role="viewer"] button[onclick*="addProjectUpdate"],
+        body[data-user-role="viewer"] button[onclick*="addQuickNote"],
+        body[data-user-role="viewer"] button[onclick*="moveResource"],
+        body[data-user-role="viewer"] button[onclick*="SplitTaskModal"],
+        body[data-user-role="viewer"] button[onclick*="CopyTaskModal"] {
+            display: none !important;
+        }
+
+        /*
+         * Personal: non può creare né eliminare entità, né riordinare risorse.
+         */
+        body[data-user-role="personal"] button.delete,
+        body[data-user-role="personal"] button[onclick^="open"][onclick$="Modal()"],
+        body[data-user-role="personal"] button[onclick*="addProjectUpdate"],
+        body[data-user-role="personal"] button[onclick*="addQuickNote"],
+        body[data-user-role="personal"] button[onclick*="moveResource"],
+        body[data-user-role="personal"] button[onclick*="SplitTaskModal"],
+        body[data-user-role="personal"] button[onclick*="CopyTaskModal"] {
+            display: none !important;
+        }
+
         .dashboard-card h3 {
             margin: 0 0 12px 0;
             font-size: 1em;
@@ -3801,3 +3839,100 @@
 .db-status.offline { color: #FFA726; text-shadow: 0 0 6px #FFA72688; }
 .db-status.syncing { color: #2196F3; text-shadow: 0 0 6px #2196F388; animation: db-pulse 1s infinite; }
 @keyframes db-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ─── Task Groups ─────────────────────────────────────────────────────────── */
+.task-group-header td {
+    padding: 6px 12px;
+    font-size: 0.88em;
+    letter-spacing: 0.02em;
+    user-select: none;
+    cursor: pointer;
+}
+.task-group-header:hover td {
+    filter: brightness(1.05);
+}
+.task-group-color-bar {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* ─── Auth / Login ─────────────────────────────────────────────────────────── */
+#loginOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg, #f5f5f5);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-card {
+    background: var(--surface, #fff);
+    border-radius: 12px;
+    padding: 40px;
+    min-width: 320px;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.login-card h2 {
+    margin: 0 0 8px;
+    font-size: 1.4em;
+    text-align: center;
+}
+
+.login-error {
+    color: #F44336;
+    font-size: 0.88em;
+    padding: 6px 10px;
+    background: #F4433622;
+    border-radius: 4px;
+}
+
+/* Auth bar nella navbar */
+.auth-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78em;
+    float: right;
+    margin-top: -4px;
+}
+
+/* Role badges */
+.role-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.role-badge.role-admin    { background: #7B1FA222; color: #7B1FA2; }
+.role-badge.role-editor   { background: #1976D222; color: #1976D2; }
+.role-badge.role-viewer   { background: #38883822; color: #388838; }
+.role-badge.role-personal { background: #E65C0022; color: #E65C00; }
+
+/* Checkbox label inline */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.checkbox-label:hover {
+    background: var(--hover, rgba(0,0,0,0.05));
+}

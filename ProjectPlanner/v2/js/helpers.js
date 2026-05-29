@@ -310,10 +310,38 @@ export function calculateNextWorkingDay(dateStr, saturdayWork, sundayWork, holid
 
 // ─── Modal helpers ─────────────────────────────────────────────────────────────
 
+/**
+ * Applica la modalità sola lettura completa a un modal per gli utenti viewer.
+ * Disabilita tutti gli input e nasconde i pulsanti di azione.
+ */
+function _applyViewerModalRestrictions(modal) {
+  modal.querySelectorAll('input, select, textarea').forEach(el => {
+    el.disabled = true;
+  });
+  modal.querySelectorAll('button').forEach(btn => {
+    const onclick = (btn.getAttribute('onclick') || '').trim();
+    const isClose = btn.classList.contains('modal-close') || /^close/i.test(onclick);
+    if (!isClose) btn.style.display = 'none';
+  });
+  // Banner sola lettura
+  const footer = modal.querySelector('.modal-footer');
+  if (footer && !footer.querySelector('.pp2-viewer-notice')) {
+    const notice = document.createElement('span');
+    notice.className = 'pp2-viewer-notice';
+    notice.style.cssText = 'font-size:12px;color:var(--text-secondary,#666);margin-right:auto;';
+    notice.textContent = '👁️ Modalità sola lettura';
+    footer.prepend(notice);
+  }
+}
+
 export function openModal(modalElement) {
   if (modalElement) {
     modalElement.classList.add('active');
     document.body.classList.add('modal-open');
+    // Sola lettura: viewer globale o modal esplicitamente marcato read-only (es. editor su tipo non consentito)
+    if (document.body.dataset.userRole === 'viewer' || modalElement.dataset.readOnly === 'true') {
+      _applyViewerModalRestrictions(modalElement);
+    }
   }
 }
 

@@ -22,6 +22,7 @@
 
 import * as db    from '../db.js';
 import * as state from '../state.js';
+import * as Auth  from './auth.js';
 import { formatDateLocal } from '../helpers.js';
 
 // ─── Export ───────────────────────────────────────────────────────────────────
@@ -64,6 +65,11 @@ export async function exportData() {
  * Dopo l'import, ricarica la pagina per aggiornare lo stato.
  */
 export async function importData() {
+    if (Auth.getCurrentUser()?.role !== 'admin') {
+        alert('Operazione riservata agli amministratori.');
+        return;
+    }
+
     const fileInput = document.getElementById('importFile');
     const file      = fileInput?.files[0];
 
@@ -97,6 +103,11 @@ export async function importData() {
  * Dopo l'import, ricarica la pagina per aggiornare lo stato.
  */
 export async function importDataMerge() {
+    if (Auth.getCurrentUser()?.role !== 'admin') {
+        alert('Operazione riservata agli amministratori.');
+        return;
+    }
+
     const fileInput = document.getElementById('importFile');
     const file      = fileInput?.files[0];
 
@@ -116,5 +127,27 @@ export async function importDataMerge() {
         window.location.reload();
     } catch (err) {
         alert('Errore nell\'importazione: ' + err.message);
+    }
+}
+
+// ─── Wipe database ────────────────────────────────────────────────────────────
+
+/**
+ * Cancella l'intero database (tutte le tabelle dati, impostazioni e cache IDB).
+ * Riservata all'admin. Richiede doppia conferma.
+ */
+export async function wipeDatabase() {
+    if (Auth.getCurrentUser()?.role !== 'admin') {
+        alert('Operazione riservata agli amministratori.');
+        return;
+    }
+    if (!confirm('⚠️ ATTENZIONE: questa operazione eliminerà TUTTI i dati (risorse, progetti, template, riunioni, festività, impostazioni).\n\nQuesto è IRREVERSIBILE. Continuare?')) return;
+    if (!confirm('Conferma definitiva: eliminare TUTTO il contenuto del database?')) return;
+    try {
+        await db.wipeAll();
+        alert('Database pulito con successo.');
+        window.location.reload();
+    } catch (err) {
+        alert('Errore durante la pulizia del database: ' + err.message);
     }
 }

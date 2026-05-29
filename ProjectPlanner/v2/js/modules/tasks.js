@@ -66,6 +66,7 @@
 
 import * as db    from '../db.js';
 import * as state from '../state.js';
+import * as Auth  from './auth.js';
 import {
     openModal,
     closeModal,
@@ -385,6 +386,9 @@ export function openTaskModal(id = null) {
 
                 // Lavoro notturno
                 f('taskNightWork').value = task.nightWork || '';
+                // Gruppo
+                populateGroupSelect();
+                if (f('taskGroupId')) f('taskGroupId').value = task.groupId || '';
             }
         }
     } else {
@@ -395,10 +399,37 @@ export function openTaskModal(id = null) {
         f('taskCreatedAtDisplay').style.display = 'none';
         f('taskEmailSentDisplay').innerHTML = '';
         _clearTaskForm();
+        populateGroupSelect();
         if (typeof window.updatePlantSelect === 'function') window.updatePlantSelect();
     }
 
     updateResourceSelects();
+
+    // Applica restrizioni modalità sola lettura per utente personal
+    const _tmUser = Auth.getCurrentUser();
+    if (id && _tmUser?.role === 'personal') {
+        const _tmProj = _currentProject();
+        const _tmTask = _tmProj?.tasks?.find(t => t.id === id);
+        if (_tmTask) _applyPersonalTaskRestrictions(_tmTask, _tmUser.resourceId);
+    }
+
+    // Editor con tipi risorsa limitati: blocca rimozione/cambio delle risorse non di propria gestione
+    if (id && _tmUser?.role === 'editor'
+        && Array.isArray(_tmUser.allowedResourceTypes)
+        && _tmUser.allowedResourceTypes.length > 0) {
+        const _edContainer = f('taskResources');
+        _edContainer?.querySelectorAll('.resource-item').forEach(item => {
+            const selEl     = item.querySelector('.task-resource-select');
+            const removeBtn = item.querySelector('.delete-resource');
+            const resourceId = selEl?.value;
+            if (!resourceId) return;
+            const _edRes = state.resources.find(r => String(r.id) === String(resourceId));
+            if (_edRes && !_tmUser.allowedResourceTypes.includes(_edRes.type)) {
+                if (removeBtn) { removeBtn.disabled = true; removeBtn.title = 'Risorsa non di tua gestione'; }
+                if (selEl)     { selEl.disabled = true; }
+            }
+        });
+    }
 
     // Editor Markdown note
     const notesTextarea = f('taskNotes');
@@ -472,6 +503,7 @@ function _clearTaskForm() {
 
     // Campi extra
     f('taskNightWork').value = '';
+    if (f('taskGroupId')) f('taskGroupId').value = '';
 }
 
 /**
@@ -890,6 +922,87 @@ function _appendSuggestedResource(container) {
     if (pct) pct.value = 100;
 }
 
+// ─── Restrizioni ruolo personal nel modal attività ──────────────────────────
+
+/**
+ * Per utenti 'personal': disabilita tutti i campi di schedulazione, lascia
+ * modificabili solo stato, completamento risorsa propria, e (condizionalmente)
+ * il completamento generale.
+ */
+function _applyPersonalTaskRestrictions(task, userResourceId) {
+    const f = id => document.getElementById(id);
+
+    // Verifica se l'utente è assegnato a questa attività
+    const userInTask = (task.resources || []).some(r => r.resourceId == userResourceId);
+
+    // Campi di sola lettura (scheduling & metadati)
+    const readOnlyIds = [
+        'taskName', 'taskAnnotation', 'taskStartDate', 'taskEndDate',
+        'taskDuration', 'taskFlexibleDate', 'taskSaturdayWork', 'taskSundayWork',
+        'taskHolidayWork', 'taskNightWork', 'taskLocationType', 'taskPlantId',
+        'taskStartLinkedTo', 'taskEndLinkedTo', 'taskStartOffset', 'taskEndOffset',
+        'taskNotes', 'taskGroupId', 'taskStartedAt', 'taskCompletedAt',
+        'calcFromStart', 'calcFromEnd'
+    ];
+    readOnlyIds.forEach(id => { const el = f(id); if (el) el.disabled = true; });
+
+    const completionEl = f('taskCompletion');
+    const statusEl     = f('taskStatus');
+
+    if (!userInTask) {
+        // Utente non assegnato: sola lettura completa (anche stato e completamento)
+        if (completionEl) completionEl.disabled = true;
+        if (statusEl)     statusEl.disabled     = true;
+        // Nasconde anche il pulsante Salva
+        const saveBtn = document.querySelector('#taskModal .modal-footer button[onclick*="saveTask"]');
+        if (saveBtn) saveBtn.style.display = 'none';
+    } else {
+        // taskCompletion: abilitato solo se la risorsa è l'unica o le altre sono al 100%
+        const otherResources = (task.resources || []).filter(r => r.resourceId != userResourceId);
+        const othersAllAt100 = otherResources.every(r => (r.completion || 0) >= 100);
+        if (completionEl) completionEl.disabled = !(otherResources.length === 0 || othersAllAt100);
+    }
+
+    // Nasconde pulsanti non consentiti
+    const deleteBtn = f('taskDeleteBtn');
+    if (deleteBtn) deleteBtn.style.display = 'none';
+    const emailBtn = document.querySelector('#taskModal .modal-footer button[onclick*="sendTaskEmail"]');
+    if (emailBtn) emailBtn.style.display = 'none';
+    const emailSentSpan = f('taskEmailSentDisplay');
+    if (emailSentSpan) emailSentSpan.style.display = 'none';
+
+    // Nasconde il pulsante "+ Aggiungi Elemento" checklist
+    const addChecklistBtn = document.querySelector('#taskChecklistContainer + button');
+    if (addChecklistBtn) addChecklistBtn.style.display = 'none';
+
+    // Righe risorse: disabilita tutto tranne il completamento della propria risorsa
+    document.querySelectorAll('#taskResources .resource-item').forEach(item => {
+        const selEl  = item.querySelector('.task-resource-select');
+        const pctEl  = item.querySelector('.task-resource-percentage');
+        const cmpEl  = item.querySelector('.task-resource-completion');
+        const delBtn = item.querySelector('.delete-resource');
+        const isOwn  = userInTask && selEl?.value == userResourceId;
+        if (selEl)  selEl.disabled  = true;
+        if (pctEl)  pctEl.disabled  = true;
+        if (delBtn) delBtn.style.display = 'none';
+        if (cmpEl)  cmpEl.disabled  = !isOwn;
+    });
+    // Nasconde il pulsante "+ Aggiungi Risorsa"
+    const addResBtn = document.querySelector('#taskResources .add-resource-btn');
+    if (addResBtn) addResBtn.style.display = 'none';
+
+    // Banner informativo
+    const banner = f('taskProjectBanner');
+    if (banner) {
+        const notice = document.createElement('div');
+        notice.style.cssText = 'margin-top:8px;padding:6px 10px;background:var(--warning-bg,#fff3e0);border-left:3px solid var(--warning-color,#f57c00);font-size:12px;border-radius:3px;color:var(--text-primary)';
+        notice.textContent   = userInTask
+            ? '⚠️ Modalità sola lettura: puoi modificare solo il tuo completamento e lo stato dell\'attività.'
+            : '⚠️ Sola lettura: non sei assegnato a questa attività.';
+        banner.appendChild(notice);
+    }
+}
+
 // ─── CRUD Task ────────────────────────────────────────────────────────────────
 
 /**
@@ -962,6 +1075,7 @@ export async function saveTask() {
     const startedAt   = f('taskStartedAt')?.value   || null;
     const completedAt = f('taskCompletedAt')?.value || null;
     const nightWork   = f('taskNightWork')?.value.trim() || null;
+    const groupId     = f('taskGroupId')?.value || null;
 
     // Preserva createdAt e emailSentAt
     let createdAt  = null;
@@ -1002,7 +1116,8 @@ export async function saveTask() {
         completedAt,
         createdAt,
         emailSentAt,
-        nightWork
+        nightWork,
+        groupId: groupId || null
     };
 
     if (state.editingTaskId) {
@@ -1097,10 +1212,39 @@ export function editTask(id) {
  * @param {number} id - ID del task da eliminare
  */
 export async function deleteTask(id) {
-    if (!confirm('Sei sicuro di voler eliminare questa attività?')) return;
-
     const project = _currentProject();
     if (!project) return;
+    const task = project.tasks?.find(t => t.id === id);
+
+    // Restrizioni editor con tipi risorsa limitati
+    const _dtUser = Auth.getCurrentUser();
+    if (task && _dtUser?.role === 'editor'
+        && Array.isArray(_dtUser.allowedResourceTypes)
+        && _dtUser.allowedResourceTypes.length > 0) {
+
+        // Blocca se l'attività ha risorse di tipi non gestiti da questo editor
+        const hasUnmanaged = (task.resources || []).some(tr => {
+            const res = state.resources.find(r => String(r.id) === String(tr.resourceId));
+            return res && !_dtUser.allowedResourceTypes.includes(res.type);
+        });
+        if (hasUnmanaged) {
+            alert('Non puoi eliminare questa attività perché contiene risorse non di tua gestione.');
+            return;
+        }
+
+        // Blocca se altre attività dipendono da questa
+        const dependents = (project.tasks || []).filter(t => t.id !== id && (
+            t.startLinkedTo === `end:${id}` || t.startLinkedTo === `start:${id}` ||
+            t.endLinkedTo   === `end:${id}` || t.endLinkedTo   === `start:${id}`
+        ));
+        if (dependents.length > 0) {
+            const names = dependents.map(t => `"${t.name}"`).join(', ');
+            alert(`Non puoi eliminare questa attività perché le seguenti attività dipendono da essa: ${names}.\nRimuovi prima le dipendenze.`);
+            return;
+        }
+    }
+
+    if (!confirm('Sei sicuro di voler eliminare questa attività?')) return;
 
     project.tasks = project.tasks.filter(t => t.id !== id);
     await db.save('projects', project);
@@ -1293,8 +1437,55 @@ export function renderTasks() {
         { value: 'annullata', label: 'Annullata'  }
     ];
 
-    sortedTasks.forEach(task => {
+    // ─── Raggruppamento per gruppi ────────────────────────────────────────────
+    const taskGroups = project.taskGroups || [];
+    let tasksToRender;
+    if (taskGroups.length === 0) {
+        tasksToRender = [{ group: null, tasks: sortedTasks }];
+    } else {
+        const tasksByGroup = new Map();
+        tasksByGroup.set(null, []);
+        taskGroups.forEach(g => tasksByGroup.set(g.id, []));
+        sortedTasks.forEach(task => {
+            const gid = task.groupId && tasksByGroup.has(task.groupId) ? task.groupId : null;
+            tasksByGroup.get(gid).push(task);
+        });
+        tasksToRender = [];
+        const ungrouped = tasksByGroup.get(null);
+        if (ungrouped.length > 0) tasksToRender.push({ group: null, tasks: ungrouped });
+        [...taskGroups].sort((a, b) => (a.order || 0) - (b.order || 0))
+            .forEach(g => tasksToRender.push({ group: g, tasks: tasksByGroup.get(g.id) || [] }));
+    }
+
+    tasksToRender.forEach(({ group, tasks: sectionTasks }) => {
+        // Intestazione gruppo
+        if (group) {
+            const headerTr = document.createElement('tr');
+            headerTr.className = 'task-group-header';
+            headerTr.setAttribute('data-group-id', group.id);
+            headerTr.innerHTML = `<td colspan="11" style="background:${group.color}22; border-left:4px solid ${group.color}; padding:6px 12px;">
+                <span class="task-group-color-bar" style="background:${group.color};"></span>
+                <strong>${escapeHtml(group.name)}</strong>
+                <span style="font-size:0.85em; color:var(--text-secondary); margin-left:8px;">${sectionTasks.length} attivit\u00e0</span>
+                <span style="float:right; display:flex; gap:4px;">
+                    <button onclick="event.stopPropagation(); window.openGroupModal?.('${group.id}')" class="secondary" style="font-size:11px; padding:2px 8px;">\u270f\ufe0f Modifica</button>
+                    <button onclick="event.stopPropagation(); window.deleteGroup?.('${group.id}')" class="delete" style="font-size:11px; padding:2px 8px;">\ud83d\uddd1\ufe0f</button>
+                </span>
+            </td>`;
+            headerTr.onclick = (e) => {
+                if (e.target.tagName === 'BUTTON') return;
+                const isCollapsed = headerTr.dataset.collapsed === 'true';
+                tbody.querySelectorAll(`[data-group-member="${group.id}"]`).forEach(r => {
+                    r.style.display = isCollapsed ? '' : 'none';
+                });
+                headerTr.dataset.collapsed = isCollapsed ? 'false' : 'true';
+            };
+            tbody.appendChild(headerTr);
+        }
+
+        sectionTasks.forEach(task => {
         const tr = document.createElement('tr');
+        if (group) tr.setAttribute('data-group-member', group.id);
 
         const isCompleted = task.status === 'completata' || task.completion >= 100;
         const isOverdue   = !isCompleted && task.endDate && task.endDate < today;
@@ -1443,7 +1634,8 @@ export function renderTasks() {
             </td>
         `;
         tbody.appendChild(tr);
-    });
+        }); // end sectionTasks.forEach
+    }); // end tasksToRender.forEach
 
     // Riepilogo giorni progetto
     if (typeof window.renderProjectDaysSummary === 'function') window.renderProjectDaysSummary();
@@ -1908,4 +2100,122 @@ export function analizzaRisorsePerAttivita() {
         </table>
         <button onclick="window.closeAnalyzeResourcesPanel?.()" class="secondary" style="margin-top:8px; font-size:12px;">✕ Chiudi</button>
     `;
+}
+
+// ─── Gestione Gruppi Attività ─────────────────────────────────────────────────
+
+/** Aggiorna il <select id="taskGroupId"> con i gruppi del progetto corrente. */
+function populateGroupSelect() {
+    const sel = document.getElementById('taskGroupId');
+    if (!sel) return;
+    const project = _currentProject();
+    const groups  = project?.taskGroups || [];
+    sel.innerHTML = '<option value="">-- Nessun Gruppo --</option>' +
+        groups.sort((a, b) => (a.order || 0) - (b.order || 0))
+              .map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`)
+              .join('');
+}
+
+/**
+ * Apre il modal per creare/modificare gruppi.
+ * @param {string|null} groupId - id del gruppo da modificare, o null per creazione
+ */
+export function openGroupModal(groupId = null) {
+    const f = i => document.getElementById(i);
+    const project = _currentProject();
+    if (!project) return;
+    if (!project.taskGroups) project.taskGroups = [];
+
+    if (groupId) {
+        const g = project.taskGroups.find(g => g.id === groupId);
+        if (g) {
+            f('taskGroupModalTitle').textContent = 'Modifica Gruppo';
+            f('taskGroupId_edit').value = g.id;
+            f('taskGroupName').value    = g.name;
+            f('taskGroupColor').value   = g.color || '#4a90d9';
+        }
+    } else {
+        f('taskGroupModalTitle').textContent = 'Nuovo Gruppo';
+        f('taskGroupId_edit').value = '';
+        f('taskGroupName').value    = '';
+        f('taskGroupColor').value   = '#4a90d9';
+    }
+    _renderGroupsList();
+    openModal(document.getElementById('taskGroupModal'));
+}
+
+/** Chiude il modal gruppi. */
+export function closeGroupModal() {
+    closeModal(document.getElementById('taskGroupModal'));
+}
+
+/** Salva (crea o aggiorna) un gruppo. */
+export async function saveGroup() {
+    const f = i => document.getElementById(i);
+    const name   = f('taskGroupName')?.value.trim();
+    const color  = f('taskGroupColor')?.value || '#4a90d9';
+    const editId = f('taskGroupId_edit')?.value || null;
+    if (!name) { alert('Inserisci un nome per il gruppo'); return; }
+
+    const project = _currentProject();
+    if (!project) return;
+    if (!project.taskGroups) project.taskGroups = [];
+
+    if (editId) {
+        const idx = project.taskGroups.findIndex(g => g.id === editId);
+        if (idx >= 0) project.taskGroups[idx] = { ...project.taskGroups[idx], name, color };
+    } else {
+        project.taskGroups.push({
+            id:    `grp-${Date.now()}`,
+            name,
+            color,
+            order: project.taskGroups.length
+        });
+    }
+    await db.save('projects', project);
+    _renderGroupsList();
+    populateGroupSelect();
+    f('taskGroupName').value     = '';
+    f('taskGroupId_edit').value  = '';
+    f('taskGroupModalTitle').textContent = 'Nuovo Gruppo';
+    f('taskGroupColor').value    = '#4a90d9';
+    renderTasks();
+}
+
+/**
+ * Elimina un gruppo. I task assegnati perdono il groupId.
+ * @param {string} groupId
+ */
+export async function deleteGroup(groupId) {
+    if (!confirm('Eliminare questo gruppo? Le attività assegnate non saranno eliminate.')) return;
+    const project = _currentProject();
+    if (!project) return;
+    project.taskGroups = (project.taskGroups || []).filter(g => g.id !== groupId);
+    (project.tasks || []).forEach(t => { if (t.groupId === groupId) t.groupId = null; });
+    await db.save('projects', project);
+    renderTasks();
+    _renderGroupsList();
+    populateGroupSelect();
+}
+
+/** Renderizza la lista dei gruppi nel modal gruppi. */
+function _renderGroupsList() {
+    const container = document.getElementById('taskGroupsList');
+    if (!container) return;
+    const project = _currentProject();
+    const groups  = project?.taskGroups || [];
+    if (groups.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-secondary); font-size:0.9em;">Nessun gruppo creato.</p>';
+        return;
+    }
+    container.innerHTML = groups
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map(g => `
+            <div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border-color);">
+                <span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:${g.color}; flex-shrink:0;"></span>
+                <span style="flex:1; font-size:0.9em;">${escapeHtml(g.name)}</span>
+                <button onclick="window.openGroupModal?.('${g.id}')" class="secondary" style="font-size:11px; padding:2px 8px;">\u270f\ufe0f</button>
+                <button onclick="window.deleteGroup?.('${g.id}')" class="delete" style="font-size:11px; padding:2px 8px;">\ud83d\uddd1\ufe0f</button>
+            </div>
+        `).join('');
 }

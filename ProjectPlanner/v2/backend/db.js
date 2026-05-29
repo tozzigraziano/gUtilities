@@ -56,6 +56,17 @@ db.exec(`
     key         TEXT PRIMARY KEY,
     value       TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    id                     TEXT PRIMARY KEY,
+    username               TEXT UNIQUE NOT NULL,
+    password_hash          TEXT NOT NULL,
+    role                   TEXT NOT NULL DEFAULT 'viewer',
+    allowed_resource_types TEXT NOT NULL DEFAULT '[]',
+    resource_id            TEXT,
+    is_active              INTEGER NOT NULL DEFAULT 1,
+    created_at             TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // ─── Prepared statements ──────────────────────────────────────────────────────
@@ -164,6 +175,68 @@ function replaceAllSettings(settingsObj) {
   tx(settingsObj);
 }
 
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+const userStmts = {
+  getAll: db.prepare(`
+    SELECT id, username, role, allowed_resource_types, resource_id, is_active, created_at
+    FROM users ORDER BY created_at ASC
+  `),
+  getById:        db.prepare(`SELECT * FROM users WHERE id = ?`),
+  getByUsername:  db.prepare(`SELECT * FROM users WHERE username = ?`),
+  insert: db.prepare(`
+    INSERT INTO users (id, username, password_hash, role, allowed_resource_types, resource_id, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, 1)
+  `),
+  update: db.prepare(`
+    UPDATE users SET username=?, role=?, allowed_resource_types=?, resource_id=?, is_active=? WHERE id=?
+  `),
+  updatePassword: db.prepare(`UPDATE users SET password_hash=? WHERE id=?`),
+  delete:         db.prepare(`DELETE FROM users WHERE id=?`)
+};
+
+function _parseUser(u) {
+  if (!u) return null;
+  return {
+    ...u,
+    allowed_resource_types: JSON.parse(u.allowed_resource_types || '[]'),
+    is_active: u.is_active === 1
+  };
+}
+
+function getAllUsers() {
+  return userStmts.getAll.all().map(_parseUser);
+}
+
+function getUserById(id) {
+  return _parseUser(userStmts.getById.get(id));
+}
+
+function getUserByUsername(username) {
+  return _parseUser(userStmts.getByUsername.get(username));
+}
+
+function createUser(id, username, passwordHash, role, allowedResourceTypes, resourceId) {
+  userStmts.insert.run(id, username, passwordHash, role,
+    JSON.stringify(allowedResourceTypes || []), resourceId || null);
+  return getUserById(id);
+}
+
+function updateUser(id, username, role, allowedResourceTypes, resourceId, isActive) {
+  userStmts.update.run(username, role,
+    JSON.stringify(allowedResourceTypes || []), resourceId || null,
+    isActive ? 1 : 0, id);
+  return getUserById(id);
+}
+
+function updateUserPassword(id, passwordHash) {
+  userStmts.updatePassword.run(passwordHash, id);
+}
+
+function deleteUser(id) {
+  return userStmts.delete.run(id).changes > 0;
+}
+
 // ─── Export ───────────────────────────────────────────────────────────────────
 module.exports = {
   db,
@@ -175,5 +248,13 @@ module.exports = {
   getAllSettings,
   getSetting,
   setSetting,
-  replaceAllSettings
+  replaceAllSettings,
+  // Users
+  getAllUsers,
+  getUserById,
+  getUserByUsername,
+  createUser,
+  updateUser,
+  updateUserPassword,
+  deleteUser
 };

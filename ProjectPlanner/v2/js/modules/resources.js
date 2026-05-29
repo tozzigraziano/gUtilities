@@ -19,6 +19,7 @@
 
 import * as db     from '../db.js';
 import * as state  from '../state.js';
+import * as Auth   from './auth.js';
 import { openModal, closeModal, escapeHtml, formatDateLocal, generateId } from '../helpers.js';
 import { calculateHolidays, renderHolidays } from './holidays.js';
 
@@ -251,12 +252,31 @@ export function openResourceModal(id = null) {
         setupCalendarAutoRefresh();
     }, 50);
 
+    // Editor con tipi risorsa limitati: read-only se il tipo di questa risorsa non è consentito
+    if (id) {
+        const _ormUser = Auth.getCurrentUser();
+        const _ormRes  = state.resources.find(r => r.id === id);
+        if (_ormUser?.role === 'editor'
+            && Array.isArray(_ormUser.allowedResourceTypes)
+            && _ormUser.allowedResourceTypes.length > 0
+            && _ormRes
+            && !_ormUser.allowedResourceTypes.includes(_ormRes.type)) {
+            modal.dataset.readOnly = 'true';
+        } else {
+            delete modal.dataset.readOnly;
+        }
+    } else {
+        delete modal.dataset.readOnly;
+    }
+
     openModal(modal);
 }
 
 /** Chiude il modal risorsa. */
 export function closeResourceModal() {
-    closeModal(document.getElementById('resourceModal'));
+    const modal = document.getElementById('resourceModal');
+    if (modal) delete modal.dataset.readOnly;
+    closeModal(modal);
     clearResourceForm();
 }
 
@@ -843,6 +863,17 @@ export function renderResources() {
 
         const isHidden = resource.hidden || false;
 
+        // Determina se l'utente può gestire questa risorsa
+        const _resUser = Auth.getCurrentUser();
+        const _canManage = !_resUser
+            || _resUser.role === 'admin'
+            || (_resUser.role === 'editor' && (
+                !Array.isArray(_resUser.allowedResourceTypes)
+                || _resUser.allowedResourceTypes.length === 0
+                || _resUser.allowedResourceTypes.includes(resource.type)
+            ));
+        const _hideActions = _canManage ? '' : 'style="display:none"';
+
         tr.innerHTML = `
             <td style="width: 80px;">
                 <button onclick="resourcesModule.moveResourceUp(${index})" ${index === 0 ? 'disabled' : ''} style="padding: 2px 6px; font-size: 12px; margin-right: 2px;" title="Sposta su">⬆️</button>
@@ -853,12 +884,12 @@ export function renderResources() {
             <td>${typeLabel}</td>
             <td style="font-size: 11px;">${allAbsencesStr}</td>
             <td style="text-align: center;">
-                <button onclick="resourcesModule.toggleResourceVisibility(${resource.id})" style="padding: 4px 8px; font-size: 18px; cursor: pointer; ${isHidden ? 'opacity: 0.3;' : ''}" title="${isHidden ? 'Mostra in Gantt e Vista Risorse' : 'Nascondi da Gantt e Vista Risorse'}">${isHidden ? '○' : '●'}</button>
+                <button onclick="resourcesModule.toggleResourceVisibility(${resource.id})" ${_canManage ? '' : 'disabled'} style="padding: 4px 8px; font-size: 18px; cursor: pointer; ${isHidden ? 'opacity: 0.3;' : ''}" title="${isHidden ? 'Mostra in Gantt e Vista Risorse' : 'Nascondi da Gantt e Vista Risorse'}">${isHidden ? '○' : '●'}</button>
             </td>
             <td class="action-buttons">
                 <button onclick="resourcesModule.exportResourceMarkdown(${resource.id})" class="secondary" title="Esporta riepilogo attività in Markdown">📄 Esporta MD</button>
                 <button onclick="resourcesModule.openResourceModal(${resource.id})" class="secondary">✏️ Modifica</button>
-                <button onclick="resourcesModule.deleteResource(${resource.id})" class="delete">🗑️ Elimina</button>
+                <button onclick="resourcesModule.deleteResource(${resource.id})" class="delete" ${_hideActions}>🗑️ Elimina</button>
             </td>
         `;
         tbody.appendChild(tr);

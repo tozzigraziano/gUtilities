@@ -37,6 +37,8 @@ import * as ActivityMap from './modules/activityMap.js';
 import * as CheckpointCalendar from './modules/checkpointCalendar.js';
 import * as TaskReview  from './modules/taskReview.js';
 import * as QuickNotes  from './modules/quickNotes.js';
+import * as Auth        from './modules/auth.js';
+import * as Users       from './modules/users.js';
 
 // ─── Caricamento dati ─────────────────────────────────────────────────────────
 
@@ -193,6 +195,43 @@ export function switchTab(tabName) {
   if (tabName === 'checkpointCalendar') CheckpointCalendar.renderCheckpointCalendar();
 }
 
+// ─── Restrizioni ruolo personal ──────────────────────────────────────────────
+
+/**
+ * Applica le restrizioni UI basate sul ruolo dell'utente corrente.
+ * Sempre ripristina tutti i tab prima di applicare le restrizioni specifiche.
+ * Imposta body.dataset.userRole usato da helpers.openModal per il viewer.
+ */
+function applyRoleRestrictions() {
+  const user = Auth.getCurrentUser();
+  const role = user?.role || '';
+
+  // Aggiorna attributo body (usato da openModal per viewer)
+  document.body.dataset.userRole = role;
+
+  // Ripristina sempre tutti i tab (fix: switcher da personal a altro ruolo)
+  document.querySelectorAll('.tab').forEach(btn => { btn.style.display = ''; });
+
+  if (role !== 'personal') return;
+
+  const ALLOWED = new Set(['gantt', 'resourceView', 'projects']);
+
+  // Nascondi tab non consentiti
+  document.querySelectorAll('.tab').forEach(btn => {
+    const m = btn.getAttribute('onclick')?.match(/switchTab\('([^']+)'\)/);
+    if (m && !ALLOWED.has(m[1])) btn.style.display = 'none';
+  });
+
+  // Attiva il tab gantt
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const ganttBtn = document.querySelector(".tab[onclick*=\"'gantt'\"]");
+  const ganttPanel = document.getElementById('gantt');
+  if (ganttBtn) ganttBtn.classList.add('active');
+  if (ganttPanel) ganttPanel.classList.add('active');
+  Gantt.renderGantt();
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 async function initApp() {
@@ -228,13 +267,36 @@ async function initApp() {
     Meetings.populateTimeSelect?.('globalMeetingTime');
     Dashboard.renderDashboard();
 
+    // Applica restrizioni UI per ruolo (nasconde tab per personal, setta attributo body per viewer)
+    applyRoleRestrictions();
+
   } catch (err) {
     console.error('Errore inizializzazione:', err);
     alert('Errore nel caricamento dei dati. Verifica la console.');
   }
 }
 
-document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('DOMContentLoaded', async () => {
+  // Controlla autenticazione prima di inizializzare l'app
+  if (!Auth.isAuthenticated()) {
+    Auth.showLoginOverlay();
+  } else {
+    await initApp();
+    Auth.hideLoginOverlay();
+    Auth.updateAuthBar();
+  }
+});
+
+// Login riuscito → carica dati
+window.addEventListener('auth:loggedIn', async () => {
+  await initApp();
+  Auth.updateAuthBar();
+});
+
+// Token scaduto / 401
+window.addEventListener('auth:unauthorized', () => {
+  Auth.logout();
+});
 
 // ─── Handler eventi cross-modulo ─────────────────────────────────────────────
 // I moduli usano CustomEvent('app:viewRefresh', { detail: { views: [...] } })
@@ -286,6 +348,7 @@ window.moveResourceUp           = Resources.moveResourceUp;
 window.moveResourceDown         = Resources.moveResourceDown;
 window.toggleResourceVisibility = Resources.toggleResourceVisibility;
 window.updateResourceSelects    = Resources.updateResourceSelects;
+window.resourcesModule          = Resources;  // namespace usato nell'HTML generato da renderResources
 
 // Projects
 window.saveProject              = Projects.saveProject;
@@ -334,6 +397,10 @@ window.saveTemplateMilestone    = Templates.saveTemplateMilestone;
 window.deleteTemplateMilestone  = Templates.deleteTemplateMilestone;
 window.openTemplateMilestoneModal  = Templates.openTemplateMilestoneModal;
 window.closeTemplateMilestoneModal = Templates.closeTemplateMilestoneModal;
+window.openTemplateGroupModal      = Templates.openTemplateGroupModal;
+window.closeTemplateGroupModal     = Templates.closeTemplateGroupModal;
+window.saveTemplateGroup           = Templates.saveTemplateGroup;
+window.deleteTemplateGroup         = Templates.deleteTemplateGroup;
 
 // Meetings
 window.saveGlobalMeeting        = Meetings.saveGlobalMeeting;
@@ -406,6 +473,7 @@ window.closeOfferModal          = Offers.closeOfferModal;
 window.exportData               = ExportImport.exportData;
 window.importData               = ExportImport.importData;
 window.importDataMerge          = ExportImport.importDataMerge;
+window.wipeDatabase             = ExportImport.wipeDatabase;
 
 // ActivityMap
 window.renderActivityMap        = ActivityMap.renderActivityMap;
@@ -436,6 +504,11 @@ window.analizzaRisorsePerAttivita       = Tasks.analizzaRisorsePerAttivita;
 window.renderTasks                      = Tasks.renderTasks;
 window.updateTrackingDaysDiff           = Tasks.updateTrackingDaysDiff;
 window.applyTaskLinks                   = Projects.applyTaskLinks;
+// Task Groups
+window.openGroupModal                   = Tasks.openGroupModal;
+window.closeGroupModal                  = Tasks.closeGroupModal;
+window.saveGroup                        = Tasks.saveGroup;
+window.deleteGroup                      = Tasks.deleteGroup;
 
 // Projects (funzioni aggiuntive)
 window.calculateProjectStats            = Projects.calculateProjectStats;
@@ -449,10 +522,13 @@ window.viewUpdate                       = Projects.viewUpdate;
 window.closeUpdateModal                 = Projects.closeUpdateModal;
 
 // Resources (funzioni aggiuntive)
-window.renderResourceTypes              = Resources.renderResourceTypes;
+window.openResourceTypesSettings        = Resources.openResourceTypesSettings;
+window.closeResourceTypesSettings       = Resources.closeResourceTypesSettings;
+window.addResourceType                  = Resources.addResourceType;
+window.renderResourceTypes              = Resources.renderResourceTypesList;
 window.saveResourceTypes                = Resources.saveResourceTypes;
-window.addResourceTypeRow               = Resources.addResourceTypeRow;
-window.removeResourceTypeRow            = Resources.removeResourceTypeRow;
+window.addResourceTypeRow               = Resources.addResourceType;
+window.removeResourceTypeRow            = Resources.removeResourceType;
 window.addAbsenceRow                    = Resources.addAbsenceRow;
 window.removeAbsenceRow                 = Resources.removeAbsenceRow;
 window.addPermessoRow                   = Resources.addPermessoRow;
@@ -511,6 +587,21 @@ window.saveIssue                        = Offers.saveIssue;
 window.deleteIssue                      = Offers.deleteIssue;
 window.editOffer                        = Offers.editOffer;
 window.editIssue                        = Offers.editIssue;
+
+// Auth
+window.doLogin                  = Auth.doLogin;
+window.authLogout               = Auth.logout;
+window.openChangePasswordModal  = Auth.openChangePasswordModal;
+window.closeChangePasswordModal = Auth.closeChangePasswordModal;
+window.doChangePassword         = Auth.doChangePassword;
+
+// Users
+window.openUsersModal        = Users.openUsersModal;
+window.closeUsersModal       = Users.closeUsersModal;
+window.saveUser              = Users.saveUser;
+window.editUser              = Users.editUser;
+window.deleteUser            = Users.deleteUser;
+window.updateUserFormForRole = Users.updateUserFormForRole;
 
 // CheckpointCalendar
 window.checkpointCalPrev                = CheckpointCalendar.checkpointCalPrev;

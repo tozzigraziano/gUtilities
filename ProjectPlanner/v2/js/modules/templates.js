@@ -30,6 +30,7 @@ import { calculateHolidays, renderHolidays } from './holidays.js';
 let _currentTemplateId          = null;
 let _editingTemplateMilestoneId = null;
 let _editingTemplateTaskId      = null;
+let _editingTemplateGroupId     = null;
 
 // ─── Helper interno ────────────────────────────────────────────────────────────
 
@@ -82,8 +83,9 @@ export async function saveTemplate() {
     const template = {
         id:         _currentTemplateId || Date.now(),
         name:       templateName,
-        milestones: existing ? existing.milestones : [],
-        tasks:      existing ? existing.tasks      : []
+        milestones: existing ? existing.milestones  : [],
+        tasks:      existing ? existing.tasks       : [],
+        taskGroups: existing ? existing.taskGroups  : []
     };
 
     const updatedTemplates = _currentTemplateId
@@ -176,13 +178,16 @@ export async function applyTemplateToProject(templateId, projectId, skipConfirm 
 
     const templateMilestones = template.milestones || [];
     const templateTasks      = template.tasks      || [];
+    const templateGroups     = template.taskGroups || [];
 
     // Genera ID unici per il mapping template → progetto
     let idSeed = Date.now();
     const msIdMap   = {};
     const taskIdMap = {};
+    const grpIdMap  = {};
     templateMilestones.forEach(m => { msIdMap[String(m.id)]   = ++idSeed; });
     templateTasks.forEach(t      => { taskIdMap[String(t.id)] = ++idSeed; });
+    templateGroups.forEach(g     => { grpIdMap[String(g.id)]  = `grp-${++idSeed}`; });
 
     function translateLinkedTo(linkedTo) {
         if (!linkedTo) return undefined;
@@ -223,6 +228,14 @@ export async function applyTemplateToProject(templateId, projectId, skipConfirm 
         }
     });
 
+    // Copia i gruppi nel progetto
+    project.taskGroups = templateGroups.map(g => ({
+        id:    grpIdMap[String(g.id)],
+        name:  g.name,
+        color: g.color || '#4a90d9',
+        order: g.order || 0
+    }));
+
     // Costruisci milestone del progetto
     project.milestones = templateMilestones.map(m => ({
         id:   msIdMap[String(m.id)],
@@ -251,7 +264,8 @@ export async function applyTemplateToProject(templateId, projectId, skipConfirm 
             endLinkedTo:   endLinkedTo   || undefined,
             endOffset:     endLinkedTo   ? (t.endOffset   || 0) : undefined,
             resources:    [],
-            locationType: t.locationType || undefined
+            locationType: t.locationType || undefined,
+            groupId: t.groupId && grpIdMap[String(t.groupId)] ? grpIdMap[String(t.groupId)] : null
         };
     });
 
@@ -501,6 +515,7 @@ export function openTemplateTaskModal(id = null) {
     const title = document.getElementById('templateTaskModalTitle');
 
     populateTemplateLinkedSelects(id);
+    _populateTemplateGroupSelect();
 
     if (id) {
         title.textContent = 'Modifica Attività';
@@ -509,6 +524,7 @@ export function openTemplateTaskModal(id = null) {
             const task = (template.tasks || []).find(t => t.id === id);
             if (task) {
                 document.getElementById('templateTaskName').value           = task.name;
+                document.getElementById('templateTaskGroupId').value        = task.groupId   || '';
                 document.getElementById('templateTaskStartDay').value       = task.startDayOffset || 0;
                 document.getElementById('templateTaskStartLinkedTo').value  = task.startLinkedTo  || '';
                 document.getElementById('templateTaskStartOffset').value    = task.startOffset    || 0;
@@ -546,6 +562,8 @@ function _clearTemplateTaskForm() {
     document.getElementById('templateTaskLocationType').value   = '';
     document.getElementById('templateTaskSaturdayWork').checked = false;
     document.getElementById('templateTaskSundayWork').checked   = false;
+    const _grpSel = document.getElementById('templateTaskGroupId');
+    if (_grpSel) _grpSel.value = '';
 }
 
 // ─── CRUD Template Task ────────────────────────────────────────────────────────
@@ -562,6 +580,7 @@ export async function saveTemplateTask() {
     const saturdayWork   = document.getElementById('templateTaskSaturdayWork').checked;
     const sundayWork     = document.getElementById('templateTaskSundayWork').checked;
     const locationType   = document.getElementById('templateTaskLocationType').value || undefined;
+    const groupId        = document.getElementById('templateTaskGroupId')?.value || null;
 
     if (!name || !duration) { alert('Nome e Durata sono obbligatori'); return; }
 
@@ -575,7 +594,8 @@ export async function saveTemplateTask() {
         id: _editingTemplateTaskId || Date.now(),
         name, startDayOffset, startLinkedTo, startOffset,
         duration, endLinkedTo, endOffset,
-        saturdayWork, sundayWork, locationType
+        saturdayWork, sundayWork, locationType,
+        groupId: groupId || null
     };
 
     if (_editingTemplateTaskId) {
@@ -619,8 +639,7 @@ function renderTemplateTasks() {
     tbody.innerHTML = '';
     if (!template.tasks) return;
 
-    const locationLabels = { 'sede': '🏢 Sede', 'cliente': '🏭 Cliente', 'remoto': '🌐 Remoto' };
-
+    const locationLabels = { 'sede': '🏢 Sede', 'cliente': '🏭 Cliente', 'remoto': '🌐 Remoto' };    const groups = template.taskGroups || [];
     template.tasks.forEach(task => {
         // Descrizione inizio
         let startDesc = '';
@@ -650,9 +669,16 @@ function renderTemplateTasks() {
 
         const locationStr = task.locationType ? (locationLabels[task.locationType] || task.locationType) : '-';
 
+        // Gruppo
+        const _group     = task.groupId ? groups.find(g => g.id === task.groupId) : null;
+        const _groupCell = _group
+            ? `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${_group.color};margin-right:4px;"></span>${escapeHtml(_group.name)}`
+            : '-';
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${escapeHtml(task.name)}</td>
+            <td style="font-size:11px;">${_groupCell}</td>
             <td style="font-size:11px;">${startDesc}</td>
             <td style="font-size:11px;">${endDesc}</td>
             <td>${locationStr}</td>
@@ -665,4 +691,132 @@ function renderTemplateTasks() {
         `;
         tbody.appendChild(tr);
     });
+}
+
+// ─── Gruppi Template ───────────────────────────────────────────────────────────
+
+function _populateTemplateGroupSelect() {
+    const sel = document.getElementById('templateTaskGroupId');
+    if (!sel) return;
+    const template = state.templates.find(t => t.id === _currentTemplateId);
+    const groups = template?.taskGroups || [];
+    sel.innerHTML = '<option value="">-- Nessun Gruppo --</option>' +
+        groups.sort((a, b) => (a.order || 0) - (b.order || 0))
+              .map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`)
+              .join('');
+}
+
+function _renderTemplateGroupsList() {
+    const container = document.getElementById('templateGroupsList');
+    if (!container) return;
+    const template = state.templates.find(t => t.id === _currentTemplateId);
+    const groups = template?.taskGroups || [];
+    if (groups.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-secondary); font-size:0.9em;">Nessun gruppo creato.</p>';
+        return;
+    }
+    container.innerHTML = groups
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map(g => `
+            <div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border-color);">
+                <span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:${g.color}; flex-shrink:0;"></span>
+                <span style="flex:1; font-size:0.9em;">${escapeHtml(g.name)}</span>
+                <button onclick="openTemplateGroupModal('${g.id}')" class="secondary" style="font-size:11px; padding:2px 8px;">✏️</button>
+                <button onclick="deleteTemplateGroup('${g.id}')" class="delete" style="font-size:11px; padding:2px 8px;">🗑️</button>
+            </div>
+        `).join('');
+}
+
+/** Apre il modal per creare/modificare un gruppo del template corrente. */
+export function openTemplateGroupModal(groupId = null) {
+    _editingTemplateGroupId = groupId;
+    const f = i => document.getElementById(i);
+    const template = state.templates.find(t => t.id === _currentTemplateId);
+    if (!template) return;
+    if (!template.taskGroups) template.taskGroups = [];
+
+    if (groupId) {
+        const g = template.taskGroups.find(g => g.id === groupId);
+        if (g) {
+            f('templateGroupModalTitle').textContent = 'Modifica Gruppo';
+            f('templateGroupId_edit').value = g.id;
+            f('templateGroupName').value    = g.name;
+            f('templateGroupColor').value   = g.color || '#4a90d9';
+        }
+    } else {
+        f('templateGroupModalTitle').textContent = 'Nuovo Gruppo';
+        f('templateGroupId_edit').value = '';
+        f('templateGroupName').value    = '';
+        f('templateGroupColor').value   = '#4a90d9';
+    }
+    _renderTemplateGroupsList();
+    openModal(document.getElementById('templateGroupModal'));
+}
+
+/** Chiude il modal gruppi template. */
+export function closeTemplateGroupModal() {
+    _editingTemplateGroupId = null;
+    closeModal(document.getElementById('templateGroupModal'));
+}
+
+/** Salva (crea o aggiorna) un gruppo del template. */
+export async function saveTemplateGroup() {
+    const f = i => document.getElementById(i);
+    const name   = f('templateGroupName')?.value.trim();
+    const color  = f('templateGroupColor')?.value || '#4a90d9';
+    const editId = f('templateGroupId_edit')?.value || null;
+    if (!name) { alert('Inserisci un nome per il gruppo'); return; }
+
+    const templateIndex = state.templates.findIndex(t => t.id === _currentTemplateId);
+    if (templateIndex === -1) return;
+
+    const template = { ...state.templates[templateIndex] };
+    if (!template.taskGroups) template.taskGroups = [];
+
+    if (editId) {
+        const idx = template.taskGroups.findIndex(g => g.id === editId);
+        if (idx >= 0) template.taskGroups[idx] = { ...template.taskGroups[idx], name, color };
+    } else {
+        template.taskGroups.push({
+            id:    `tgrp-${Date.now()}`,
+            name,
+            color,
+            order: template.taskGroups.length
+        });
+    }
+
+    const updatedTemplates = state.templates.map(t => t.id === _currentTemplateId ? template : t);
+    state.setTemplates(updatedTemplates);
+    await db.save('templates', template);
+
+    _renderTemplateGroupsList();
+    _populateTemplateGroupSelect();
+    f('templateGroupName').value     = '';
+    f('templateGroupId_edit').value  = '';
+    f('templateGroupModalTitle').textContent = 'Nuovo Gruppo';
+    f('templateGroupColor').value    = '#4a90d9';
+    _editingTemplateGroupId = null;
+}
+
+/**
+ * Elimina un gruppo del template. I task assegnati perdono il groupId.
+ * @param {string} groupId
+ */
+export async function deleteTemplateGroup(groupId) {
+    if (!confirm('Eliminare questo gruppo? Le attività assegnate non saranno eliminate.')) return;
+
+    const templateIndex = state.templates.findIndex(t => t.id === _currentTemplateId);
+    if (templateIndex === -1) return;
+
+    const template = { ...state.templates[templateIndex] };
+    template.taskGroups = (template.taskGroups || []).filter(g => g.id !== groupId);
+    (template.tasks || []).forEach(t => { if (t.groupId === groupId) t.groupId = null; });
+
+    const updatedTemplates = state.templates.map(t => t.id === _currentTemplateId ? template : t);
+    state.setTemplates(updatedTemplates);
+    await db.save('templates', template);
+
+    _renderTemplateGroupsList();
+    _populateTemplateGroupSelect();
+    renderTemplateTasks();
 }

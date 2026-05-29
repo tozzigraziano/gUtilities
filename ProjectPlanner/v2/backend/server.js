@@ -3,6 +3,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,12 +31,24 @@ app.use(cors({
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json({ limit: '50mb' }));
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
+// ─── Health check ─────────────────────────────────────────────────────────────
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', version: '2.0.0', timestamp: Date.now() });
+});
+
+// ─── Auth routes (no auth middleware) ────────────────────────────────────────
+app.use('/api/auth', require('./routes/auth'));
+
+// ─── Auth middleware per tutte le altre route API ─────────────────────────────
+const { requireAuth } = require('./middleware/auth');
+app.use('/api', requireAuth);
+
+// ─── Routes protette ──────────────────────────────────────────────────────────
 app.use('/api/resources',      require('./routes/resources'));
 app.use('/api/projects',       require('./routes/projects'));
 app.use('/api/templates',      require('./routes/templates'));
@@ -43,6 +56,7 @@ app.use('/api/meetings',       require('./routes/meetings'));
 app.use('/api/plants',         require('./routes/plants'));
 app.use('/api/holidays',       require('./routes/holidays'));
 app.use('/api/settings',       require('./routes/settings'));
+app.use('/api/users',          require('./routes/users'));
 app.use('/api',                require('./routes/exportImport'));
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -79,4 +93,15 @@ app.listen(PORT, '0.0.0.0', () => {
   lanIPs.forEach(ip => console.log(`  LAN:     http://${ip}:${PORT}/index.html`));
   console.log(`  Health:  http://localhost:${PORT}/api/health\n`);
   console.log('  Premi CTRL+C per fermare il server.\n');
+
+  // ─── Seed admin user (prima esecuzione) ──────────────────────────────────
+  const { getAllUsers, createUser } = require('./db');
+  const admins = getAllUsers().filter(u => u.role === 'admin');
+  if (admins.length === 0) {
+    const id   = `admin_${Date.now()}`;
+    const hash = bcrypt.hashSync('admin', 10);
+    createUser(id, 'admin', hash, 'admin', [], null);
+    console.log('  ⚠️  Utente admin creato con credenziali default: admin / admin');
+    console.log('  ⚠️  CAMBIA LA PASSWORD APPENA POSSIBILE!\n');
+  }
 });
