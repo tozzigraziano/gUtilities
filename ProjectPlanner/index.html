@@ -13619,7 +13619,29 @@
                             })
                         );
 
-                        if (hasAssignment) overlapDays++;
+                        // Controlla assenza o permesso
+                        const isAbsent = resource.absences && resource.absences.some(absence => {
+                            const absStart = new Date(absence.start);
+                            const absEnd = new Date(absence.end);
+                            absStart.setHours(0, 0, 0, 0);
+                            absEnd.setHours(23, 59, 59, 999);
+                            const checkDate = new Date(current);
+                            checkDate.setHours(12, 0, 0, 0);
+                            const inRange = checkDate >= absStart && checkDate <= absEnd;
+                            return inRange;
+                        });
+                        const isPermit = resource.permits && resource.permits.some(permit => {
+                            const absStart = new Date(permit.date);
+                            const absEnd = new Date(permit.date);
+                            absStart.setHours(0, 0, 0, 0);
+                            absEnd.setHours(23, 59, 59, 999);
+                            const checkDate = new Date(current);
+                            checkDate.setHours(12, 0, 0, 0);
+                            const inRange = checkDate >= absStart && checkDate <= absEnd;
+                            return inRange;
+                        });
+
+                        if (hasAssignment || isAbsent || isPermit) overlapDays++;
                         current.setDate(current.getDate() + 1);
                     }
                 });
