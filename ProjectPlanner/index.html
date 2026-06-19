@@ -6431,6 +6431,7 @@
                         <button type="button" class="fmd-tb-btn" onclick="fmdInsert('link')" title="Link">🔗 Link</button>
                         <button type="button" class="fmd-tb-btn" onclick="fmdInsert('hr')" title="Separatore orizzontale">— HR</button>
                         <span class="fmd-tb-sep"></span>
+                        <button type="button" class="fmd-tb-btn" onclick="triggerImageUpload()" title="Allega Immagine">🖼️ Immagine</button>
                         <div class="fmd-emoji-wrap">
                             <button type="button" class="fmd-tb-btn" onclick="fmdToggleEmojiPanel(event)" title="Inserisci icona / emoji">😀 Icone</button>
                             <div id="fmdEmojiPanel" class="fmd-emoji-panel">
@@ -6453,6 +6454,7 @@
                             </div>
                         </div>
                     </div>
+                    <input type="file" id="imageUploadInput" accept="image/*" style="display: none;">
                     <textarea id="fmdTextarea" placeholder="Scrivi qui in Markdown..."></textarea>
                 </div>
                 <div class="fmd-col">
@@ -6896,6 +6898,157 @@
             }
         });
 
+        // === GESTIONE IMMAGINI NELLE NOTE ===
+        
+        // Apre il file picker per selezionare un'immagine
+        function triggerImageUpload() {
+            const input = document.getElementById('imageUploadInput');
+            if (input) {
+                input.value = ''; // Reset per permettere lo stesso file
+                input.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (file) handleImageFile(file);
+                };
+                input.click();
+            }
+        }
+
+        // Gestisce l'incollaggio di immagini dalla clipboard
+        function handleImagePaste(e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const file = items[i].getAsFile();
+                    if (file) handleImageFile(file);
+                    break;
+                }
+            }
+        }
+
+        // Processa il file immagine: comprime, ridimensiona e inserisce nel textarea
+        async function handleImageFile(file) {
+            try {
+                // Mostra un messaggio di caricamento
+                const ta = document.getElementById('fmdTextarea');
+                const originalContent = ta.value;
+                const cursorPos = ta.selectionStart;
+                const loadingText = '\n![Caricamento immagine in corso...]()\n';
+                
+                ta.value = originalContent.substring(0, cursorPos) + loadingText + originalContent.substring(ta.selectionEnd);
+                ta.dispatchEvent(new Event('input'));
+
+                // Comprimi e ridimensiona l'immagine
+                const base64 = await compressAndResizeImage(file);
+                
+                // Rimuovi il testo di caricamento e inserisci l'immagine
+                ta.value = originalContent.substring(0, cursorPos) + originalContent.substring(ta.selectionEnd);
+                
+                // Inserisci il markdown dell'immagine
+                const imageMarkdown = `\n![Immagine](${base64})\n`;
+                ta.value = ta.value.substring(0, cursorPos) + imageMarkdown + ta.value.substring(cursorPos);
+                
+                // Posiziona il cursore dopo l'immagine inserita
+                const newPos = cursorPos + imageMarkdown.length;
+                ta.selectionStart = ta.selectionEnd = newPos;
+                
+                // Aggiorna la preview
+                ta.dispatchEvent(new Event('input'));
+                ta.focus();
+                
+                console.log('Immagine inserita con successo. Dimensione Base64:', Math.round(base64.length / 1024), 'KB');
+            } catch (error) {
+                console.error('Errore durante l\'elaborazione dell\'immagine:', error);
+                alert('Errore durante l\'elaborazione dell\'immagine. Assicurati che sia un formato valido (JPG, PNG, GIF, WebP).');
+            }
+        }
+
+        // Comprimi e ridimensiona un'immagine, ritorna la stringa Base64
+        function compressAndResizeImage(file) {
+            return new Promise((resolve, reject) => {
+                // Leggi il file
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        // Calcola le nuove dimensioni (max 800px di larghezza)
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
+                        
+                        if (height > MAX_HEIGHT) {
+                            width = Math.round((width * MAX_HEIGHT) / height);
+                            height = MAX_HEIGHT;
+                        }
+                        
+                        // Crea un canvas per il ridimensionamento
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Comprimi come JPEG con qualità 0.7 (70%)
+                        // Se il file originale è PNG con trasparenza, usa PNG
+                        let format = 'image/jpeg';
+                        let quality = 0.7;
+                        
+                        if (file.type === 'image/png') {
+                            // Verifica se ha trasparenza
+                            const imgData = ctx.getImageData(0, 0, width, height);
+                            let hasAlpha = false;
+                            for (let i = 3; i < imgData.data.length; i += 4) {
+                                if (imgData.data[i] < 255) {
+                                    hasAlpha = true;
+                                    break;
+                                }
+                            }
+                            if (hasAlpha) {
+                                format = 'image/png';
+                                quality = 0.8;
+                            }
+                        }
+                        
+                        // Converti in Base64
+                        const base64 = canvas.toDataURL(format, quality);
+                        
+                        // Verifica che non sia troppo grande (max 2MB)
+                        const sizeKB = Math.round(base64.length * 0.75 / 1024);
+                        if (sizeKB > 2048) {
+                            // Ricomprimi con qualità inferiore
+                            const lowerQuality = Math.max(0.3, quality * (2048 / sizeKB));
+                            const smallerBase64 = canvas.toDataURL(format, lowerQuality);
+                            console.log(`Immagine ricompressa da ${sizeKB}KB a ${Math.round(smallerBase64.length * 0.75 / 1024)}KB`);
+                            resolve(smallerBase64);
+                        } else {
+                            resolve(base64);
+                        }
+                    };
+                    
+                    img.onerror = function() {
+                        reject(new Error('Impossibile caricare l\'immagine'));
+                    };
+                    
+                    img.src = e.target.result;
+                };
+                
+                reader.onerror = function() {
+                    reject(new Error('Impossibile leggere il file'));
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+
 
         function openFullscreenNoteEditor(textareaId, label) {
             const source = document.getElementById(textareaId);
@@ -6918,6 +7071,9 @@
             fmdTextarea.oninput = function() {
                 fmdPreview.innerHTML = this.value ? marked.parse(this.value) : '<em style="color:var(--text-tertiary)">Nessun contenuto ancora.</em>';
             };
+
+            // Event listener per incollaggio di immagini
+            fmdTextarea.onpaste = handleImagePaste;
 
             // Mostra il modal
             const modal = document.getElementById('fullscreenNoteModal');
@@ -6953,7 +7109,10 @@
             modal.classList.remove('active');
             document.body.classList.remove('modal-open');
             const fmdTextarea = document.getElementById('fmdTextarea');
-            if (fmdTextarea) fmdTextarea.oninput = null;
+            if (fmdTextarea) {
+                fmdTextarea.oninput = null;
+                fmdTextarea.onpaste = null;
+            }
             _fmdSourceId = null;
         }
 
