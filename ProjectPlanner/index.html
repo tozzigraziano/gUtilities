@@ -8100,19 +8100,21 @@
                 URL.revokeObjectURL(icsUrl);
             }
 
-            // Copia l'HTML formattato negli appunti, poi apri mailto come fallback
+            // Copia l'HTML formattato negli appunti, poi apri mailto solo con oggetto
             const blob = new Blob([htmlBody], { type: 'text/html' });
             const clipboardItem = new ClipboardItem({ 'text/html': blob, 'text/plain': new Blob([plainBody], { type: 'text/plain' }) });
             navigator.clipboard.write([clipboardItem]).then(() => {
-                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
+                // Mailto solo con oggetto, senza body (per evitare problemi con immagini Base64 lunghe)
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}`;
                 window.location.href = mailtoLink;
                 setTimeout(() => {
-                    alert('✅ Il contenuto formattato è stato copiato negli appunti.\n📅 Il file .ics per il calendario è stato scaricato.\n\nNel client email:\n1. Usa Ctrl+V per incollare la versione formattata\n2. Allega il file .ics scaricato per aggiungere l\'evento al calendario');
+                    alert('✅ Il contenuto formattato è stato copiato negli appunti.\n📅 Il file .ics per il calendario è stato scaricato.\n\n📧 Nel client email:\n1. Premi Ctrl+V nel corpo della email per incollare il contenuto\n2. Allega il file .ics scaricato per aggiungere l\'evento al calendario');
                 }, 500);
             }).catch(() => {
-                // Fallback: apri solo mailto con testo semplice
-                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
+                // Fallback: apri solo mailto con oggetto
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}`;
                 window.location.href = mailtoLink;
+                alert('⚠️ Impossibile copiare negli appunti.\n\n📧 Aperta email con oggetto. Copia manualmente il contenuto dal modal.');
             });
 
             // Salva data invio email sul task
@@ -8182,14 +8184,17 @@
                 'text/plain': new Blob([plainBody], { type: 'text/plain' })
             });
             navigator.clipboard.write([clipboardItem]).then(() => {
-                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
+                // Mailto solo con oggetto, senza body (per evitare problemi con contenuti lunghi)
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}`;
                 window.location.href = mailtoLink;
                 setTimeout(() => {
-                    alert('✅ Il contenuto formattato è stato copiato negli appunti.\n\nNel client email:\n• Usa Ctrl+V per incollare la versione formattata con il Markdown');
+                    alert('✅ Il contenuto formattato è stato copiato negli appunti.\n\n📧 Nel client email:\n• Premi Ctrl+V nel corpo della email per incollare il contenuto');
                 }, 500);
             }).catch(() => {
-                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
+                // Fallback: apri solo mailto con oggetto
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}`;
                 window.location.href = mailtoLink;
+                alert('⚠️ Impossibile copiare negli appunti.\n\n📧 Aperta email con oggetto. Copia manualmente il contenuto.');
             });
         }
 
