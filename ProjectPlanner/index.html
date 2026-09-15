@@ -1405,6 +1405,78 @@
             cursor: pointer;
         }
 
+        /* === PIN PRIORITÀ ATTIVITÀ === */
+        .pin-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 2px 6px;
+            margin-left: 6px;
+            color: var(--text-tertiary);
+            line-height: 1;
+            transition: background 0.15s, color 0.15s;
+        }
+        .pin-btn:hover { background: var(--bg-hover); color: var(--accent-color); }
+        .pin-btn.pinned { background: var(--accent-color-light); color: var(--accent-color); border-color: var(--accent-color); }
+
+        .task-interruption-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffcc80;
+            border-radius: 10px;
+            font-size: 11px;
+            padding: 1px 7px;
+            margin-left: 6px;
+            cursor: pointer;
+        }
+        [data-theme="dark"] .task-interruption-badge {
+            background: #3e2600;
+            color: #ffb74d;
+            border-color: #7a4400;
+        }
+
+        .task-delta-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: rgba(244,67,54,0.1);
+            color: #d32f2f;
+            border: 1px solid rgba(244,67,54,0.3);
+            border-radius: 10px;
+            font-size: 11px;
+            padding: 1px 7px;
+            margin-left: 4px;
+        }
+        [data-theme="dark"] .task-delta-badge {
+            background: rgba(244,67,54,0.15);
+            color: #ef9a9a;
+            border-color: rgba(244,67,54,0.4);
+        }
+
+        /* === ALERT DATA INIZIO NEL PASSATO === */
+        .locked-end-alert-modal {
+            position: fixed; inset: 0; z-index: 10000;
+            background: rgba(0,0,0,0.55);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .locked-end-alert-content {
+            background: var(--bg-primary);
+            border: 2px solid #f44336;
+            border-radius: 8px;
+            padding: 20px 24px;
+            max-width: 560px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .locked-end-alert-content h3 { color: #f44336; margin: 0 0 12px; }
+        .locked-end-alert-content ul { margin: 8px 0 16px; padding-left: 20px; }
+        .locked-end-alert-content li { margin-bottom: 6px; font-size: 13px; }
+
         .resource-assignment.delay-extended,
         .week-task-card.delay-extended {
             border-left: 3px dashed #d32f2f !important;
@@ -5728,6 +5800,16 @@
                         <label style="width: auto;" for="taskFlexibleDate">Data Flessibile (proposta automatica quando risorsa libera)</label>
                     </div>
                     <div class="form-group">
+                        <label>Durata Stimata (gg):</label>
+                        <input type="number" id="taskEstimatedDuration" min="1" placeholder="Come da piano (baseline)">
+                        <span id="taskDurationDeltaBadge" style="display:none;" class="task-delta-badge"></span>
+                        <span style="font-size:0.82em; color:var(--text-tertiary); margin-left:8px;">Giorni pianificati originariamente — invariato anche se il task si prolunga</span>
+                    </div>
+                    <div class="form-group" id="taskInterruptionsContainer" style="display:none;">
+                        <label>Interruzioni PIN:</label>
+                        <div id="taskInterruptionsList" style="font-size:12px; color:var(--text-secondary); max-height:100px; overflow-y:auto;"></div>
+                    </div>
+                    <div class="form-group">
                         <label></label>
                         <div class="inline-group">
                             <input type="checkbox" id="taskSaturdayWork">
@@ -7784,6 +7866,37 @@
                         
                         // Lavoro notturno
                         document.getElementById('taskNightWork').value = task.nightWork || '';
+
+                        // Durata stimata (baseline) e badge delta
+                        document.getElementById('taskEstimatedDuration').value = task.estimatedDuration || '';
+                        const deltaBadge = document.getElementById('taskDurationDeltaBadge');
+                        if (task.estimatedDuration && task.duration && task.duration > task.estimatedDuration) {
+                            deltaBadge.textContent = `+${task.duration - task.estimatedDuration} gg rispetto al piano`;
+                            deltaBadge.style.display = 'inline-flex';
+                        } else {
+                            deltaBadge.style.display = 'none';
+                        }
+
+                        // Sezione interruzioni PIN
+                        const intrCont = document.getElementById('taskInterruptionsContainer');
+                        const intrList = document.getElementById('taskInterruptionsList');
+                        const interruptions = task.interruptions || [];
+                        if (interruptions.length > 0) {
+                            intrCont.style.display = '';
+                            intrList.innerHTML = interruptions.map(intr => {
+                                let priorityLabel = `Task ID ${intr.priorityTaskId}`;
+                                if (intr.priorityProjectId) {
+                                    const pp = projects.find(p => p.id == intr.priorityProjectId);
+                                    if (pp && pp.tasks) {
+                                        const pt = pp.tasks.find(t => t.id == intr.priorityTaskId);
+                                        if (pt) priorityLabel = `${pp.code} - ${pt.name}`;
+                                    }
+                                }
+                                return `<span style="margin-right:8px; display:inline-block; padding:1px 6px; background:var(--bg-tertiary); border-radius:4px;">📌 ${intr.date} — priorità: <em>${escapeHtml(priorityLabel)}</em></span>`;
+                            }).join('');
+                        } else {
+                            intrCont.style.display = 'none';
+                        }
                     }
                 }
             } else {
@@ -7793,6 +7906,9 @@
                 document.getElementById('taskCreatedAtDisplay').textContent = '';
                 document.getElementById('taskCreatedAtDisplay').style.display = 'none';
                 document.getElementById('taskEmailSentDisplay').innerHTML = '';
+                document.getElementById('taskEstimatedDuration').value = '';
+                document.getElementById('taskDurationDeltaBadge').style.display = 'none';
+                document.getElementById('taskInterruptionsContainer').style.display = 'none';
                 clearTaskForm();
                 updatePlantSelect();
             }
@@ -9447,6 +9563,9 @@
                     });
                 }
             });
+
+            // Verifica task con fine vincolata impattati dalle nuove assenze
+            checkLockedEndTasksOnAbsences(resource.id, absences);
             
             renderResources();
             updateResourceSelects();
@@ -11705,8 +11824,11 @@
                 return;
             }
             
-            // Giorni totali previsti (somma durate)
-            const totalPlannedDays = tasks.reduce((sum, t) => sum + (parseInt(t.duration) || 0), 0);
+            // Giorni totali previsti: usa estimatedDuration come baseline se disponibile, altrimenti duration
+            const estimatedDays = (t) => parseInt(t.estimatedDuration) || parseInt(t.duration) || 0;
+            const totalPlannedDays = tasks.reduce((sum, t) => sum + estimatedDays(t), 0);
+            // Indica se almeno un task ha la durata stimata impostata (per mostrare etichetta corretta)
+            const hasEstimates = tasks.some(t => t.estimatedDuration && parseInt(t.estimatedDuration) > 0);
             
             // Giorni lavorati (somma dei giorni effettivi delle attività avviate)
             let totalWorkedDays = 0;
@@ -11727,21 +11849,21 @@
             
             totalWorkedDays += totalActualCompleted;
             
-            // Giorni rimasti (durata attività non ancora completate)
+            // Giorni rimasti (usa durata stimata come baseline se disponibile)
             const remainingDays = tasks
                 .filter(t => (parseInt(t.completion) || 0) < 100 && t.status !== 'completata' && t.status !== 'annullata')
-                .reduce((sum, t) => sum + (parseInt(t.duration) || 0), 0);
+                .reduce((sum, t) => sum + estimatedDays(t), 0);
             
-            // Giorni completati (durata prevista delle attività completate)
+            // Giorni completati (durata stimata delle attività completate)
             const completedPlannedDays = tasks
                 .filter(t => (parseInt(t.completion) || 0) >= 100 || t.status === 'completata')
-                .reduce((sum, t) => sum + (parseInt(t.duration) || 0), 0);
+                .reduce((sum, t) => sum + estimatedDays(t), 0);
             
             const badgeStyle = 'padding: 8px 14px; border-radius: 6px; font-size: 0.9em; display: flex; flex-direction: column; align-items: center; min-width: 120px;';
             
             container.innerHTML = `
-                <div style="${badgeStyle} background: var(--bg-tertiary); border: 1px solid var(--border-color);">
-                    <span style="font-size: 0.8em; color: var(--text-tertiary);">📋 Giorni Previsti</span>
+                <div style="${badgeStyle} background: var(--bg-tertiary); border: 1px solid var(--border-color);" title="${hasEstimates ? 'Basato sulla durata stimata (baseline)' : 'Basato sulla durata corrente'}">
+                    <span style="font-size: 0.8em; color: var(--text-tertiary);">📋 ${hasEstimates ? 'Giorni Stimati' : 'Giorni Previsti'}</span>
                     <strong style="font-size: 1.3em;">${totalPlannedDays}</strong>
                 </div>
                 <div style="${badgeStyle} background: var(--bg-tertiary); border: 1px solid var(--border-color);">
@@ -12264,6 +12386,7 @@
             const startedAt = document.getElementById('taskStartedAt').value;
             const completedAt = document.getElementById('taskCompletedAt').value;
             const duration = parseInt(document.getElementById('taskDuration').value) || 0;
+            const estimatedDurationVal = parseInt(document.getElementById('taskEstimatedDuration').value) || 0;
             const saturdayWork = document.getElementById('taskSaturdayWork').checked;
             const sundayWork = document.getElementById('taskSundayWork').checked;
             const holidayWork = document.getElementById('taskHolidayWork').checked;
@@ -12278,7 +12401,9 @@
             
             if (startedAt && completedAt && duration) {
                 const actualDays = countWorkingDaysBetween(startedAt, completedAt, saturdayWork, sundayWork, holidayWork, modalResources);
-                const plannedDays = duration;
+                // Usa la durata stimata (baseline) come riferimento se disponibile
+                const plannedDays = estimatedDurationVal > 0 ? estimatedDurationVal : duration;
+                const isUsingEstimate = estimatedDurationVal > 0 && estimatedDurationVal !== duration;
                 const diff = actualDays - plannedDays;
                 let diffColor = '#4CAF50';
                 let diffIcon = '✅';
@@ -12290,7 +12415,8 @@
                 } else if (diff === 0) {
                     diffLabel = 'nei tempi';
                 }
-                daysDiffDisplay.innerHTML = `${diffIcon} <span style="color: ${diffColor}; font-weight: bold;">${Math.abs(diff)}gg ${diff === 0 ? 'nei tempi' : diffLabel}</span> <span style="color: var(--text-tertiary);">(previsti: ${plannedDays}gg, effettivi: ${actualDays}gg)</span>`;
+                const baseLabel = isUsingEstimate ? 'stimati' : 'previsti';
+                daysDiffDisplay.innerHTML = `${diffIcon} <span style="color: ${diffColor}; font-weight: bold;">${Math.abs(diff)}gg ${diff === 0 ? 'nei tempi' : diffLabel}</span> <span style="color: var(--text-tertiary);">(${baseLabel}: ${plannedDays}gg, effettivi: ${actualDays}gg${isUsingEstimate ? `, durata attuale: ${duration}gg` : ''})</span>`;
             } else {
                 daysDiffDisplay.innerHTML = '';
             }
@@ -12512,6 +12638,8 @@
             let flexibleDate = document.getElementById('taskFlexibleDate').checked;
             const locationType = document.getElementById('taskLocationType').value || 'sede';
             const plantId = locationType === 'cliente' ? (document.getElementById('taskPlantId').value || null) : null;
+            const estimatedDurationRaw = parseInt(document.getElementById('taskEstimatedDuration').value);
+            const estimatedDuration = isNaN(estimatedDurationRaw) ? null : estimatedDurationRaw;
             
             // Se completion passa da 0 a > 0, rimuovi automaticamente data flessibile e calcola le date
             if (completion > 0 && flexibleDate) {
@@ -12565,11 +12693,13 @@
             // Gestione createdAt e emailSentAt: preserva valori esistenti
             let createdAt = null;
             let emailSentAt = null;
+            let existingInterruptions = [];
             if (editingTaskId) {
                 const existingTask = project.tasks.find(t => t.id === editingTaskId);
                 if (existingTask) {
                     createdAt = existingTask.createdAt || null;
                     emailSentAt = existingTask.emailSentAt || null;
+                    existingInterruptions = existingTask.interruptions || [];
                 }
             } else {
                 createdAt = formatDateLocal(new Date());
@@ -12601,7 +12731,9 @@
                 completedAt: completedAt,
                 createdAt: createdAt,
                 emailSentAt: emailSentAt,
-                nightWork: nightWork
+                nightWork: nightWork,
+                estimatedDuration: estimatedDuration,
+                interruptions: existingInterruptions
             };
 
             if (editingTaskId) {
@@ -12734,6 +12866,39 @@
             // Se non ci sono collegamenti, mostra comunque l'avviso assenze
             if (!task.startLinkedTo && !task.endLinkedTo && task.startDate && task.endDate && task.resources) {
                 showAbsenceWarning(task.startDate, task.endDate, task.resources);
+            }
+
+            // Popola durata stimata e badge delta
+            document.getElementById('taskEstimatedDuration').value = task.estimatedDuration || '';
+            const deltaBadge = document.getElementById('taskDurationDeltaBadge');
+            if (task.estimatedDuration && task.duration && task.duration > task.estimatedDuration) {
+                const delta = task.duration - task.estimatedDuration;
+                deltaBadge.textContent = `+${delta} gg rispetto al piano`;
+                deltaBadge.style.display = 'inline-flex';
+            } else {
+                deltaBadge.style.display = 'none';
+            }
+
+            // Mostra sezione interruzioni
+            const interruptionsContainer = document.getElementById('taskInterruptionsContainer');
+            const interruptionsList = document.getElementById('taskInterruptionsList');
+            const interruptions = task.interruptions || [];
+            if (interruptions.length > 0) {
+                interruptionsContainer.style.display = '';
+                interruptionsList.innerHTML = interruptions.map(intr => {
+                    // Trova il nome del progetto e task prioritario
+                    let priorityLabel = `Task ID ${intr.priorityTaskId}`;
+                    if (intr.priorityProjectId) {
+                        const pp = projects.find(p => p.id == intr.priorityProjectId);
+                        if (pp && pp.tasks) {
+                            const pt = pp.tasks.find(t => t.id == intr.priorityTaskId);
+                            if (pt) priorityLabel = `${pp.code} - ${pt.name}`;
+                        }
+                    }
+                    return `<span style="margin-right:8px; display:inline-block; padding:1px 6px; background:var(--bg-tertiary); border-radius:4px;">📌 ${intr.date} — priorità: <em>${priorityLabel}</em></span>`;
+                }).join('');
+            } else {
+                interruptionsContainer.style.display = 'none';
             }
 
             document.getElementById('taskName').scrollIntoView({ behavior: 'smooth' });
@@ -13269,8 +13434,13 @@
                     // Aggiorna solo attività in-corso o nessuno stato
                     if (task.status !== 'in-corso' && task.status !== 'nessuno' && task.status !== '') return;
                     
-                    // Se ha una data di fine ed è scaduta, imposta come in-ritardo
-                    if (task.endDate && task.endDate < today && task.completion < 100) {
+                    // Se ha una data di fine ed è scaduta, imposta come in-ritardo.
+                    // Se è definita una durata stimata (baseline), usa quella come riferimento
+                    // per non mascherare i ritardi su task già estesi per ferie/PIN.
+                    const referenceEndDate = (task.estimatedDuration && task.startDate)
+                        ? calculateEndDateForTask(task.startDate, task.estimatedDuration, task.saturdayWork, task.sundayWork, task.holidayWork || false, task.resources)
+                        : task.endDate;
+                    if (referenceEndDate && referenceEndDate < today && task.completion < 100) {
                         task.status = 'in-ritardo';
                     }
                 });
@@ -13396,7 +13566,12 @@
                 today.setHours(0, 0, 0, 0);
                 const startDate = new Date(task.startDate);
                 startDate.setHours(0, 0, 0, 0);
-                const endDate = new Date(task.endDate);
+                // Usa la durata stimata (baseline) come riferimento se disponibile,
+                // così un task esteso per ferie/PIN appare correttamente in ritardo
+                const baselineEndStr = (task.estimatedDuration && task.startDate)
+                    ? calculateEndDateForTask(task.startDate, task.estimatedDuration, task.saturdayWork, task.sundayWork, task.holidayWork || false, task.resources)
+                    : task.endDate;
+                const endDate = new Date(baselineEndStr);
                 endDate.setHours(0, 0, 0, 0);
                 
                 // Calcola la percentuale prevista in base al tempo trascorso
@@ -15605,6 +15780,15 @@
                                     }
                                 });
                             }
+                            // Migra estimatedDuration e interruptions (retrocompatibilità)
+                            if (task.estimatedDuration === undefined) {
+                                task.estimatedDuration = null;
+                                projectsNeedsSave = true;
+                            }
+                            if (!Array.isArray(task.interruptions)) {
+                                task.interruptions = [];
+                                projectsNeedsSave = true;
+                            }
                         });
                     }
                 });
@@ -17461,6 +17645,19 @@
                             return checkDate >= start && checkDate <= end;
                         });
                         
+                        // Se la sovrapposizione è gestita con PIN (almeno un task ha
+                        // un'interruzione per questo giorno che referenzia un altro task
+                        // attivo nello stesso giorno), il carico è atteso: salta l'avviso.
+                        const taskIdsOnDay = new Set(tasksOnDay.map(a => a.task.id));
+                        const isPinManaged = tasksOnDay.some(a =>
+                            (a.task.interruptions || []).some(i =>
+                                i.date === dateStr &&
+                                i.resourceId == resource.id &&
+                                taskIdsOnDay.has(Number(i.priorityTaskId))
+                            )
+                        );
+                        if (isPinManaged) return;
+                        
                         warnings.push({
                             type: 'sovraccarico',
                             severity: 'critical',
@@ -18750,6 +18947,246 @@
             });
         }
 
+        // === PIN PRIORITÀ & ALERT DATA INIZIO NEL PASSATO ===
+
+        /**
+         * Restituisce i giorni lavorativi (array di stringhe YYYY-MM-DD)
+         * nell'intervallo [startStr, endStr] per un dato task (rispettando sabato/domenica/festivi).
+         * Non considera assenze (le interruzioni sono indipendenti dalle assenze).
+         */
+        function getWorkingDaysInRange(startStr, endStr, task) {
+            const result = [];
+            const parts = startStr.split('-');
+            let cur = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            const endParts = endStr.split('-');
+            const end = new Date(parseInt(endParts[0]), parseInt(endParts[1]) - 1, parseInt(endParts[2]));
+            while (cur <= end) {
+                const dow = cur.getDay();
+                const ds = formatDateLocal(cur);
+                const isHol = holidays.some(h => h.date === ds);
+                const isSat = dow === 6;
+                const isSun = dow === 0;
+                const isWorking = (!isSat || (task && task.saturdayWork)) &&
+                                  (!isSun || (task && task.sundayWork)) &&
+                                  (!isHol || (task && task.holidayWork));
+                if (isWorking) result.push(ds);
+                cur.setDate(cur.getDate() + 1);
+            }
+            return result;
+        }
+
+        /**
+         * Verifica, dopo la modifica delle assenze di una risorsa, se ci sono task
+         * con endLinkedTo impostato (fine vincolata) la cui data di inizio ricalcolata
+         * cadrebbe nel passato. Mostra un alert modale se necessario.
+         */
+        function checkLockedEndTasksOnAbsences(resourceId, newAbsences) {
+            const today = formatDateLocal(new Date());
+            const impacted = [];
+
+            projects.forEach(project => {
+                if (!project.tasks) return;
+                project.tasks.forEach(task => {
+                    // Considera solo task con fine vincolata (endLinkedTo impostato) e non completati
+                    if (!task.endLinkedTo) return;
+                    if (task.completion >= 100 || task.status === 'completata' || task.status === 'annullata') return;
+                    // Verifica che questa risorsa sia assegnata al task
+                    if (!task.resources || !task.resources.some(r => r.resourceId == resourceId)) return;
+                    if (!task.startDate || !task.endDate || !task.duration) return;
+
+                    // Ricalcola la data di fine con le nuove assenze
+                    const newEndDate = calculateEndDateForTask(
+                        task.startDate, task.duration,
+                        task.saturdayWork, task.sundayWork, task.holidayWork,
+                        task.resources
+                    );
+
+                    if (newEndDate > task.endDate) {
+                        // La fine ricalcolata va oltre quella pianificata.
+                        // Calcola quanti gg servirebbero partendo da startDate per coprire la durata
+                        // (già fatto con newEndDate). Ora verifica se invece partissimo da endDate a ritroso
+                        // la startDate teorica sarebbe nel passato.
+                        // Per semplicità: segnala che l'attività è impattata e che serve rivedere manualmente.
+                        impacted.push({ project, task, newEndDate });
+                    }
+                });
+            });
+
+            if (impacted.length > 0) {
+                showLockedEndTasksAlert(impacted, 'assenze');
+            }
+        }
+
+        /**
+         * Mostra il modale di alert per task con fine vincolata impattati.
+         * source: 'assenze' | 'pin'
+         */
+        function showLockedEndTasksAlert(impacted, source) {
+            // Rimuovi eventuali alert precedenti
+            const existingAlert = document.getElementById('lockedEndAlertModal');
+            if (existingAlert) existingAlert.remove();
+
+            const cause = source === 'assenze' ? 'l\'aggiunta di assenze' : 'il PIN priorità';
+            const overlay = document.createElement('div');
+            overlay.id = 'lockedEndAlertModal';
+            overlay.className = 'locked-end-alert-modal';
+
+            const taskListHtml = impacted.map(({ project, task, newEndDate }) => {
+                const delta = newEndDate ? ` (nuova fine stimata: <strong>${newEndDate}</strong>)` : '';
+                return `<li><strong>${project.code} — ${escapeHtml(task.name)}</strong>${delta}<br>
+                    Fine vincolata: ${task.endDate} — Inizio: ${task.startDate} — Durata: ${task.duration} gg<br>
+                    <small style="color:var(--text-tertiary);">Azione: riduci la durata, sposta le attività collegate o aumenta la durata stimata</small></li>`;
+            }).join('');
+
+            overlay.innerHTML = `
+                <div class="locked-end-alert-content">
+                    <h3>⚠️ Attenzione: planning non più fattibile</h3>
+                    <p>A seguito di <strong>${cause}</strong>, ${impacted.length} attività con <em>data di fine vincolata</em> non possono più essere completate entro il piano originale:</p>
+                    <ul>${taskListHtml}</ul>
+                    <p style="font-size:13px; color:var(--text-secondary);">
+                        Queste attività hanno la data di fine collegata ad altri task o milestone e non possono essere spostate automaticamente.<br>
+                        Devi <strong>reimpostare manualmente</strong> il planning: sposta le attività collegate, riduci la durata assegnata o aggiorna la durata stimata come baseline.
+                    </p>
+                    <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+                        ${impacted.map(({ project, task }) =>
+                            `<button onclick="currentProjectId=${project.id}; openTaskModal(${task.id}); document.getElementById('lockedEndAlertModal').remove();" class="secondary" style="font-size:12px;">✏️ ${escapeHtml(task.name)}</button>`
+                        ).join('')}
+                        <button onclick="document.getElementById('lockedEndAlertModal').remove();" style="margin-left:auto;">Chiudi</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+        }
+
+        /**
+         * Applica il PIN priorità a un task nella vista risorse.
+         * Segna come "interrotti" tutti i task sovrapposti per la stessa risorsa,
+         * aggiunge i giorni di interruzione al loro conteggio e propone la nuova data di fine.
+         */
+        function pinTaskPriority(resourceId, pinnedTaskId, pinnedProjectId) {
+            const pinnedProject = projects.find(p => p.id == pinnedProjectId);
+            if (!pinnedProject) return;
+            const pinnedTask = pinnedProject.tasks && pinnedProject.tasks.find(t => t.id == pinnedTaskId);
+            if (!pinnedTask || !pinnedTask.startDate || !pinnedTask.endDate) return;
+
+            // Trova tutti gli altri task sovrapposti per questa risorsa
+            const affectedTasks = [];
+            projects.forEach(project => {
+                if (!project.tasks) return;
+                project.tasks.forEach(task => {
+                    if (task.id === pinnedTaskId && project.id == pinnedProjectId) return;
+                    if (task.completion >= 100 || task.status === 'completata' || task.status === 'annullata') return;
+                    if (!task.resources || !task.resources.some(r => r.resourceId == resourceId)) return;
+                    if (!task.startDate || !task.endDate) return;
+
+                    // Controlla sovrapposizione
+                    if (task.endDate < pinnedTask.startDate || task.startDate > pinnedTask.endDate) return;
+
+                    // Calcola giorni lavorativi sovrapposti non già registrati come interruzione
+                    const overlapStart = task.startDate > pinnedTask.startDate ? task.startDate : pinnedTask.startDate;
+                    const overlapEnd = task.endDate < pinnedTask.endDate ? task.endDate : pinnedTask.endDate;
+                    const overlapWorkDays = getWorkingDaysInRange(overlapStart, overlapEnd, task);
+
+                    // Filtra i giorni già registrati come interruzione per questo task prioritario
+                    const existingInterruptions = (task.interruptions || []).filter(i => i.priorityTaskId == pinnedTaskId).map(i => i.date);
+                    const newDays = overlapWorkDays.filter(d => !existingInterruptions.includes(d));
+
+                    if (newDays.length > 0) {
+                        // Calcola nuova data di fine: aggiungi newDays.length gg lavorativi dopo l'attuale endDate
+                        const dayAfterEnd = new Date(task.endDate + 'T00:00:00');
+                        dayAfterEnd.setDate(dayAfterEnd.getDate() + 1);
+                        const dayAfterEndStr = formatDateLocal(dayAfterEnd);
+                        const newEndDate = calculateEndDateForTask(
+                            dayAfterEndStr, newDays.length,
+                            task.saturdayWork, task.sundayWork, task.holidayWork,
+                            task.resources
+                        );
+                        affectedTasks.push({ project, task, newDays, newEndDate });
+                    }
+                });
+            });
+
+            if (affectedTasks.length === 0) {
+                alert('📌 Nessuna altra attività sovrapposta trovata per questa risorsa nel periodo del task selezionato.');
+                return;
+            }
+
+            // Costruisci messaggio di conferma
+            let msg = `📌 Dare priorità a "${pinnedTask.name}"?\n\nLe seguenti attività riceveranno interruzioni:\n\n`;
+            affectedTasks.forEach(({ project, task, newDays, newEndDate }) => {
+                msg += `• ${project.code} — ${task.name}\n  Giorni interrotti: ${newDays.length} (${newDays[0]}${newDays.length > 1 ? ' … ' + newDays[newDays.length - 1] : ''})\n  Nuova fine proposta: ${task.endDate} → ${newEndDate}\n\n`;
+            });
+            msg += 'Confermi?';
+
+            if (!confirm(msg)) return;
+
+            // Applica le modifiche
+            const lockedEndTasks = [];
+            affectedTasks.forEach(({ project, task, newDays, newEndDate }) => {
+                if (!Array.isArray(task.interruptions)) task.interruptions = [];
+                newDays.forEach(date => {
+                    task.interruptions.push({
+                        date,
+                        priorityTaskId: pinnedTaskId,
+                        priorityProjectId: pinnedProjectId,
+                        resourceId: resourceId
+                    });
+                });
+
+                if (task.endLinkedTo) {
+                    // Fine vincolata: non modifichiamo la data, segnaliamo l'impatto
+                    lockedEndTasks.push({ project, task, newEndDate });
+                } else {
+                    task.endDate = newEndDate;
+                    // Aggiorna la durata per riflettere i giorni aggiuntivi
+                    // duration = giorni lavorativi tra startDate e nuova endDate
+                    const workDays = getWorkingDaysInRange(task.startDate, newEndDate, task);
+                    task.duration = workDays.length;
+                }
+            });
+
+            saveToIndexedDBAll();
+            renderResourceView();
+            renderGantt();
+
+            if (lockedEndTasks.length > 0) {
+                showLockedEndTasksAlert(lockedEndTasks, 'pin');
+            }
+        }
+
+        /**
+         * Rimuove tutte le interruzioni PIN registrate su un task per un dato task prioritario.
+         */
+        function removePinInterruptions(taskId, projectId, priorityTaskId, priorityProjectId) {
+            const project = projects.find(p => p.id == projectId);
+            if (!project) return;
+            const task = project.tasks && project.tasks.find(t => t.id == taskId);
+            if (!task || !Array.isArray(task.interruptions)) return;
+
+            const before = task.interruptions.length;
+            task.interruptions = task.interruptions.filter(i => !(i.priorityTaskId == priorityTaskId && i.priorityProjectId == priorityProjectId));
+            const removed = before - task.interruptions.length;
+
+            if (removed === 0) return;
+
+            // Ricalcola end date: rimuovi i giorni rimossi dall'estensione
+            if (!task.endLinkedTo && task.startDate && task.duration) {
+                const newEndDate = calculateEndDateForTask(
+                    task.startDate, task.duration,
+                    task.saturdayWork, task.sundayWork, task.holidayWork,
+                    task.resources
+                );
+                task.endDate = newEndDate;
+                const workDays = getWorkingDaysInRange(task.startDate, newEndDate, task);
+                task.duration = workDays.length;
+            }
+
+            saveToIndexedDBAll();
+            renderResourceView();
+            renderGantt();
+        }
+
         function renderResourceView() {
             const resourceFilter = document.getElementById('resourceViewFilter')?.value;
             const period = document.getElementById('resourceViewPeriod')?.value;
@@ -19551,7 +19988,75 @@
                                 currentProjectId = assignment.project.id;
                                 openTaskModal(assignment.task.id);
                             };
-                            
+
+                            // === PIN nella vista settimana/mese ===
+                            const taskDayTasksCount = dayAssignments.filter(a => a.type === 'task').length;
+                            const hasOverlapToday = taskDayTasksCount > 1;
+
+                            // Controlla se questo task è il task prioritario (altri task di questo giorno lo referenziano)
+                            const isPinnedToday = dayAssignments.some(other =>
+                                other.type === 'task' && other.task.id !== assignment.task.id &&
+                                (other.task.interruptions || []).some(i => i.priorityTaskId == assignment.task.id && i.resourceId == assignment.resourceId)
+                            );
+
+                            // Interruzioni sul task corrente per questo giorno specifico
+                            const intrToday = (assignment.task.interruptions || []).filter(i => i.date === dateStr && i.resourceId == assignment.resourceId);
+
+                            if (hasOverlapToday || isPinnedToday || intrToday.length > 0) {
+                                const pinRow = document.createElement('div');
+                                pinRow.style.cssText = 'margin-top:3px; display:flex; gap:3px; flex-wrap:wrap;';
+                                pinRow.onclick = e => e.stopPropagation();
+
+                                if (isPinnedToday) {
+                                    // Mostra badge PRIORITÀ (non cliccabile)
+                                    const pinnedBadge = document.createElement('span');
+                                    pinnedBadge.className = 'pin-btn pinned';
+                                    pinnedBadge.style.cssText = 'cursor:default; font-size:10px; padding:1px 5px;';
+                                    pinnedBadge.textContent = '📌 PRIORITÀ';
+                                    pinnedBadge.title = 'Questo task ha priorità sugli altri task sovrapposti';
+                                    pinRow.appendChild(pinnedBadge);
+                                } else if (hasOverlapToday && intrToday.length === 0) {
+                                    // Mostra bottone PIN (solo se non già interrotto)
+                                    const pinBtn = document.createElement('button');
+                                    pinBtn.className = 'pin-btn';
+                                    pinBtn.style.cssText = 'font-size:10px; padding:1px 5px;';
+                                    pinBtn.textContent = '📌 PIN';
+                                    pinBtn.title = 'Dai priorità a questo task per il giorno ' + dateStr;
+                                    pinBtn.onclick = () => pinTaskPriority(assignment.resourceId, assignment.task.id, assignment.project.id);
+                                    pinRow.appendChild(pinBtn);
+                                }
+
+                                // Badge interruzioni (uno per priorityTask distinto)
+                                const intrGroupedToday = {};
+                                intrToday.forEach(i => {
+                                    const key = `${i.priorityTaskId}_${i.priorityProjectId}`;
+                                    if (!intrGroupedToday[key]) intrGroupedToday[key] = { ...i, count: 0 };
+                                    intrGroupedToday[key].count++;
+                                });
+                                Object.values(intrGroupedToday).forEach(g => {
+                                    let ptName = `Task ${g.priorityTaskId}`;
+                                    const pp = projects.find(p => p.id == g.priorityProjectId);
+                                    if (pp && pp.tasks) {
+                                        const pt = pp.tasks.find(t => t.id == g.priorityTaskId);
+                                        if (pt) ptName = `${pp.code} — ${pt.name}`;
+                                    }
+                                    const intrBadge = document.createElement('span');
+                                    intrBadge.className = 'task-interruption-badge';
+                                    intrBadge.style.cssText = 'font-size:9px; padding:1px 4px; cursor:pointer;';
+                                    intrBadge.textContent = `📌 int. (${ptName})`;
+                                    intrBadge.title = `Interrotto per priorità a: ${ptName}\nClicca per rimuovere`;
+                                    intrBadge.onclick = () => {
+                                        if (confirm(`Rimuovere l'interruzione PIN verso "${ptName}"?\nLa data di fine verrà ricalcolata.`)) {
+                                            removePinInterruptions(assignment.task.id, assignment.project.id, g.priorityTaskId, g.priorityProjectId);
+                                        }
+                                    };
+                                    pinRow.appendChild(intrBadge);
+                                });
+
+                                taskCard.appendChild(pinRow);
+                            }
+                            // === fine PIN settimana/mese ===
+
                             dayColumn.appendChild(taskCard);
                         });
                         
@@ -19780,22 +20285,41 @@
                         // Completamento per-risorsa
                         const listResData = assignment.task.resources && assignment.task.resources.find(r => r.resourceId == assignment.resourceId);
                         const listResCompletion = listResData ? (listResData.completion || 0) : assignment.task.completion;
-                        
+
+                        // Badge interruzioni PIN per questo task
+                        const taskInterruptions = (assignment.task.interruptions || []).filter(i => i.resourceId == assignment.resourceId);
+                        const interruptionsBadgeHtml = taskInterruptions.length > 0
+                            ? `<span class="task-interruption-badge" title="Questo task ha ${taskInterruptions.length} giorno/i di interruzione PIN. Clicca per rimuoverle tutte."
+                                onclick="event.stopPropagation(); if(confirm('Rimuovere le interruzioni PIN da questo task? La data di fine verrà ricalcolata.')) { removePinInterruptions(${assignment.task.id}, ${assignment.project.id}, ${taskInterruptions[0].priorityTaskId}, ${taskInterruptions[0].priorityProjectId}); }">
+                                📌 ${taskInterruptions.length} interruz.</span>`
+                            : '';
+
+                        // Badge delta durata stimata
+                        const estDur = assignment.task.estimatedDuration;
+                        const actualDur = assignment.task.duration;
+                        const deltaBadgeHtml = (estDur && actualDur > estDur)
+                            ? `<span class="task-delta-badge" title="Durata stimata: ${estDur} gg — Attuale: ${actualDur} gg">+${actualDur - estDur} gg vs piano</span>`
+                            : '';
+
                         const assignInfo = document.createElement('div');
                         assignInfo.style.fontSize = '13px';
                         assignInfo.style.padding = '8px 10px';
                         assignInfo.style.display = 'grid';
-                        assignInfo.style.gridTemplateColumns = '200px 100px 1fr 120px 110px auto 150px';
-                        assignInfo.style.gap = '15px';
+                        assignInfo.style.gridTemplateColumns = '200px 100px 1fr 120px 110px auto auto';
+                        assignInfo.style.gap = '10px';
                         assignInfo.style.alignItems = 'center';
                         assignInfo.innerHTML = `
                             <span style="font-weight: bold; color: var(--primary-color);">${assignment.project.client}</span>
                             <span>${assignment.project.code}</span>
-                            <span style="font-weight: bold;">${assignment.task.name}${notesIndicator}${nightIndicator}</span>
+                            <span style="font-weight: bold;">${assignment.task.name}${notesIndicator}${nightIndicator}${interruptionsBadgeHtml}${deltaBadgeHtml}</span>
                             <span>Compl: <strong>${listResCompletion}%</strong></span>
                             <span>Carico: <strong style="color: ${assignment.percentage > 100 ? 'var(--danger-color)' : 'var(--primary-color)'};">${assignment.percentage}%</strong></span>
                             <span>${getLocationBadgeHtml(assignment.task)}</span>
-                            <span style="color: var(--danger-color); font-weight: bold;">${hasConflict ? '⚠️ SOVRAPPOSIZIONE' : ''}</span>
+                            <span style="color: var(--danger-color); font-weight: bold; display:flex; align-items:center; gap:4px;">
+                                ${hasConflict ? '⚠️ SOVRAP.' : ''}
+                                ${hasConflict ? `<button class="pin-btn" title="📌 Dai priorità a questo task: gli altri task sovrapposti verranno prolungati"
+                                    onclick="event.stopPropagation(); pinTaskPriority(${assignment.resourceId}, ${assignment.task.id}, ${assignment.project.id})">📌 PIN</button>` : ''}
+                            </span>
                         `;
                         assignDiv.appendChild(assignInfo);
                         
@@ -19807,7 +20331,7 @@
                         dateRow.style.display = 'flex';
                         dateRow.style.gap = '20px';
                         dateRow.innerHTML = `
-                            <span>📅 ${assignment.startDate} - ${assignment.endDate} (${assignment.task.duration} gg)</span>
+                            <span>📅 ${assignment.startDate} - ${assignment.endDate} (${assignment.task.duration} gg${estDur ? ` — piano: ${estDur} gg` : ''})</span>
                             <span style="color: var(--warning-color); font-weight: bold;">${absenceWarning}</span>
                         `;
                         assignDiv.appendChild(dateRow);
