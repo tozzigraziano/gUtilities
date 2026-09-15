@@ -10107,6 +10107,55 @@
             updateProjectSelects();
         }
 
+        function duplicateProject(id) {
+            const source = projects.find(p => p.id === id);
+            if (!source) return;
+
+            const newId = Date.now() + Math.random();
+
+            const newProject = {
+                id: newId,
+                client: source.client,
+                code: source.code + ' (Copia)',
+                description: source.description,
+                generalInfo: source.generalInfo || '',
+                tasks: (source.tasks || []).map(t => ({
+                    ...JSON.parse(JSON.stringify(t)),
+                    id: Date.now() + Math.random(),
+                    projectId: newId,
+                    completion: 0,
+                    status: (t.status === 'completata' || t.status === 'annullata') ? 'da-avviare' : (t.status || 'da-avviare'),
+                    startedAt: null,
+                    completedAt: null,
+                    trackingStartDate: null,
+                    trackingEndDate: null,
+                    trackingDays: null,
+                    startLinkedTo: '',
+                    endLinkedTo: ''
+                })),
+                milestones: (source.milestones || []).map(m => ({
+                    ...JSON.parse(JSON.stringify(m)),
+                    id: Date.now() + Math.random(),
+                    completed: false
+                })),
+                updates: [],
+                offers: (source.offers || []).map(o => ({
+                    ...JSON.parse(JSON.stringify(o)),
+                    id: Date.now() + Math.random()
+                })),
+                issues: [],
+                meetings: (source.meetings || []).map(m => ({
+                    ...JSON.parse(JSON.stringify(m)),
+                    id: Date.now() + Math.random()
+                }))
+            };
+
+            projects.push(newProject);
+            saveToIndexedDBAll();
+            renderProjects();
+            updateProjectSelects();
+        }
+
         function clearProjectForm() {
             currentProjectId = null;
             document.getElementById('projectClient').value = '';
@@ -11727,8 +11776,9 @@
                         </div>
                     </td>
                     <td class="action-buttons">
-                        <button onclick="event.stopPropagation(); openProjectModal(${project.id})" class="secondary">✏️ Modifica</button>
-                        <button onclick="event.stopPropagation(); deleteProject(${project.id})" class="delete">🗑️ Elimina</button>
+                        <button onclick="event.stopPropagation(); openProjectModal(${project.id})" class="secondary">✏️</button>
+                        <button onclick="event.stopPropagation(); duplicateProject(${project.id})" class="secondary">📋</button>
+                        <button onclick="event.stopPropagation(); deleteProject(${project.id})" class="delete">🗑️</button>
                     </td>
                 `;
                 
