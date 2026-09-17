@@ -5801,7 +5801,7 @@
                     </div>
                     <div class="form-group">
                         <label>Durata Stimata (gg):</label>
-                        <input type="number" id="taskEstimatedDuration" min="1" placeholder="Come da piano (baseline)">
+                        <input type="number" id="taskEstimatedDuration" min="0" placeholder="Come da piano (baseline), 0 = non pianificata">
                         <span id="taskDurationDeltaBadge" style="display:none;" class="task-delta-badge"></span>
                         <span style="font-size:0.82em; color:var(--text-tertiary); margin-left:8px;">Giorni pianificati originariamente — invariato anche se il task si prolunga</span>
                     </div>
@@ -7868,9 +7868,12 @@
                         document.getElementById('taskNightWork').value = task.nightWork || '';
 
                         // Durata stimata (baseline) e badge delta
-                        document.getElementById('taskEstimatedDuration').value = task.estimatedDuration || '';
+                        document.getElementById('taskEstimatedDuration').value = task.estimatedDuration != null ? task.estimatedDuration : '';
                         const deltaBadge = document.getElementById('taskDurationDeltaBadge');
-                        if (task.estimatedDuration && task.duration && task.duration > task.estimatedDuration) {
+                        if (task.estimatedDuration === 0) {
+                            deltaBadge.textContent = 'Attività non pianificata (fuori baseline)';
+                            deltaBadge.style.display = 'inline-flex';
+                        } else if (task.estimatedDuration && task.duration && task.duration > task.estimatedDuration) {
                             deltaBadge.textContent = `+${task.duration - task.estimatedDuration} gg rispetto al piano`;
                             deltaBadge.style.display = 'inline-flex';
                         } else {
@@ -11874,8 +11877,8 @@
                 return;
             }
             
-            // Giorni totali previsti: usa estimatedDuration come baseline se disponibile, altrimenti duration
-            const estimatedDays = (t) => parseInt(t.estimatedDuration) || parseInt(t.duration) || 0;
+            // Giorni totali previsti: null = nessuna baseline (usa duration), 0 = non pianificata
+            const estimatedDays = (t) => (t.estimatedDuration === null || t.estimatedDuration === undefined) ? (parseInt(t.duration) || 0) : (parseInt(t.estimatedDuration) || 0);
             const totalPlannedDays = tasks.reduce((sum, t) => sum + estimatedDays(t), 0);
             // Indica se almeno un task ha la durata stimata impostata (per mostrare etichetta corretta)
             const hasEstimates = tasks.some(t => t.estimatedDuration && parseInt(t.estimatedDuration) > 0);
@@ -12919,9 +12922,12 @@
             }
 
             // Popola durata stimata e badge delta
-            document.getElementById('taskEstimatedDuration').value = task.estimatedDuration || '';
+            document.getElementById('taskEstimatedDuration').value = task.estimatedDuration != null ? task.estimatedDuration : '';
             const deltaBadge = document.getElementById('taskDurationDeltaBadge');
-            if (task.estimatedDuration && task.duration && task.duration > task.estimatedDuration) {
+            if (task.estimatedDuration === 0) {
+                deltaBadge.textContent = 'Attività non pianificata (fuori baseline)';
+                deltaBadge.style.display = 'inline-flex';
+            } else if (task.estimatedDuration && task.duration && task.duration > task.estimatedDuration) {
                 const delta = task.duration - task.estimatedDuration;
                 deltaBadge.textContent = `+${delta} gg rispetto al piano`;
                 deltaBadge.style.display = 'inline-flex';
@@ -13865,6 +13871,15 @@
                 const notesIndicator = task.notes && task.notes.trim() ? 
                     `<span style="color: var(--warning-color); margin-left: 5px; cursor: help;" title="${task.notes.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">📝</span>` : '';
 
+                // Indicatore fuori target (duration > estimatedDuration baseline)
+                let targetIndicator = '';
+                if (task.estimatedDuration === 0) {
+                    targetIndicator = `<span style="color: #ff9800; font-weight: bold; margin-left: 5px;" title="Attività non prevista nel piano iniziale (durata stimata: 0gg)">🆕 Non pianificata</span>`;
+                } else if (task.estimatedDuration > 0 && task.duration > task.estimatedDuration) {
+                    const overDelta = task.duration - task.estimatedDuration;
+                    targetIndicator = `<span style="color: #f44336; font-weight: bold; margin-left: 5px;" title="Durata stimata: ${task.estimatedDuration}gg, Durata attuale: ${task.duration}gg">⏱️ +${overDelta}gg fuori target</span>`;
+                }
+
                 // Indicatore differenza giorni previsti vs effettivi
                 let daysDiffIndicator = '';
                 if (task.startedAt && task.completedAt && task.duration) {
@@ -13898,7 +13913,7 @@
                     : '<td></td>';
                 
                 tr.innerHTML = checkboxCell + `
-                    <td ${cancelledStyle}>${task.name} ${delayIndicator}${flexibleIndicator}${notesIndicator}</td>
+                    <td ${cancelledStyle}>${task.name} ${delayIndicator}${flexibleIndicator}${notesIndicator}${targetIndicator}</td>
                     <td ${cancelledStyle}>${resourcesStr}</td>
                     <td ${cancelledStyle}>${task.startDate || '-'}</td>
                     <td ${cancelledStyle}>${task.endDate || '-'}</td>
@@ -21303,7 +21318,7 @@
             // Centro Italia di default
             activityMapInstance = L.map('mapContainer').setView([42.5, 12.5], 6);
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_3o6k_1_3e68b0443f02d4d1801905cc', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
                 maxZoom: 19,
                 subdomains: 'abcd'
