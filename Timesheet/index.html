@@ -661,6 +661,25 @@
             color: var(--text-tertiary);
             font-style: italic;
         }
+        /* ===== Progetti ===== */
+        /* Fix hover flashing: nessuna variazione di dimensione, solo cambio colore */
+        .project-tag:hover {
+            font-size: inherit !important;
+            transform: none !important;
+            padding: 2px 8px !important;
+            filter: brightness(1.18) !important;
+            cursor: default !important;
+        }
+        .projects-list { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+        .project-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; transition: box-shadow 0.2s; }
+        .project-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        .project-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+        .project-card-title { font-weight: 600; font-size: 1.05em; color: var(--text-primary); }
+        .project-versions { display: flex; flex-wrap: wrap; gap: 6px; }
+        .version-badge { background: var(--accent-color); color: #fff; padding: 2px 10px; border-radius: 12px; font-size: 0.82em; font-weight: 500; }
+        .version-tag-modal { display: inline-flex; align-items: center; gap: 4px; background: var(--hover-bg); border: 1px solid var(--border-color); border-radius: 4px; padding: 3px 8px; margin: 2px; font-size: 0.88em; }
+        .version-tag-modal button { background: none; border: none; cursor: pointer; color: var(--text-secondary); line-height: 1; font-size: 1em; padding: 0 2px; }
+        .version-tag-modal button:hover { color: var(--danger-color, #e53e3e); }
     </style>
 </head>
 <body>
@@ -1219,7 +1238,8 @@
         let timesheetEntries = [];
         let holidays = [];
         let localHolidays = [];
-        let dailyNotes = []; // Daily work notes
+        let dailyNotes = [];
+    let projects = []; // Daily work notes
         let categories = []; // Work type categories
         let editingIndex = -1; // Track if we're editing an existing entry
         let editingLocalHolidayId = null; // Track if we're editing a local holiday
@@ -1469,7 +1489,7 @@
         ];
 
         // Load data from localStorage
-        function loadData() {
+        function loadData () {
             const savedWorkTypes = localStorage.getItem('workTypes');
             const savedDayTypes = localStorage.getItem('dayTypes');
             const savedEntries = localStorage.getItem('timesheetEntries');
@@ -1486,6 +1506,22 @@
 
             // Migrazione dati: calcola workHours dai workEntries se non presente
             migrateWorkHours();
+        const savedProjects = localStorage.getItem('projects');
+        if (savedProjects) try { projects = JSON.parse(savedProjects); } catch(e) { projects = []; }
+        // Sync projects dai dati già caricati (timesheetEntries in scope qui)
+        timesheetEntries.forEach(function(entry) {
+            (entry.workEntries || []).forEach(function(we) {
+                var code = (we.workCode || '').trim();
+                if (!code) return;
+                var proj = projects.find(function(p) { return p.name === code; });
+                if (!proj) {
+                    proj = { id: 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), name: code, versions: [] };
+                    projects.push(proj);
+                }
+                var ver = (we.version || '').trim();
+                if (ver && proj.versions.indexOf(ver) === -1) proj.versions.push(ver);
+            });
+        });
             
             // Calcola festività
             calculateHolidays();
@@ -1513,10 +1549,11 @@
         }
 
         // Save data to localStorage
-        function saveData() {
+        function saveData () {
             localStorage.setItem('workTypes', JSON.stringify(workTypes));
             localStorage.setItem('dayTypes', JSON.stringify(dayTypes));
             localStorage.setItem('timesheetEntries', JSON.stringify(timesheetEntries));
+        localStorage.setItem('projects', JSON.stringify(projects));
             localStorage.setItem('localHolidays', JSON.stringify(localHolidays));
             localStorage.setItem('dailyNotes', JSON.stringify(dailyNotes));
             localStorage.setItem('categories', JSON.stringify(categories));
@@ -3495,6 +3532,7 @@
 
         // Load and render on page load
         loadData();
+        setupProgettiTab();
         renderCategories();
         renderWorkTypes();
         renderDayTypes();
@@ -3506,6 +3544,305 @@
         updateProjectSuggestions();
         populateNoteWorkTypes();
         renderNotes();
+
+    // ===== GESTIONE PROGETTI =====
+
+    function _esc (str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    let editingProjectId = null;
+    let modalProjectVersions = [];
+
+    function syncProjectsFromEntries () {
+        timesheetEntries.forEach(entry => {
+            (entry.workEntries || []).forEach(we => {
+                const code = (we.workCode || '').trim();
+                if (!code) return;
+                let proj = projects.find(p => p.name === code);
+                if (!proj) {
+                    proj = { id: 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), name: code, versions: [] };
+                    projects.push(proj);
+                }
+                const ver = (we.version || '').trim();
+                if (ver && !proj.versions.includes(ver)) proj.versions.push(ver);
+            });
+        });
+    }
+
+    function renderProjects () {
+        var container = document.getElementById('projects-list');
+        if (!container) return;
+        var searchEl = document.getElementById('projects-search');
+        var filter = searchEl ? searchEl.value.toLowerCase().trim() : '';
+        var list = filter
+            ? projects.filter(function(p) {
+                return p.name.toLowerCase().indexOf(filter) !== -1 ||
+                       p.versions.some(function(v) { return v.toLowerCase().indexOf(filter) !== -1; });
+              })
+            : projects;
+        var sorted = list.slice().sort(function(a, b) { return a.name.localeCompare(b.name); });
+        if (sorted.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:32px;">' +
+                (filter ? 'Nessun progetto trovato per &ldquo;' + _esc(filter) + '&rdquo;.' : 'Nessun progetto. Aggiungine uno con &ldquo;+ Nuovo Progetto&rdquo;.') +
+                '</p>';
+            return;
+        }
+        container.innerHTML = sorted.map(function(p) {
+            var versHtml = p.versions.length > 0
+                ? p.versions.map(function(v) { return '<span class="version-badge">' + _esc(v) + '</span>'; }).join('')
+                : '<span style="color:var(--text-secondary);font-size:0.88em;font-style:italic;">Nessuna versione definita</span>';
+            return '<div class="project-card">' +
+                '<div class="project-card-header">' +
+                    '<span class="project-card-title">' + _esc(p.name) + '</span>' +
+                    '<div style="display:flex;gap:6px;">' +
+                        '<button class="btn btn-secondary" style="padding:4px 10px;font-size:0.85em;" onclick="openProjectModal(\'' + p.id + '\')">✏️ Modifica</button>' +
+                        '<button class="btn btn-danger" style="padding:4px 10px;font-size:0.85em;" onclick="deleteProject(\'' + p.id + '\')">🗑️ Elimina</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="project-versions">' + versHtml + '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    function openProjectModal (projectId) {
+        editingProjectId = projectId || null;
+        const modal = document.getElementById('project-modal');
+        const titleEl = document.getElementById('project-modal-title');
+        const nameInput = document.getElementById('project-name-input');
+        if (projectId) {
+            const proj = projects.find(p => p.id === projectId);
+            if (!proj) return;
+            titleEl.textContent = 'Modifica Progetto';
+            nameInput.value = proj.name;
+            modalProjectVersions = [...proj.versions];
+        } else {
+            titleEl.textContent = 'Nuovo Progetto';
+            nameInput.value = '';
+            modalProjectVersions = [];
+        }
+        renderProjectVersionsList();
+        modal.style.display = 'flex';
+        nameInput.focus();
+    }
+
+    function closeProjectModal () {
+        document.getElementById('project-modal').style.display = 'none';
+    }
+
+    function renderProjectVersionsList () {
+        const container = document.getElementById('project-versions-list');
+        if (!container) return;
+        if (modalProjectVersions.length === 0) {
+            container.innerHTML = '<span style="color:var(--text-secondary);font-size:0.88em;font-style:italic;">Nessuna versione aggiunta</span>';
+            return;
+        }
+        container.innerHTML = modalProjectVersions.map((v, i) => `
+            <span class="version-tag-modal">${_esc(v)}<button onclick="removeVersionFromModal(${i})" title="Rimuovi">×</button></span>
+        `).join('');
+    }
+
+    function addVersionToProjectModal () {
+        const input = document.getElementById('new-version-input');
+        const v = (input.value || '').trim();
+        if (!v) return;
+        if (!modalProjectVersions.includes(v)) {
+            modalProjectVersions.push(v);
+            renderProjectVersionsList();
+        }
+        input.value = '';
+        input.focus();
+    }
+
+    function removeVersionFromModal (index) {
+        modalProjectVersions.splice(index, 1);
+        renderProjectVersionsList();
+    }
+
+    function saveProject () {
+        const name = (document.getElementById('project-name-input').value || '').trim();
+        if (!name) { alert('Inserisci il codice progetto.'); return; }
+        if (editingProjectId) {
+            const proj = projects.find(p => p.id === editingProjectId);
+            if (proj) {
+                const oldName = proj.name;
+                proj.name = name;
+                proj.versions = [...modalProjectVersions];
+                if (oldName !== name) {
+                    timesheetEntries.forEach(entry => {
+                        (entry.workEntries || []).forEach(we => {
+                            if (we.workCode === oldName) we.workCode = name;
+                        });
+                    });
+                }
+            }
+        } else {
+            if (projects.find(p => p.name === name)) {
+                alert('Esiste già un progetto con questo codice.');
+                return;
+            }
+            projects.push({
+                id: 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+                name,
+                versions: [...modalProjectVersions]
+            });
+        }
+        saveData();
+        renderProjects();
+        closeProjectModal();
+    }
+
+    function deleteProject (projectId) {
+        if (!confirm('Eliminare questo progetto? Le registrazioni di timesheet non verranno modificate.')) return;
+        projects = projects.filter(p => p.id !== projectId);
+        saveData();
+        renderProjects();
+    }
+
+    function getVersionsForCode (workCode) {
+        const code = (workCode || '').trim();
+        if (!code) return [];
+        const vers = new Set();
+        const proj = projects.find(p => p.name === code);
+        if (proj) proj.versions.forEach(v => vers.add(v));
+        timesheetEntries.forEach(entry => {
+            (entry.workEntries || []).forEach(we => {
+                if (we.workCode === code && (we.version || '').trim())
+                    vers.add(we.version.trim());
+            });
+        });
+        return [...vers];
+    }
+
+    function setupProgettiTab () {
+        // Cerca il contenitore dei tab nav e del contenuto
+        var firstNavBtn = document.querySelector('.nav-tab');
+        var navEl = firstNavBtn ? firstNavBtn.parentElement : null;
+        var firstTabContent = document.querySelector('.tab-content');
+        var contentEl = firstTabContent ? firstTabContent.parentElement : null;
+        if (!navEl || !contentEl) return;
+
+        // Crea bottone tab
+        var btn = document.createElement('button');
+        btn.id = 'nav-btn-progetti';
+        btn.className = 'nav-tab';
+        btn.textContent = '📁 Progetti';
+        navEl.appendChild(btn);
+
+        // Crea div contenuto tab
+        var tabDiv = document.createElement('div');
+        tabDiv.id = 'tab-progetti';
+        tabDiv.className = 'tab-content';
+        tabDiv.innerHTML =
+            '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:16px 16px 8px;">' +
+                '<h2 style="margin:0;">📁 Progetti</h2>' +
+                '<div style="display:flex;gap:8px;align-items:center;">' +
+                    '<input type="search" id="projects-search" placeholder="🔍 Cerca progetto o versione…"' +
+                    ' style="padding:6px 10px;border:1px solid var(--border-color);border-radius:6px;background:var(--input-bg,var(--card-bg));color:var(--text-primary);font-size:0.9em;width:220px;"' +
+                    ' oninput="renderProjects()">' +
+                    '<button class="btn btn-primary" onclick="openProjectModal()">+ Nuovo Progetto</button>' +
+                '</div>' +
+            '</div>' +
+            '<div id="projects-list" class="projects-list"></div>';
+        contentEl.appendChild(tabDiv);
+
+        // Crea modal progetto
+        var modalEl = document.createElement('div');
+        modalEl.id = 'project-modal';
+        modalEl.className = 'modal-overlay';
+        modalEl.style.display = 'none';
+        modalEl.innerHTML =
+            '<div class="modal-content" style="max-width:480px;width:92%;" onclick="event.stopPropagation()">' +
+                '<div class="modal-header">' +
+                    '<h3 id="project-modal-title">Nuovo Progetto</h3>' +
+                    '<button class="modal-close" onclick="closeProjectModal()">✕</button>' +
+                '</div>' +
+                '<div class="modal-body">' +
+                    '<div class="form-group">' +
+                        '<label>Codice Progetto *</label>' +
+                        '<input type="text" id="project-name-input" class="form-input" placeholder="es. PRJ-001">' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label>Versioni conosciute</label>' +
+                        '<div id="project-versions-list" style="display:flex;flex-wrap:wrap;gap:4px;min-height:24px;margin-bottom:8px;"></div>' +
+                        '<div style="display:flex;gap:8px;">' +
+                            '<input type="text" id="new-version-input" class="form-input" style="flex:1;" placeholder="es. 1.0.0" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addVersionToProjectModal();}">' +
+                            '<button class="btn btn-secondary" onclick="addVersionToProjectModal()">+ Aggiungi</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="modal-footer">' +
+                    '<button class="btn btn-secondary" onclick="closeProjectModal()">Annulla</button>' +
+                    '<button class="btn btn-primary" onclick="saveProject()">Salva</button>' +
+                '</div>' +
+            '</div>';
+        modalEl.addEventListener('click', function(e) { if (e.target === modalEl) closeProjectModal(); });
+        document.body.appendChild(modalEl);
+
+        // --- Click handler: mostra il tab Progetti ---
+        btn.onclick = function () {
+            // Rimuove SOLO la classe active dagli altri tab (NON tocca style.display per non interferire)
+            document.querySelectorAll('.tab-content').forEach(function(t) {
+                t.classList.remove('active');
+                // Resetta eventuali inline display impostati da switchTab originale
+                t.style.removeProperty('display');
+            });
+            document.querySelectorAll('.nav-tab').forEach(function(b) { b.classList.remove('active'); });
+            // Mostra il nostro tab tramite inline style (il CSS default è display:none)
+            tabDiv.style.display = 'block';
+            btn.classList.add('active');
+            renderProjects();
+        };
+
+        // --- Patch switchTab: quando si torna ad altri tab, nasconde il nostro ---
+        var _origSwitchTab = window.switchTab;
+        if (typeof _origSwitchTab === 'function') {
+            window.switchTab = function(tab) {
+                // Rimuove il nostro inline style override prima che l'originale faccia il suo lavoro
+                tabDiv.style.removeProperty('display');
+                _origSwitchTab(tab);
+            };
+        }
+
+        // --- Autocomplete versioni ---
+        var observer = new MutationObserver(function() {
+            document.querySelectorAll('[id^="work-version-"]').forEach(function(vi) {
+                if (vi.getAttribute('list')) return;
+                var idx = vi.id.replace('work-version-', '');
+                var dlId = 'vdl-' + idx;
+                vi.setAttribute('list', dlId);
+                if (!document.getElementById(dlId)) {
+                    var dl = document.createElement('datalist');
+                    dl.id = dlId;
+                    document.body.appendChild(dl);
+                }
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        document.addEventListener('input', function(e) {
+            var t = e.target;
+            if (!t || !t.id) return;
+            var m = t.id.match(/^work-code-(\d+)$/);
+            if (!m) return;
+            updateVersionDatalist(m[1], t.value);
+        });
+    }
+
+    function updateVersionDatalist (idx, workCode) {
+        var dlId = 'vdl-' + idx;
+        var dl = document.getElementById(dlId);
+        if (!dl) {
+            dl = document.createElement('datalist');
+            dl.id = dlId;
+            document.body.appendChild(dl);
+            var vi = document.getElementById('work-version-' + idx);
+            if (vi && !vi.getAttribute('list')) vi.setAttribute('list', dlId);
+        }
+        var versions = getVersionsForCode(workCode);
+        dl.innerHTML = versions.map(function(v) { return '<option value="' + _esc(v) + '"></option>'; }).join('');
+    }
+
     </script>
 </body>
 </html>
