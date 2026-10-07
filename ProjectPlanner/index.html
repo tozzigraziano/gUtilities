@@ -7,6 +7,42 @@
     <!-- Marked.js for Markdown support -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
+        function isVacationLikeAbsenceType(type) {
+            return type === 'vacation' || type === 'cassa_integrazione';
+        }
+
+        function getAbsenceDisplayClass(type) {
+            if (type === 'sick') return 'on-absence-sick';
+            if (type === 'planned_intervention') return 'on-absence-planned-intervention';
+            if (type === 'cassa_integrazione') return 'on-absence-cassa-integrazione';
+            return 'on-absence';
+        }
+
+        function getAbsenceCssClass(type) {
+            if (type === 'sick') return 'absence-sick';
+            if (type === 'planned_intervention') return 'absence-planned';
+            if (type === 'cassa_integrazione') return 'absence-cassa-integrazione';
+            return 'absence-vacation';
+        }
+
+        function getAbsenceLabel(type) {
+            if (type === 'sick') return 'Malattia';
+            if (type === 'planned_intervention') return 'Intervento Pianificato';
+            if (type === 'cassa_integrazione') return 'Cassa Integrazione';
+            return 'Ferie';
+        }
+
+        function getAbsenceIcon(type) {
+            if (type === 'sick') return '🤒';
+            if (type === 'planned_intervention') return '🏥';
+            if (type === 'cassa_integrazione') return '😔';
+            return '🏖️';
+        }
+
+        function isAbsenceCountableForAvailability(type) {
+            return type === 'vacation' || type === 'cassa_integrazione' || type === 'sick' || type === 'planned_intervention';
+        }
+
         // Custom marked renderer per blocchi di codice con numeri di linea e codice inline
         const codeRenderer = {
             code(token) {
@@ -1062,6 +1098,12 @@
             font-weight: 700;
         }
 
+        .res-cal-day.absence-cassa-integrazione {
+            background: #5e35b1;
+            color: #fff;
+            font-weight: 700;
+        }
+
         .res-cal-day.permit {
             background: #ff9800;
             color: #fff;
@@ -1085,6 +1127,10 @@
 
         [data-theme="dark"] .res-cal-day.absence-planned {
             background: #6a1b9a;
+        }
+
+        [data-theme="dark"] .res-cal-day.absence-cassa-integrazione {
+            background: #4a148c;
         }
 
         [data-theme="dark"] .res-cal-day.permit {
@@ -1573,6 +1619,17 @@
             position: relative;
         }
 
+        .gantt-day.absence-cassa-integrazione {
+            background: repeating-linear-gradient(
+                45deg,
+                #5e35b1,
+                #5e35b1 4px,
+                #7e57c2 4px,
+                #7e57c2 8px
+            ) !important;
+            position: relative;
+        }
+
         [data-theme="dark"] .gantt-day.absence,
         [data-theme="dark"] .gantt-day.absence-sick,
         [data-theme="dark"] .gantt-day.absence-planned-intervention {
@@ -1582,6 +1639,16 @@
                 #b71c1c 4px,
                 #c62828 4px,
                 #c62828 8px
+            ) !important;
+        }
+
+        [data-theme="dark"] .gantt-day.absence-cassa-integrazione {
+            background: repeating-linear-gradient(
+                45deg,
+                #4a148c,
+                #4a148c 4px,
+                #6a1b9a 4px,
+                #6a1b9a 8px
             ) !important;
         }
         
@@ -1609,6 +1676,17 @@
         
         .gantt-day.absence-planned-intervention::after {
             content: '🏥';
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            z-index: 5;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+        }
+
+        .gantt-day.absence-cassa-integrazione::after {
+            content: '😔';
             position: absolute;
             top: 2px;
             left: 50%;
@@ -1839,6 +1917,17 @@
             ) !important;
             position: relative;
         }
+
+        .resource-daily-bar.on-absence-cassa-integrazione {
+            background: repeating-linear-gradient(
+                45deg,
+                #5e35b1,
+                #5e35b1 4px,
+                #7e57c2 4px,
+                #7e57c2 8px
+            ) !important;
+            position: relative;
+        }
         
         [data-theme="dark"] .resource-daily-bar.on-absence,
         [data-theme="dark"] .resource-daily-bar.on-absence-sick,
@@ -1849,6 +1938,16 @@
                 #b71c1c 4px,
                 #c62828 4px,
                 #c62828 8px
+            ) !important;
+        }
+
+        [data-theme="dark"] .resource-daily-bar.on-absence-cassa-integrazione {
+            background: repeating-linear-gradient(
+                45deg,
+                #4a148c,
+                #4a148c 4px,
+                #6a1b9a 4px,
+                #6a1b9a 8px
             ) !important;
         }
         
@@ -1878,6 +1977,18 @@
         
         .resource-daily-bar.on-absence-planned-intervention::after {
             content: '🏥';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
+        }
+        
+        .resource-daily-bar.on-absence-cassa-integrazione::after {
+            content: '😔';
             position: absolute;
             top: 50%;
             left: 50%;
@@ -2003,6 +2114,18 @@
             box-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
         }
 
+        .resource-daily-bar.current-day.on-absence-cassa-integrazione {
+            background: repeating-linear-gradient(
+                45deg,
+                #5e35b1,
+                #5e35b1 4px,
+                #7e57c2 4px,
+                #7e57c2 8px
+            ) !important;
+            border: 2px solid #ff5722;
+            box-shadow: 0 0 8px rgba(94, 53, 177, 0.6);
+        }
+
         .resource-daily-bar.current-day.on-permit {
             background: repeating-linear-gradient(
                 45deg,
@@ -2027,7 +2150,8 @@
         
         [data-theme="dark"] .resource-daily-bar.current-day.on-absence,
         [data-theme="dark"] .resource-daily-bar.current-day.on-absence-sick,
-        [data-theme="dark"] .resource-daily-bar.current-day.on-absence-planned-intervention {
+        [data-theme="dark"] .resource-daily-bar.current-day.on-absence-planned-intervention,
+        [data-theme="dark"] .resource-daily-bar.current-day.on-absence-cassa-integrazione {
             background: repeating-linear-gradient(
                 45deg,
                 #b71c1c,
@@ -5533,6 +5657,10 @@
                         <span>🤒 Malattia</span>
                     </div>
                     <div class="legend-item">
+                        <div class="legend-color" style="background: repeating-linear-gradient(45deg, #5e35b1, #5e35b1 3px, #7e57c2 3px, #7e57c2 6px);"></div>
+                        <span>😔 Cassa Integrazione</span>
+                    </div>
+                    <div class="legend-item">
                         <div class="legend-color" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 3px, #e57373 3px, #e57373 6px);"></div>
                         <span>🏥 Intervento Pianificato</span>
                     </div>
@@ -5601,6 +5729,7 @@
                         <div class="res-cal-legend">
                             <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: repeating-linear-gradient(45deg, #d32f2f, #d32f2f 2px, #e57373 2px, #e57373 4px);"></span> Ferie</span>
                             <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #d32f2f;"></span> Malattia</span>
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #5e35b1;"></span> Cassa</span>
                             <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #7b1fa2;"></span> Intervento</span>
                             <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #ff9800;"></span> Permesso</span>
                         </div>
@@ -9246,9 +9375,7 @@
                 });
 
                 if (absType) {
-                    if (absType === 'sick') cell.classList.add('absence-sick');
-                    else if (absType === 'planned_intervention') cell.classList.add('absence-planned');
-                    else cell.classList.add('absence-vacation');
+                    cell.classList.add(getAbsenceCssClass(absType));
                 } else if (permitMatch) {
                     cell.classList.add('permit');
                 }
@@ -9264,9 +9391,9 @@
 
                 // Tooltip
                 let title = dateStr;
-                if (absType === 'vacation') title += ' — 🏖️ Ferie';
-                else if (absType === 'sick') title += ' — 🤒 Malattia';
-                else if (absType === 'planned_intervention') title += ' — 🏥 Intervento Pianificato';
+                if (absType) {
+                    title += ` — ${getAbsenceIcon(absType)} ${getAbsenceLabel(absType)}`;
+                }
                 if (permitMatch) title += ` — ⏰ Permesso ${permitMatch.startTime}-${permitMatch.endTime}`;
                 cell.title = title;
 
@@ -9307,6 +9434,7 @@
                     <option value="vacation">Ferie</option>
                     <option value="sick">Malattia</option>
                     <option value="planned_intervention">Intervento Pianificato</option>
+                    <option value="cassa_integrazione">Cassa Integrazione 😔</option>
                 </select>
                 <input type="date" class="absence-start">
                 <span>-</span>
@@ -9602,6 +9730,7 @@
                             <option value="vacation" ${absenceType === 'vacation' ? 'selected' : ''}>Ferie</option>
                             <option value="sick" ${absenceType === 'sick' ? 'selected' : ''}>Malattia</option>
                             <option value="planned_intervention" ${absenceType === 'planned_intervention' ? 'selected' : ''}>Intervento Pianificato</option>
+                            <option value="cassa_integrazione" ${absenceType === 'cassa_integrazione' ? 'selected' : ''}>Cassa Integrazione 😔</option>
                         </select>
                         <input type="date" class="absence-start" value="${absence.start}">
                         <span>-</span>
@@ -9627,6 +9756,7 @@
                         <option value="vacation">Ferie</option>
                         <option value="sick">Malattia</option>
                         <option value="planned_intervention">Intervento Pianificato</option>
+                        <option value="cassa_integrazione">Cassa Integrazione 😔</option>
                     </select>
                     <input type="date" class="absence-start">
                     <span>-</span>
@@ -14654,7 +14784,7 @@
         // === EXPORT PIANO FERIE PDF ===
         function exportVacationPlanPDF() {
             const year = new Date().getFullYear();
-            const visibleResources = resources.filter(r => r.absences && r.absences.some(abs => abs.type === 'vacation')).sort((a, b) => (a.order || 0) - (b.order || 0));
+            const visibleResources = resources.filter(r => r.absences && r.absences.some(abs => isVacationLikeAbsenceType(abs.type))).sort((a, b) => (a.order || 0) - (b.order || 0));
 
             if (visibleResources.length === 0) {
                 alert('Nessuna risorsa con ferie registrate da esportare.');
@@ -14674,7 +14804,7 @@
                 const vacSet = new Set();
                 if (r.absences) {
                     r.absences.forEach(abs => {
-                        if (abs.type !== 'vacation') return;
+                        if (!isVacationLikeAbsenceType(abs.type)) return;
                         const start = new Date(abs.start + 'T00:00:00');
                         const end = new Date(abs.end + 'T00:00:00');
                         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -16796,7 +16926,7 @@
                 statusBadge.className = 'resource-status-badge';
                 
                 if (currentAbsenceType) {
-                    const absLabels = { 'vacation': '🏖️ In ferie', 'sick': '🤒 Malattia', 'planned_intervention': '🏥 Intervento' };
+                    const absLabels = { 'vacation': '🏖️ In ferie', 'sick': '🤒 Malattia', 'planned_intervention': '🏥 Intervento', 'cassa_integrazione': '😔 Cassa Integrazione' };
                     statusBadge.textContent = absLabels[currentAbsenceType] || '🏖️ Assente';
                     statusBadge.classList.add('status-absence');
                 } else if (todayLoad === 0) {
@@ -16826,7 +16956,7 @@
                 let tooltipLines = [`${resource.firstName} ${resource.lastName}`];
                 tooltipLines.push('');
                 if (currentAbsenceType) {
-                    const absNames = { 'vacation': 'In ferie', 'sick': 'Malattia', 'planned_intervention': 'Intervento pianificato' };
+                    const absNames = { 'vacation': 'In ferie', 'sick': 'Malattia', 'planned_intervention': 'Intervento pianificato', 'cassa_integrazione': 'Cassa Integrazione' };
                     tooltipLines.push(`⚠ Stato: ${absNames[currentAbsenceType] || 'Assente'}`);
                 } else {
                     tooltipLines.push(`Carico oggi: ${todayLoad.toFixed(0)}%`);
@@ -17101,6 +17231,8 @@
                                 dayDiv.classList.add('absence-sick');
                             } else if (absence.type === 'planned_intervention') {
                                 dayDiv.classList.add('absence-planned-intervention');
+                            } else if (absence.type === 'cassa_integrazione') {
+                                dayDiv.classList.add('absence-cassa-integrazione');
                             } else {
                                 dayDiv.classList.add('absence');
                             }
@@ -19725,6 +19857,8 @@
                         dailyBar.classList.add('on-absence-sick');
                     } else if (absenceType === 'planned_intervention') {
                         dailyBar.classList.add('on-absence-planned-intervention');
+                    } else if (absenceType === 'cassa_integrazione') {
+                        dailyBar.classList.add('on-absence-cassa-integrazione');
                     } else {
                         dailyBar.classList.add('on-absence');
                     }
@@ -19762,7 +19896,7 @@
                 tooltip.className = 'resource-daily-bar-tooltip';
                 let tooltipText = `${dateStr}: ${load.toFixed(0)}%`;
                 if (isAbsent) {
-                    const absenceLabel = absenceType === 'sick' ? 'MALATTIA' : (absenceType === 'planned_intervention' ? 'INTERVENTO PIANIFICATO' : 'FERIE');
+                    const absenceLabel = absenceType === 'sick' ? 'MALATTIA' : (absenceType === 'planned_intervention' ? 'INTERVENTO PIANIFICATO' : (absenceType === 'cassa_integrazione' ? 'CASSA INTEGRAZIONE' : 'FERIE'));
                     tooltipText += ` ⚠️ ${absenceLabel}`;
                 } else if (hasPermit) {
                     tooltipText += ` ⏰ PERMESSO ${permitInfo.startTime} - ${permitInfo.endTime}`;
@@ -19815,8 +19949,10 @@
                 absencesDiv.style.color = 'var(--text-tertiary)';
                 absencesDiv.innerHTML = '<strong>Assenze:</strong> ' + 
                     resource.absences.map(a => {
-                        if (a.start === a.end) return a.start;
-                        return `${a.start} - ${a.end}`;
+                        const icon = getAbsenceIcon(a.type);
+                        const label = getAbsenceLabel(a.type);
+                        const dateRange = a.start === a.end ? a.start : `${a.start} - ${a.end}`;
+                        return `${icon} ${label}: ${dateRange}`;
                     }).join(', ');
                 contentWrapper.appendChild(absencesDiv);
             }
