@@ -4006,6 +4006,94 @@
         [data-theme="dark"] .resource-stat-badge.from-today {
             background: #1e88e5;
         }
+
+        /* Badge "non disponibile trasferte" nella vista risorse */
+        .resource-no-travel-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 8px;
+            background: #e65100;
+            color: white;
+            margin-left: 8px;
+            white-space: nowrap;
+            cursor: default;
+        }
+        [data-theme="dark"] .resource-no-travel-badge {
+            background: #bf360c;
+        }
+
+        .no-travel-range {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .no-travel-range .delete-no-travel {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 16px;
+            margin: 0;
+            transition: transform 0.2s;
+        }
+        .no-travel-range .delete-no-travel:hover {
+            transform: scale(1.2);
+            background: none;
+        }
+        #noTravelDays .add-no-travel-btn {
+            margin-left: 30px;
+            margin-top: 5px;
+        }
+
+        /* Barre giornaliere: non disponibilità trasferte */
+        .resource-daily-bar.on-no-travel {
+            background: repeating-linear-gradient(
+                45deg,
+                #546e7a,
+                #546e7a 4px,
+                #78909c 4px,
+                #78909c 8px
+            ) !important;
+            position: relative;
+        }
+
+        [data-theme="dark"] .resource-daily-bar.on-no-travel {
+            background: repeating-linear-gradient(
+                45deg,
+                #37474f,
+                #37474f 4px,
+                #546e7a 4px,
+                #546e7a 8px
+            ) !important;
+        }
+
+        .resource-daily-bar.on-no-travel::after {
+            content: '🚫';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 1px rgba(255,255,255,0.8));
+            pointer-events: none;
+        }
+
+        /* Etichetta giorno con indicatore no-travel (per vista sett./mese) */
+        .day-label.no-travel-day {
+            color: #546e7a;
+            font-weight: 700;
+        }
+        .day-label.no-travel-day::after {
+            content: ' 🚫';
+            font-size: 8px;
+        }
     </style>
 </head>
 <body>
@@ -5714,6 +5802,12 @@
                     <label>Ore di Permesso:</label>
                     <div id="permitDays">
                         <!-- Le righe di permesso verranno aggiunte dinamicamente -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>🚫 Non disp. trasferte:</label>
+                    <div id="noTravelDays">
+                        <!-- Le righe di non disponibilità trasferte verranno aggiunte dinamicamente -->
                     </div>
                 </div>
                 </div>
@@ -9497,8 +9591,127 @@
         function removePermitRange(button) {
             button.parentElement.remove();
         }
-        
-        // Trova tutte le attività con ritardi causati da assenze
+
+        function addNoTravelRange() {
+            const container = document.getElementById('noTravelDays');
+            const existingAddBtn = container.querySelector('.add-no-travel-btn');
+            if (existingAddBtn) existingAddBtn.remove();
+
+            const newRange = document.createElement('div');
+            newRange.className = 'no-travel-range';
+            newRange.innerHTML = `
+                <button type="button" onclick="removeNoTravelRange(this)" class="delete-no-travel" title="Rimuovi periodo">🗑️</button>
+                <input type="date" class="no-travel-start">
+                <span>-</span>
+                <input type="date" class="no-travel-end">
+                <input type="text" class="no-travel-note" placeholder="Motivo (opzionale)" style="width:160px;">
+            `;
+            container.appendChild(newRange);
+
+            const startInput = newRange.querySelector('.no-travel-start');
+            const endInput = newRange.querySelector('.no-travel-end');
+            startInput.addEventListener('change', function() {
+                if (this.value && !endInput.value) endInput.value = this.value;
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'add-no-travel-btn';
+            addBtn.textContent = '+ Aggiungi Periodo';
+            addBtn.onclick = addNoTravelRange;
+            container.appendChild(addBtn);
+        }
+
+        function removeNoTravelRange(button) {
+            button.parentElement.remove();
+        }
+
+        function getModalNoTravelPeriods() {
+            const periods = [];
+            document.querySelectorAll('.no-travel-range').forEach(range => {
+                const start = range.querySelector('.no-travel-start')?.value;
+                const end = range.querySelector('.no-travel-end')?.value || start;
+                const note = range.querySelector('.no-travel-note')?.value || '';
+                if (start) periods.push({ start, end, note });
+            });
+            return periods;
+        }
+
+        /**
+         * Verifica conflitti tra i periodi no-travel di una risorsa e le attività
+         * "Presso Cliente" a cui è assegnata.
+         * Restituisce array di {project, task, resourceName, overlapStart, overlapEnd}.
+         */
+        function checkTravelConflicts(resourceId, noTravelPeriods) {
+            const conflicts = [];
+            if (!noTravelPeriods || noTravelPeriods.length === 0) return conflicts;
+            const resource = resources.find(r => r.id == resourceId);
+            const resourceName = resource ? `${resource.firstName} ${resource.lastName}` : String(resourceId);
+
+            noTravelPeriods.forEach(period => {
+                if (!period.start) return;
+                const pStart = new Date(period.start + 'T00:00:00');
+                const pEnd = new Date((period.end || period.start) + 'T00:00:00');
+
+                projects.forEach(project => {
+                    if (!project.tasks) return;
+                    project.tasks.forEach(task => {
+                        if (task.locationType !== 'cliente') return;
+                        if (task.completion >= 100 || task.status === 'completata' || task.status === 'annullata') return;
+                        if (!task.startDate || !task.endDate) return;
+                        const hasResource = task.resources && task.resources.some(r => r.resourceId == resourceId);
+                        if (!hasResource) return;
+
+                        const tStart = new Date(task.startDate + 'T00:00:00');
+                        const tEnd = new Date(task.endDate + 'T00:00:00');
+
+                        if (pStart <= tEnd && pEnd >= tStart) {
+                            // Calcola intervallo sovrapposizione
+                            const overlapStart = pStart > tStart ? period.start : task.startDate;
+                            const overlapEnd = pEnd < tEnd ? (period.end || period.start) : task.endDate;
+                            conflicts.push({ project, task, resourceName, resourceId, overlapStart, overlapEnd, note: period.note || '' });
+                        }
+                    });
+                });
+            });
+            return conflicts;
+        }
+
+        /**
+         * Verifica se un task "Presso Cliente" ha risorse con periodi no-travel sovrapposti.
+         * Usato al salvataggio del task.
+         */
+        function checkTaskTravelConflicts(task, assignedResources) {
+            const conflicts = [];
+            if (task.locationType !== 'cliente') return conflicts;
+            if (!task.startDate || !task.endDate) return conflicts;
+
+            const tStart = new Date(task.startDate + 'T00:00:00');
+            const tEnd = new Date(task.endDate + 'T00:00:00');
+
+            assignedResources.forEach(tr => {
+                if (!tr.resourceId) return;
+                const resource = resources.find(r => r.id == tr.resourceId);
+                if (!resource || !resource.noTravelPeriods) return;
+                resource.noTravelPeriods.forEach(period => {
+                    if (!period.start) return;
+                    const pStart = new Date(period.start + 'T00:00:00');
+                    const pEnd = new Date((period.end || period.start) + 'T00:00:00');
+                    if (pStart <= tEnd && pEnd >= tStart) {
+                        const overlapStart = pStart > tStart ? period.start : task.startDate;
+                        const overlapEnd = pEnd < tEnd ? (period.end || period.start) : task.endDate;
+                        conflicts.push({
+                            resourceName: `${resource.firstName} ${resource.lastName}`,
+                            overlapStart,
+                            overlapEnd,
+                            note: period.note || ''
+                        });
+                    }
+                });
+            });
+            return conflicts;
+        }
+
         function findTasksWithAbsenceDelays() {
             const tasksWithDelays = [];
             
@@ -9635,6 +9848,14 @@
                 }
             });
 
+            const noTravelPeriods = [];
+            document.querySelectorAll('.no-travel-range').forEach(range => {
+                const start = range.querySelector('.no-travel-start')?.value;
+                const end = range.querySelector('.no-travel-end')?.value || start;
+                const note = range.querySelector('.no-travel-note')?.value || '';
+                if (start) noTravelPeriods.push({ start, end, note });
+            });
+
             const resource = {
                 id: editingResourceId || Date.now(),
                 firstName,
@@ -9642,6 +9863,7 @@
                 type: document.getElementById('resourceType').value || '',
                 absences,
                 permits,
+                noTravelPeriods,
                 order: editingResourceId ? 
                     (resources.find(r => r.id === editingResourceId)?.order || 0) : 
                     resources.length
@@ -9665,6 +9887,20 @@
                     if (!confirm(message)) {
                         return;
                     }
+                }
+            }
+
+            // Controlla conflitti no-travel: trasferte già assegnate in periodi di non disponibilità
+            if (noTravelPeriods.length > 0) {
+                const travelConflicts = checkTravelConflicts(resource.id, noTravelPeriods);
+                if (travelConflicts.length > 0) {
+                    let msg = `🚫 ATTENZIONE: ${resource.firstName} ${resource.lastName} ha ${travelConflicts.length} attività "Presso Cliente" durante i periodi di non disponibilità a trasferte:\n\n`;
+                    travelConflicts.slice(0, 5).forEach(c => {
+                        msg += `• ${c.project.code} - ${c.task.name} (sovrapposizione: ${c.overlapStart} - ${c.overlapEnd})${c.note ? ' [' + c.note + ']' : ''}\n`;
+                    });
+                    if (travelConflicts.length > 5) msg += `\n... e altri ${travelConflicts.length - 5} conflitti`;
+                    msg += '\nL\'attività NON verrà spostata. Il conflitto resterà visibile negli avvisi.';
+                    alert(msg);
                 }
             }
 
@@ -9802,6 +10038,30 @@
             addPermitBtn.onclick = addPermitRange;
             permitContainer.appendChild(addPermitBtn);
 
+            // Popola periodi no-travel
+            const noTravelContainer = document.getElementById('noTravelDays');
+            noTravelContainer.innerHTML = '';
+            if (resource.noTravelPeriods && resource.noTravelPeriods.length > 0) {
+                resource.noTravelPeriods.forEach(period => {
+                    const newRange = document.createElement('div');
+                    newRange.className = 'no-travel-range';
+                    newRange.innerHTML = `
+                        <button type="button" onclick="removeNoTravelRange(this)" class="delete-no-travel" title="Rimuovi periodo">🗑️</button>
+                        <input type="date" class="no-travel-start" value="${period.start}">
+                        <span>-</span>
+                        <input type="date" class="no-travel-end" value="${period.end || period.start}">
+                        <input type="text" class="no-travel-note" placeholder="Motivo (opzionale)" style="width:160px;" value="${escapeHtml(period.note || '')}">
+                    `;
+                    noTravelContainer.appendChild(newRange);
+                });
+            }
+            const addNoTravelBtn = document.createElement('button');
+            addNoTravelBtn.type = 'button';
+            addNoTravelBtn.className = 'add-no-travel-btn';
+            addNoTravelBtn.textContent = '+ Aggiungi Periodo';
+            addNoTravelBtn.onclick = addNoTravelRange;
+            noTravelContainer.appendChild(addNoTravelBtn);
+
             // Aggiorna calendario preview
             resCalCurrentMonth = new Date().getMonth();
             resCalCurrentYear = new Date().getFullYear();
@@ -9842,6 +10102,10 @@
             const permitContainer = document.getElementById('permitDays');
             permitContainer.innerHTML = `
                 <button type="button" class="add-permit-btn" onclick="addPermitRange()">+ Aggiungi Permesso</button>
+            `;
+            const noTravelContainer = document.getElementById('noTravelDays');
+            noTravelContainer.innerHTML = `
+                <button type="button" class="add-no-travel-btn" onclick="addNoTravelRange()">+ Aggiungi Periodo</button>
             `;
         }
 
@@ -12997,6 +13261,19 @@
             
             closeTaskModal();
             
+            // Verifica conflitti trasferta (solo per attività "Presso Cliente")
+            const travelConflicts = checkTaskTravelConflicts(task, assignedResources);
+            if (travelConflicts.length > 0) {
+                let msg = `🚫 ATTENZIONE: Le seguenti risorse non sono disponibili a trasferte in questo periodo:\n\n`;
+                travelConflicts.forEach(c => {
+                    msg += `• ${c.resourceName} (${c.overlapStart} - ${c.overlapEnd})`;
+                    if (c.note) msg += ` — ${c.note}`;
+                    msg += '\n';
+                });
+                msg += '\nL\'attività è stata salvata. Il conflitto è visibile negli Avvisi.';
+                alert(msg);
+            }
+
             // Applica collegamenti tra attività
             applyTaskLinks();
         }
@@ -18050,6 +18327,27 @@
                     });
                 }
             });
+
+            // 8. Conflitti trasferta: risorse non disponibili a trasferte in attività "Presso Cliente"
+            resources.forEach(resource => {
+                if (!resource.noTravelPeriods || resource.noTravelPeriods.length === 0) return;
+                const conflicts = checkTravelConflicts(resource.id, resource.noTravelPeriods);
+                conflicts.forEach(c => {
+                    warnings.push({
+                        type: 'trasferta',
+                        severity: 'warning',
+                        icon: '🚫',
+                        title: `Non disponibile a trasferte: ${c.resourceName}`,
+                        description: `Progetto: ${c.project.client} (${c.project.code}) — Attività: ${c.task.name} (${c.task.startDate} - ${c.task.endDate}). Periodo non disponibile: ${c.overlapStart} - ${c.overlapEnd}${c.note ? ' [' + c.note + ']' : ''}`,
+                        action: 'Verificare con la risorsa o riassegnare l\'attività',
+                        onClick: () => {
+                            switchTab('projects');
+                            currentProjectId = c.project.id;
+                            openTaskModal(c.task.id);
+                        }
+                    });
+                });
+            });
             
             return warnings;
         }
@@ -19738,12 +20036,44 @@
                 delayBadge.title = delayedTasks.map(a => `${a.project.client} - ${a.task.name}`).join('\n');
                 delayBadge.onclick = (e) => {
                     e.stopPropagation();
-                    // Apri il primo task in ritardo
                     const first = delayedTasks[0];
                     currentProjectId = first.project.id;
                     openTaskModal(first.task.id);
                 };
                 header.appendChild(delayBadge);
+            }
+
+            // Badge no-travel: sempre visibile se ci sono periodi definiti
+            if (resource.noTravelPeriods && resource.noTravelPeriods.length > 0) {
+                const travelConflicts = checkTravelConflicts(resource.id, resource.noTravelPeriods);
+                const hasConflicts = travelConflicts.length > 0;
+
+                const noTravelBadge = document.createElement('span');
+                noTravelBadge.className = 'resource-no-travel-badge';
+
+                if (hasConflicts) {
+                    noTravelBadge.style.background = '#e65100';
+                    noTravelBadge.textContent = `🚫 ${travelConflicts.length} conflitto${travelConflicts.length > 1 ? 'i' : ''} trasferta`;
+                    noTravelBadge.title = travelConflicts.map(c =>
+                        `${c.project.code} — ${c.task.name} (${c.overlapStart} - ${c.overlapEnd})${c.note ? ' [' + c.note + ']' : ''}`
+                    ).join('\n');
+                    noTravelBadge.onclick = (e) => {
+                        e.stopPropagation();
+                        switchTab('warnings');
+                        renderWarnings();
+                    };
+                } else {
+                    // Nessun conflitto attivo: mostra i periodi no-travel come info
+                    noTravelBadge.style.background = '#546e7a';
+                    const periodsText = resource.noTravelPeriods.map(p =>
+                        `${p.start}${p.end && p.end !== p.start ? ' - ' + p.end : ''}${p.note ? ' [' + p.note + ']' : ''}`
+                    ).join(', ');
+                    noTravelBadge.textContent = `🚫 Non disp. trasferte`;
+                    noTravelBadge.title = `Periodi di non disponibilità a trasferte:\n${periodsText}`;
+                    noTravelBadge.style.cursor = 'default';
+                }
+
+                header.appendChild(noTravelBadge);
             }
 
             card.appendChild(header);
@@ -19831,6 +20161,21 @@
                     }
                     return false;
                 });
+
+                // Verifica se la risorsa è in periodo no-travel in questo giorno
+                let noTravelInfo = null;
+                const isNoTravel = resource.noTravelPeriods && resource.noTravelPeriods.some(period => {
+                    if (!period.start) return false;
+                    const pStart = new Date(period.start + 'T00:00:00');
+                    const pEnd = new Date((period.end || period.start) + 'T00:00:00');
+                    const checkDateNT = new Date(currentDate);
+                    checkDateNT.setHours(0, 0, 0, 0);
+                    if (checkDateNT >= pStart && checkDateNT <= pEnd) {
+                        noTravelInfo = period;
+                        return true;
+                    }
+                    return false;
+                });
                 
                 // Per vista settimanale, crea contenitore colonna
                 const dayColumn = document.createElement('div');
@@ -19864,6 +20209,8 @@
                     }
                 } else if (hasPermit) {
                     dailyBar.classList.add('on-permit');
+                } else if (isNoTravel) {
+                    dailyBar.classList.add('on-no-travel');
                 } else if (isHoliday) {
                     dailyBar.classList.add('on-holiday');
                 } else if (isSunday) {
@@ -19876,13 +20223,13 @@
                 let heightPercent;
                 if (load > 0) {
                     heightPercent = Math.max(2, (load / maxDailyLoad) * 100);
-                    // Non sovrascrivere il background se è un giorno di assenza o permesso (mantieni il pattern e l'icona)
-                    if (!isAbsent && !hasPermit) {
+                    // Non sovrascrivere il background se è un giorno di assenza, permesso o no-travel
+                    if (!isAbsent && !hasPermit && !isNoTravel) {
                         dailyBar.style.backgroundColor = getColorForLoad(load);
                     }
                 } else {
                     // Nessun carico: mostra barra minima solo se è giorno speciale
-                    if (isAbsent || hasPermit || isHoliday || isSaturday || isSunday) {
+                    if (isAbsent || hasPermit || isNoTravel || isHoliday || isSaturday || isSunday) {
                         heightPercent = 100; // Altezza piena per evidenziare
                     } else {
                         heightPercent = 2; // Barra minima per giorni normali senza carico
@@ -19907,6 +20254,9 @@
                 } else if (isSaturday) {
                     tooltipText += ' 📅 SABATO';
                 }
+                if (isNoTravel) {
+                    tooltipText += ` 🚫 NON DISP. TRASFERTE${noTravelInfo.note ? ' [' + noTravelInfo.note + ']' : ''}`;
+                }
                 tooltip.textContent = tooltipText;
                 dailyBar.appendChild(tooltip);
                 
@@ -19916,6 +20266,9 @@
                     dayLabel.className = 'day-label';
                     if (isToday) {
                         dayLabel.classList.add('current-day');
+                    }
+                    if (isNoTravel) {
+                        dayLabel.classList.add('no-travel-day');
                     }
                     const dayNames = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
                     if (isMonthView) {
