@@ -977,8 +977,8 @@
         }
 
         .res-modal-right {
-            width: 280px;
-            min-width: 280px;
+            width: 340px;
+            min-width: 340px;
             border-left: 1px solid var(--border-color);
             padding: 10px;
             background: var(--bg-tertiary);
@@ -1055,11 +1055,11 @@
 
         .res-cal-day {
             text-align: center;
-            padding: 4px 1px;
-            font-size: 11px;
+            padding: 5px 1px;
+            font-size: 12px;
             border-radius: 3px;
             position: relative;
-            min-height: 30px;
+            min-height: 36px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1135,6 +1135,44 @@
 
         [data-theme="dark"] .res-cal-day.permit {
             background: #e65100;
+        }
+
+        .res-cal-day.no-travel {
+            background: repeating-linear-gradient(45deg, #546e7a, #546e7a 3px, #78909c 3px, #78909c 6px);
+            color: #fff;
+            font-weight: 700;
+        }
+        .res-cal-day.no-travel::after {
+            content: '🚫';
+            font-size: 8px;
+            line-height: 1;
+            margin-top: 1px;
+            display: block;
+        }
+
+        [data-theme="dark"] .res-cal-day.no-travel {
+            background: repeating-linear-gradient(45deg, #37474f, #37474f 3px, #546e7a 3px, #546e7a 6px);
+        }
+
+        /* no-travel + assenza: bordo grigio per indicare entrambe le condizioni */
+        .res-cal-day.no-travel.absence-vacation,
+        .res-cal-day.no-travel.absence-sick,
+        .res-cal-day.no-travel.absence-planned,
+        .res-cal-day.no-travel.absence-cassa-integrazione,
+        .res-cal-day.no-travel.permit {
+            outline: 2px solid #546e7a;
+            outline-offset: -2px;
+        }
+        .res-cal-day.no-travel.absence-vacation::after,
+        .res-cal-day.no-travel.absence-sick::after,
+        .res-cal-day.no-travel.absence-planned::after,
+        .res-cal-day.no-travel.absence-cassa-integrazione::after,
+        .res-cal-day.no-travel.permit::after {
+            content: '🚫';
+            font-size: 8px;
+            line-height: 1;
+            margin-top: 1px;
+            display: block;
         }
 
         .resource-item .delete-resource {
@@ -5826,6 +5864,7 @@
                             <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #5e35b1;"></span> Cassa</span>
                             <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #7b1fa2;"></span> Intervento</span>
                             <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: #ff9800;"></span> Permesso</span>
+                            <span class="res-cal-legend-item"><span class="res-cal-dot" style="background: repeating-linear-gradient(45deg, #546e7a, #546e7a 2px, #78909c 2px, #78909c 4px);"></span> 🚫 No trasferta</span>
                         </div>
                         <div id="resCalGrid" class="res-cal-grid"></div>
                     </div>
@@ -9410,6 +9449,7 @@
 
             const absences = getModalAbsences();
             const permits = getModalPermits();
+            const noTravelPeriods = getModalNoTravelPeriods();
 
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -9468,10 +9508,23 @@
                     if (p.date === dateStr) permitMatch = p;
                 });
 
+                // Controlla no-travel
+                let noTravelMatch = null;
+                noTravelPeriods.forEach(period => {
+                    if (!period.start) return;
+                    const s = new Date(period.start); s.setHours(0, 0, 0, 0);
+                    const e = new Date(period.end || period.start); e.setHours(23, 59, 59, 999);
+                    if (dateObj >= s && dateObj <= e) noTravelMatch = period;
+                });
+
                 if (absType) {
                     cell.classList.add(getAbsenceCssClass(absType));
                 } else if (permitMatch) {
                     cell.classList.add('permit');
+                }
+                // no-travel si sovrappone (aggiunge bordo se c'è già un'assenza, altrimenti colora)
+                if (noTravelMatch) {
+                    cell.classList.add('no-travel');
                 }
 
                 cell.textContent = day;
@@ -9489,6 +9542,7 @@
                     title += ` — ${getAbsenceIcon(absType)} ${getAbsenceLabel(absType)}`;
                 }
                 if (permitMatch) title += ` — ⏰ Permesso ${permitMatch.startTime}-${permitMatch.endTime}`;
+                if (noTravelMatch) title += ` — 🚫 Non disp. trasferte${noTravelMatch.note ? ' [' + noTravelMatch.note + ']' : ''}`;
                 cell.title = title;
 
                 grid.appendChild(cell);
@@ -9498,6 +9552,7 @@
         function setupCalendarAutoRefresh() {
             const absContainer = document.getElementById('absenceDays');
             const permitContainer = document.getElementById('permitDays');
+            const noTravelContainer = document.getElementById('noTravelDays');
             if (absContainer) {
                 const observer = new MutationObserver(() => renderResourceCalendarPreview());
                 observer.observe(absContainer, { childList: true, subtree: true, attributes: true, attributeFilter: ['value'] });
@@ -9507,6 +9562,11 @@
                 const observer = new MutationObserver(() => renderResourceCalendarPreview());
                 observer.observe(permitContainer, { childList: true, subtree: true, attributes: true, attributeFilter: ['value'] });
                 permitContainer.addEventListener('change', renderResourceCalendarPreview);
+            }
+            if (noTravelContainer) {
+                const observer = new MutationObserver(() => renderResourceCalendarPreview());
+                observer.observe(noTravelContainer, { childList: true, subtree: true, attributes: true, attributeFilter: ['value'] });
+                noTravelContainer.addEventListener('change', renderResourceCalendarPreview);
             }
         }
 
