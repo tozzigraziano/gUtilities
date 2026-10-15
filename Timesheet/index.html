@@ -696,11 +696,11 @@
             <button class="nav-tab" onclick="switchTab('worktypes')">Tipi di Lavoro</button>
             <button class="nav-tab" onclick="switchTab('daytypes')">Tipi di Giorno</button>
             <button class="nav-tab" onclick="switchTab('holidays')">Festività</button>
-            <button class="nav-tab" onclick="switchTab('settings')">⚙️ Impostazioni</button>
-            <button class="nav-tab" onclick="switchTab('export')">Esporta</button>
-        </div>
-
-        <!-- Notes Tab -->
+            <button class="nav-tab" onclick="                                  
+  switchTab('settings')">⚙️ Impostazioni</button>
+            <button class="nav-tab"             onclick="                                                switchTab('export')"
+>
+Import/Export</button>        </div>        <!-- Notes Tab -->
         <div id="notes" class="tab-content">
             <div class="section">
                 <h2>📝 Appunti Giornalieri</h2>
@@ -960,7 +960,8 @@
         <!-- Export Tab -->
         <div id="export" class="tab-content">
             <div class="section">
-                <h2>Esporta Dati</h2>
+                <h2>                
+Esporta Dati</h2>
                 <p>Scarica tutti i tuoi dati in formato JSON ben strutturato</p>
                 <button class="btn btn-success" onclick="exportToJSON()">📥 Scarica JSON</button>
                 <button class="btn btn-secondary" onclick="importFromJSON()">📤 Importa JSON</button>
@@ -968,8 +969,9 @@
             </div>
 
             <div class="section">
-                <h2>Anteprima JSON</h2>
-                <pre id="jsonPreview" style="background: #f5f5f5; padding: 20px; border-radius: 5px; overflow-x: auto; max-height: 500px;"></pre>
+
+            <pre id="<pre id="jsonPreview" style="display:none; background: #f5f5f5; padding: 20px; border-radius: 5px; overflow-x: auto; max-height: 500px;"                        ></pre>
+
             </div>
         </div>
     </div>
@@ -1549,12 +1551,13 @@
         }
 
         // Save data to localStorage
-        function saveData () {
+        function saveData() {
             localStorage.setItem('workTypes', JSON.stringify(workTypes));
             localStorage.setItem('dayTypes', JSON.stringify(dayTypes));
             localStorage.setItem('timesheetEntries', JSON.stringify(timesheetEntries));
         localStorage.setItem('projects', JSON.stringify(projects));
             localStorage.setItem('localHolidays', JSON.stringify(localHolidays));
+    localStorage.setItem('categories', JSON.stringify(categories));
             localStorage.setItem('dailyNotes', JSON.stringify(dailyNotes));
             localStorage.setItem('categories', JSON.stringify(categories));
         }
@@ -2599,13 +2602,16 @@
             const data = {
                 version: '1.0',
                 exportDate: new Date().toISOString(),
+                categories,
                 workTypes,
                 dayTypes,
+                localHolidays,
+                dailyNotes,
                 timesheetEntries
             };
 
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
+            const blob =             new Blob([JSON.stringify(
+data, null, 2)], { type: 'application/json' });            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `timesheet-${new Date().toISOString().split('T')[0]}.json`;
@@ -2623,9 +2629,12 @@
                     try {
                         const data = JSON.parse(event.target.result);
                         if (!confirm('Importare questi dati? I dati attuali saranno sovrascritti.')) return;
-                        workTypes = data.workTypes || workTypes;
-                        dayTypes = data.dayTypes || dayTypes;
+                        workTypes =                                                 data.workTypes || workTypes;
+            dayTypes = data.dayTypes || dayTypes;
+            categories = data.categories || categories;
                         timesheetEntries = data.timesheetEntries || timesheetEntries;
+                        localHolidays = data.localHolidays || localHolidays;
+                        dailyNotes = data.dailyNotes || dailyNotes;
                         saveData();
                         renderWorkTypes();
                         renderDayTypes();
