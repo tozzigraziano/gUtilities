@@ -2564,5 +2564,791 @@ YASKAWA:
             return inside;
         }
     </script>
+  <section id="xyz-histogram-section" class="panel" style="margin-top: 16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <h2 style="margin:0;">Concentrazione valori X / Y / Z</h2>
+      <button id="export-pdf-a3-btn" type="button" style="padding:8px 12px; border:1px solid #4d8dff; border-radius:6px; background:#1b3b75; color:#fff; cursor:pointer;">
+        Esporta PDF A3 orizzontale
+      </button>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:8px; margin-top:10px;">
+      <label style="display:flex; flex-direction:column; gap:4px;">
+        <span style="font-size:12px; opacity:0.9;">Titolo PDF</span>
+        <input id="pdf-report-title-input" type="text" value="Spatial Dispersion Report" style="padding:7px 8px; border:1px solid #3a3a3a; border-radius:6px; background:#101010; color:#f0f0f0;">
+      </label>
+      <label style="display:flex; flex-direction:column; gap:4px;">
+        <span style="font-size:12px; opacity:0.9;">Esportato da</span>
+        <input id="pdf-report-author-input" type="text" style="padding:7px 8px; border:1px solid #3a3a3a; border-radius:6px; background:#101010; color:#f0f0f0;">
+      </label>
+    </div>
+    <p id="xyz-histogram-summary" style="margin: 8px 0 12px 0; opacity: 0.9;"></p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px;">
+      <div style="border: 1px solid #2f2f2f; border-radius: 8px; padding: 8px; background: #121212;">
+        <div style="font-weight: 600; margin-bottom: 6px;">Asse X</div>
+        <div id="histogram-x-peak" style="font-size: 12px; opacity: 0.9; margin-bottom: 6px;"></div>
+        <div id="histogram-x" style="height: 240px;"></div>
+      </div>
+      <div style="border: 1px solid #2f2f2f; border-radius: 8px; padding: 8px; background: #121212;">
+        <div style="font-weight: 600; margin-bottom: 6px;">Asse Y</div>
+        <div id="histogram-y-peak" style="font-size: 12px; opacity: 0.9; margin-bottom: 6px;"></div>
+        <div id="histogram-y" style="height: 240px;"></div>
+      </div>
+      <div style="border: 1px solid #2f2f2f; border-radius: 8px; padding: 8px; background: #121212;">
+        <div style="font-weight: 600; margin-bottom: 6px;">Asse Z</div>
+        <div id="histogram-z-peak" style="font-size: 12px; opacity: 0.9; margin-bottom: 6px;"></div>
+        <div id="histogram-z" style="height: 240px;"></div>
+      </div>
+    </div>
+  </section>
+  <section id="pdf-report-view" aria-hidden="true"></section>
+
+  <script>
+    (function () {
+      const xContainer = document.getElementById("histogram-x");
+      const yContainer = document.getElementById("histogram-y");
+      const zContainer = document.getElementById("histogram-z");
+      const xPeak = document.getElementById("histogram-x-peak");
+      const yPeak = document.getElementById("histogram-y-peak");
+      const zPeak = document.getElementById("histogram-z-peak");
+      const histogramSummary = document.getElementById("xyz-histogram-summary");
+      if (
+        !xContainer ||
+        !yContainer ||
+        !zContainer ||
+        !xPeak ||
+        !yPeak ||
+        !zPeak ||
+        !histogramSummary
+      ) {
+        return;
+      }
+
+      function toNumber(value) {
+        if (typeof value === "number" && Number.isFinite(value)) return value;
+        if (typeof value !== "string") return null;
+        const normalized = value.replace(",", ".").trim();
+        if (!normalized) return null;
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+
+      function extractFromTable() {
+        const tables = Array.from(document.querySelectorAll("table"));
+        for (const table of tables) {
+          const headers = Array.from(table.querySelectorAll("thead th")).map((th) =>
+            (th.textContent || "").trim().toLowerCase()
+          );
+          let xIndex = headers.findIndex((h) => h === "x" || h.includes(" x"));
+          let yIndex = headers.findIndex((h) => h === "y" || h.includes(" y"));
+          let zIndex = headers.findIndex((h) => h === "z" || h.includes(" z"));
+
+          if (xIndex < 0 || yIndex < 0 || zIndex < 0) {
+            xIndex = 0;
+            yIndex = 1;
+            zIndex = 2;
+          }
+
+          const rows = Array.from(table.querySelectorAll("tbody tr"));
+          if (!rows.length) continue;
+
+          const points = { x: [], y: [], z: [] };
+          for (const row of rows) {
+            const cells = Array.from(row.querySelectorAll("td"));
+            const x = cells[xIndex] ? toNumber(cells[xIndex].textContent || "") : null;
+            const y = cells[yIndex] ? toNumber(cells[yIndex].textContent || "") : null;
+            const z = cells[zIndex] ? toNumber(cells[zIndex].textContent || "") : null;
+            if (x !== null && y !== null && z !== null) {
+              points.x.push(x);
+              points.y.push(y);
+              points.z.push(z);
+            }
+          }
+          if (points.x.length) return points;
+        }
+        return { x: [], y: [], z: [] };
+      }
+
+      function extractFromPlotly() {
+        if (typeof window.Plotly === "undefined") return { x: [], y: [], z: [] };
+        const plotDivs = Array.from(document.querySelectorAll("div"));
+        for (const div of plotDivs) {
+          if (!div || !Array.isArray(div.data)) continue;
+          const points = { x: [], y: [], z: [] };
+          for (const trace of div.data) {
+            if (!trace || !trace.x || !trace.y || !trace.z) continue;
+            for (const n of trace.x) {
+              const v = toNumber(n);
+              if (v !== null) points.x.push(v);
+            }
+            for (const n of trace.y) {
+              const v = toNumber(n);
+              if (v !== null) points.y.push(v);
+            }
+            for (const n of trace.z) {
+              const v = toNumber(n);
+              if (v !== null) points.z.push(v);
+            }
+          }
+          if (points.x.length) return points;
+        }
+        return { x: [], y: [], z: [] };
+      }
+
+      function extractFromRawText() {
+        const sources = Array.from(document.querySelectorAll("textarea, pre, code"));
+        const points = { x: [], y: [], z: [] };
+        const lineRegex = /X\s*(-?\d+(?:[.,]\d+)?).*?Y\s*(-?\d+(?:[.,]\d+)?).*?Z\s*(-?\d+(?:[.,]\d+)?)/i;
+
+        for (const source of sources) {
+          const text =
+            source.tagName === "TEXTAREA"
+              ? source.value || ""
+              : source.textContent || "";
+          if (!text || text.length > 1500000) continue;
+
+          const lines = text.split(/\r?\n/);
+          for (const line of lines) {
+            const match = lineRegex.exec(line);
+            if (!match) continue;
+            const x = toNumber(match[1]);
+            const y = toNumber(match[2]);
+            const z = toNumber(match[3]);
+            if (x !== null && y !== null && z !== null) {
+              points.x.push(x);
+              points.y.push(y);
+              points.z.push(z);
+            }
+          }
+          if (points.x.length) return points;
+        }
+        return points;
+      }
+
+      function calcBinCount(values) {
+        const n = values.length;
+        if (n < 20) return 12;
+        const base = Math.round(Math.sqrt(n) * 3);
+        if (base < 40) return 40;
+        if (base > 180) return 180;
+        return base;
+      }
+
+      function computeHistogram(values, bins) {
+        if (!values.length) return null;
+        let min = values[0];
+        let max = values[0];
+        for (let i = 1; i < values.length; i += 1) {
+          const value = values[i];
+          if (value < min) min = value;
+          if (value > max) max = value;
+        }
+        const safeBins = Math.max(6, bins);
+        const range = max - min;
+        if (range === 0) {
+          return { min, max, step: 1, counts: [values.length], peakIndex: 0 };
+        }
+        const step = range === 0 ? 1 : range / safeBins;
+        const counts = new Array(safeBins).fill(0);
+        for (const value of values) {
+          let index = range === 0 ? 0 : Math.floor((value - min) / step);
+          if (index >= safeBins) index = safeBins - 1;
+          if (index < 0) index = 0;
+          counts[index] += 1;
+        }
+        let peakIndex = 0;
+        for (let i = 1; i < counts.length; i += 1) {
+          if (counts[i] > counts[peakIndex]) peakIndex = i;
+        }
+        return { min, max, step, counts, peakIndex };
+      }
+
+      let isRendering = false;
+      let lastSignature = "";
+
+      function axisSignature(values) {
+        if (!values.length) return "0|0|0|0";
+        let min = values[0];
+        let max = values[0];
+        let sum = 0;
+        for (let i = 0; i < values.length; i += 1) {
+          const value = values[i];
+          if (value < min) min = value;
+          if (value > max) max = value;
+          sum += value;
+        }
+        return `${values.length}|${min}|${max}|${sum}`;
+      }
+
+      function renderAxisHistogram(container, peakLabel, values, color) {
+        container.innerHTML = "";
+        peakLabel.textContent = "";
+        if (!values.length) {
+          container.innerHTML = "<div style='font-size:12px; opacity:0.8;'>Nessun dato disponibile.</div>";
+          return null;
+        }
+
+        const bins = calcBinCount(values);
+        const result = computeHistogram(values, bins);
+        if (!result) {
+          container.innerHTML = "<div style='font-size:12px; opacity:0.8;'>Errore nel calcolo istogramma.</div>";
+          return null;
+        }
+
+        let maxCount = 1;
+        for (const count of result.counts) {
+          if (count > maxCount) maxCount = count;
+        }
+        const bars = result.counts
+          .map((count, i) => {
+            const height = (count / maxCount) * 100;
+            const from = result.min + result.step * i;
+            const to = from + result.step;
+            return `
+              <div title="[${from.toFixed(3)} ; ${to.toFixed(3)}]: ${count}" style="flex:1; height:100%; display:flex; align-items:flex-end;">
+                <div style="width:100%; height:${height}%; background:linear-gradient(180deg,${color},#24314f); border-radius:2px 2px 0 0;"></div>
+              </div>
+            `;
+          })
+          .join("");
+
+        const peakFrom = result.min + result.step * result.peakIndex;
+        const peakTo = peakFrom + result.step;
+        peakLabel.textContent = `Picco: [${peakFrom.toFixed(3)} ; ${peakTo.toFixed(3)}] con ${result.counts[result.peakIndex]} valori`;
+
+        container.innerHTML = `
+          <div style="display:flex; align-items:flex-end; gap:1px; height:calc(100% - 20px); width:100%;">${bars}</div>
+          <div style="display:flex; justify-content:space-between; font-size:11px; opacity:0.75; margin-top:4px;">
+            <span>${result.min.toFixed(3)}</span>
+            <span>${result.max.toFixed(3)}</span>
+          </div>
+        `;
+        return result;
+      }
+
+      function refreshHistogram() {
+        let points = extractFromTable();
+        if (!points.x.length) points = extractFromPlotly();
+        if (!points.x.length) points = extractFromRawText();
+
+        const signature = `X:${axisSignature(points.x)}|Y:${axisSignature(points.y)}|Z:${axisSignature(points.z)}`;
+        if (signature === lastSignature) return;
+        lastSignature = signature;
+
+        isRendering = true;
+        const xResult = renderAxisHistogram(xContainer, xPeak, points.x, "#4fa3ff");
+        const yResult = renderAxisHistogram(yContainer, yPeak, points.y, "#55d37e");
+        const zResult = renderAxisHistogram(zContainer, zPeak, points.z, "#ffb347");
+
+        const sampleCount = Math.min(points.x.length, points.y.length, points.z.length);
+        if (!sampleCount) {
+          histogramSummary.textContent = "Nessun valore XYZ disponibile per gli istogrammi.";
+        } else {
+          histogramSummary.textContent =
+            `Campioni validi: ${sampleCount} · Bin X:${xResult ? xResult.counts.length : 0} Y:${yResult ? yResult.counts.length : 0} Z:${zResult ? zResult.counts.length : 0}`;
+        }
+        isRendering = false;
+      }
+
+      let scheduled = false;
+      function scheduleRefresh() {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          refreshHistogram();
+        });
+      }
+
+      const observer = new MutationObserver((mutations) => {
+        if (isRendering) return;
+        let shouldRefresh = false;
+        for (const mutation of mutations) {
+          const target = mutation.target;
+          if (
+            target &&
+            target.nodeType === 1 &&
+            target.closest &&
+            target.closest("#xyz-histogram-section")
+          ) {
+            continue;
+          }
+          shouldRefresh = true;
+          break;
+        }
+        if (shouldRefresh) scheduleRefresh();
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      window.addEventListener("load", scheduleRefresh);
+      window.addEventListener("resize", scheduleRefresh);
+      refreshHistogram();
+    })();
+  </script>
+  <script>
+    (function () {
+      const exportButton = document.getElementById("export-pdf-a3-btn");
+      const reportContainer = document.getElementById("pdf-report-view");
+      const titleInput = document.getElementById("pdf-report-title-input");
+      const authorInput = document.getElementById("pdf-report-author-input");
+      if (!exportButton || !reportContainer || !titleInput || !authorInput) return;
+
+      function detectWindowsUserName() {
+        const path = (window.location && window.location.pathname) ? decodeURIComponent(window.location.pathname) : "";
+        const normalized = path.replace(/\\/g, "/");
+        const match = normalized.match(/\/Users\/([^/]+)/i);
+        if (match && match[1]) return match[1];
+        return "";
+      }
+
+      const defaultAuthor = detectWindowsUserName() || "Utente";
+      authorInput.value = defaultAuthor;
+
+      function toNumber(value) {
+        if (typeof value === "number" && Number.isFinite(value)) return value;
+        if (typeof value !== "string") return null;
+        const normalized = value.replace(",", ".").trim();
+        if (!normalized) return null;
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+
+      function formatNumber(value) {
+        if (typeof value !== "number" || !Number.isFinite(value)) return "";
+        return value.toFixed(3);
+      }
+
+      function collectRowsFromRawText() {
+        const sources = Array.from(document.querySelectorAll("textarea, pre, code"));
+        const rows = [];
+
+        for (const source of sources) {
+          const text =
+            source.tagName === "TEXTAREA"
+              ? source.value || ""
+              : source.textContent || "";
+          if (!text || text.length > 2000000) continue;
+
+          const lines = text.split(/\r?\n/);
+          for (const line of lines) {
+            if (!line || line.indexOf("{") < 0) continue;
+            const regex = /([A-Za-z])\s*(-?\d+(?:[.,]\d+)?)/g;
+            const row = {};
+            let match = regex.exec(line);
+            while (match) {
+              const key = (match[1] || "").toUpperCase();
+              const value = toNumber(match[2]);
+              if (value !== null) row[key] = value;
+              match = regex.exec(line);
+            }
+            if (
+              Object.prototype.hasOwnProperty.call(row, "X") &&
+              Object.prototype.hasOwnProperty.call(row, "Y") &&
+              Object.prototype.hasOwnProperty.call(row, "Z")
+            ) {
+              rows.push(row);
+            }
+          }
+          if (rows.length) return rows;
+        }
+        return rows;
+      }
+
+      function collectRowsFromTables() {
+        const tables = Array.from(document.querySelectorAll("table"));
+        for (const table of tables) {
+          const headers = Array.from(table.querySelectorAll("thead th")).map((th) =>
+            (th.textContent || "").trim().toUpperCase()
+          );
+          const bodyRows = Array.from(table.querySelectorAll("tbody tr"));
+          if (!headers.length || !bodyRows.length) continue;
+          const rows = [];
+
+          for (const bodyRow of bodyRows) {
+            const cells = Array.from(bodyRow.querySelectorAll("td"));
+            if (!cells.length) continue;
+            const row = {};
+            for (let i = 0; i < headers.length && i < cells.length; i += 1) {
+              const key = headers[i];
+              const value = toNumber(cells[i].textContent || "");
+              if (value !== null && key) row[key] = value;
+            }
+            if (
+              Object.prototype.hasOwnProperty.call(row, "X") &&
+              Object.prototype.hasOwnProperty.call(row, "Y") &&
+              Object.prototype.hasOwnProperty.call(row, "Z")
+            ) {
+              rows.push(row);
+            }
+          }
+          if (rows.length) return rows;
+        }
+        return [];
+      }
+
+      function collectRowsFromPlotly() {
+        const rows = [];
+        const divs = Array.from(document.querySelectorAll("div"));
+        for (const div of divs) {
+          if (!Array.isArray(div.data)) continue;
+          for (const trace of div.data) {
+            if (!trace || !Array.isArray(trace.x) || !Array.isArray(trace.y) || !Array.isArray(trace.z)) {
+              continue;
+            }
+            const len = Math.min(trace.x.length, trace.y.length, trace.z.length);
+            for (let i = 0; i < len; i += 1) {
+              const x = toNumber(trace.x[i]);
+              const y = toNumber(trace.y[i]);
+              const z = toNumber(trace.z[i]);
+              if (x === null || y === null || z === null) continue;
+              rows.push({ X: x, Y: y, Z: z });
+            }
+          }
+          if (rows.length) return rows;
+        }
+        return rows;
+      }
+
+      function collectDatasetRows() {
+        let rows = collectRowsFromRawText();
+        if (rows.length) return rows;
+        rows = collectRowsFromTables();
+        if (rows.length) return rows;
+        return collectRowsFromPlotly();
+      }
+
+      function getColumns(rows) {
+        const base = ["X", "Y", "Z", "A", "B", "C"];
+        const extra = [];
+        for (const row of rows) {
+          for (const key of Object.keys(row)) {
+            if (base.indexOf(key) < 0 && extra.indexOf(key) < 0) extra.push(key);
+          }
+        }
+        const columns = base.filter((key) => rows.some((row) => Object.prototype.hasOwnProperty.call(row, key)));
+        return columns.concat(extra);
+      }
+
+      function axisStats(rows, axis) {
+        const values = rows
+          .map((row) => row[axis])
+          .filter((value) => typeof value === "number" && Number.isFinite(value));
+        if (!values.length) return null;
+        let min = values[0];
+        let max = values[0];
+        let sum = 0;
+        for (const value of values) {
+          if (value < min) min = value;
+          if (value > max) max = value;
+          sum += value;
+        }
+        const mean = sum / values.length;
+        let varAcc = 0;
+        for (const value of values) {
+          const d = value - mean;
+          varAcc += d * d;
+        }
+        const stdev = Math.sqrt(varAcc / values.length);
+        return { values, min, max, mean, stdev };
+      }
+
+      function buildHistogram(values) {
+        if (!values.length) return null;
+        let min = values[0];
+        let max = values[0];
+        for (let i = 1; i < values.length; i += 1) {
+          const value = values[i];
+          if (value < min) min = value;
+          if (value > max) max = value;
+        }
+        const bins = Math.max(30, Math.min(140, Math.round(Math.sqrt(values.length) * 3)));
+        const range = max - min;
+        if (range === 0) return { min, max, step: 1, counts: [values.length], peakIndex: 0 };
+        const step = range / bins;
+        const counts = new Array(bins).fill(0);
+        for (const value of values) {
+          let index = Math.floor((value - min) / step);
+          if (index < 0) index = 0;
+          if (index >= bins) index = bins - 1;
+          counts[index] += 1;
+        }
+        let peakIndex = 0;
+        for (let i = 1; i < counts.length; i += 1) {
+          if (counts[i] > counts[peakIndex]) peakIndex = i;
+        }
+        return { min, max, step, counts, peakIndex };
+      }
+
+      function renderHistogramSvg(histogram, axisClass, heightPx) {
+        if (!histogram) return "";
+        const colorMap = { x: "#2e6de6", y: "#1f9a55", z: "#d7831e", a: "#8b5cf6", b: "#db2777", c: "#0f766e" };
+        const fill = colorMap[axisClass] || "#2e6de6";
+        const width = 1200;
+        const height = 430;
+        const marginLeft = 74;
+        const marginTop = 16;
+        const marginRight = 18;
+        const marginBottom = 168;
+        const plotWidth = width - marginLeft - marginRight;
+        const plotHeight = height - marginTop - marginBottom;
+
+        let maxCount = 1;
+        for (const count of histogram.counts) {
+          if (count > maxCount) maxCount = count;
+        }
+
+        const gridSteps = [0, 25, 50, 75, 100];
+        const gridLines = gridSteps
+          .map((pct) => {
+            const y = marginTop + plotHeight - (plotHeight * pct) / 100;
+            const label = Math.round((maxCount * pct) / 100);
+            return `
+              <line x1="${marginLeft}" y1="${y.toFixed(2)}" x2="${(marginLeft + plotWidth).toFixed(2)}" y2="${y.toFixed(2)}" stroke="#d8e0ec" stroke-width="1" />
+              <text x="${(marginLeft - 8).toFixed(2)}" y="${(y + 4).toFixed(2)}" text-anchor="end" font-size="12" fill="#334155">${label}</text>
+            `;
+          })
+          .join("");
+
+        const barWidth = plotWidth / histogram.counts.length;
+        const bars = histogram.counts
+          .map((count, index) => {
+            const h = (count / maxCount) * plotHeight;
+            const x = marginLeft + index * barWidth + 0.4;
+            const y = marginTop + (plotHeight - h);
+            const rectW = Math.max(0.7, barWidth - 0.8);
+            const isPeak = index === histogram.peakIndex;
+            const stroke = isPeak ? "#0f172a" : "none";
+            const strokeW = isPeak ? 1.4 : 0;
+            return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${rectW.toFixed(2)}" height="${Math.max(0.8, h).toFixed(2)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" />`;
+          })
+          .join("");
+
+        const labelStep = histogram.counts.length > 60 ? Math.ceil(histogram.counts.length / 60) : 1;
+        const barLabels = histogram.counts
+          .map((count, index) => {
+            if (index % labelStep !== 0 && index !== histogram.peakIndex) return "";
+            const from = histogram.min + histogram.step * index;
+            const to = from + histogram.step;
+            const label = `${from.toFixed(3)}..${to.toFixed(3)} | ${count}`;
+            const x = marginLeft + index * barWidth + barWidth / 2;
+            const y = marginTop + plotHeight + 10;
+            return `<text x="${x.toFixed(2)}" y="${y.toFixed(2)}" transform="rotate(90 ${x.toFixed(2)} ${y.toFixed(2)})" text-anchor="start" font-size="9.5" fill="#334155">${label}</text>`;
+          })
+          .join("");
+
+        const labelNote =
+          labelStep > 1
+            ? `<text x="${marginLeft}" y="${(height - 6).toFixed(2)}" text-anchor="start" font-size="10" fill="#64748b">Etichette mostrate ogni ${labelStep} bin (picco sempre visibile)</text>`
+            : "";
+
+        const mid = histogram.min + (histogram.max - histogram.min) / 2;
+        return `
+          <svg class="pdf-hist-svg" viewBox="0 0 ${width} ${height}" style="height:${heightPx}px;">
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff" />
+            ${gridLines}
+            <line x1="${marginLeft}" y1="${marginTop}" x2="${marginLeft}" y2="${(marginTop + plotHeight).toFixed(2)}" stroke="#64748b" stroke-width="1.2" />
+            <line x1="${marginLeft}" y1="${(marginTop + plotHeight).toFixed(2)}" x2="${(marginLeft + plotWidth).toFixed(2)}" y2="${(marginTop + plotHeight).toFixed(2)}" stroke="#64748b" stroke-width="1.2" />
+            ${bars}
+            ${barLabels}
+            <text x="${marginLeft}" y="${(height - 12).toFixed(2)}" text-anchor="start" font-size="12" fill="#334155">${formatNumber(histogram.min)}</text>
+            <text x="${(marginLeft + plotWidth / 2).toFixed(2)}" y="${(height - 12).toFixed(2)}" text-anchor="middle" font-size="12" fill="#334155">${formatNumber(mid)}</text>
+            <text x="${(marginLeft + plotWidth).toFixed(2)}" y="${(height - 12).toFixed(2)}" text-anchor="end" font-size="12" fill="#334155">${formatNumber(histogram.max)}</text>
+            ${labelNote}
+          </svg>
+        `;
+      }
+
+      const printStyleId = "print-a3-landscape-style";
+      if (!document.getElementById(printStyleId)) {
+        const style = document.createElement("style");
+        style.id = printStyleId;
+        style.textContent = `
+@page { size: A3 landscape; margin: 10mm; }
+ #pdf-report-view { display: none; }
+@media print {
+  html, body { background: #ffffff !important; color: #101010 !important; }
+  body.pdf-export-mode > *:not(#pdf-report-view) { display: none !important; }
+  body.pdf-export-mode #pdf-report-view { display: block !important; }
+  #pdf-report-view, #pdf-report-view * { box-sizing: border-box; }
+  #pdf-report-view { font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; }
+  #pdf-report-view .pdf-report { color: #101010; }
+  #pdf-report-view .pdf-header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:1px solid #c7ccd8; padding-bottom:8px; margin-bottom:10px; }
+  #pdf-report-view .pdf-title { margin:0; font-size:24px; font-weight:700; letter-spacing:0.2px; }
+  #pdf-report-view .pdf-subtitle { margin:0; font-size:12px; color:#4b5568; }
+  #pdf-report-view .pdf-meta { text-align:right; font-size:11px; color:#4b5568; }
+  #pdf-report-view .pdf-page { break-after: page; page-break-after: always; min-height: 180mm; }
+  #pdf-report-view .pdf-page:last-child { break-after: auto; page-break-after: auto; }
+  #pdf-report-view .pdf-hist-page-title { margin: 0 0 6px 0; font-size: 22px; }
+  #pdf-report-view .pdf-hist-page-subtitle { margin: 0 0 10px 0; font-size: 12px; color:#475569; }
+  #pdf-report-view .pdf-hist-layout { display:grid; grid-template-columns: 1fr 300px; gap:12px; align-items:stretch; }
+  #pdf-report-view .pdf-stats-box { border:1px solid #d2d7e1; border-radius:6px; padding:10px; background:#f8fafd; }
+  #pdf-report-view .pdf-stats-box h4 { margin:0 0 8px 0; font-size:14px; }
+  #pdf-report-view .pdf-stat-line { display:flex; justify-content:space-between; margin:4px 0; font-size:12px; }
+  #pdf-report-view .pdf-peak { margin:0 0 8px 0; font-size:12px; color:#334155; font-weight:600; }
+  #pdf-report-view .pdf-hist-wrap { border:1px solid #cdd6e4; border-radius:6px; padding:8px; background:#ffffff; }
+  #pdf-report-view .pdf-hist-svg { display:block; width:100%; }
+  #pdf-report-view .pdf-angle-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+  #pdf-report-view .pdf-angle-card { border:1px solid #d2d7e1; border-radius:6px; padding:8px; background:#f8fafd; }
+  #pdf-report-view .pdf-angle-card h3 { margin:0 0 6px 0; font-size:14px; }
+  #pdf-report-view .pdf-table-wrap { border:1px solid #d2d7e1; border-radius:6px; overflow:hidden; }
+  #pdf-report-view table { width:100%; border-collapse:collapse; table-layout:fixed; }
+  #pdf-report-view th { background:#eef2f8; color:#1e293b; font-weight:700; border-bottom:1px solid #cfd6e2; font-size:10px; padding:4px 5px; text-align:right; }
+  #pdf-report-view td { border-bottom:1px solid #e8edf4; padding:3px 5px; font-size:9px; text-align:right; }
+  #pdf-report-view th:first-child, #pdf-report-view td:first-child { text-align:center; width:44px; }
+  #pdf-report-view tr:nth-child(even) td { background:#fafcff; }
+  #pdf-report-view thead { display:table-header-group; }
+  #pdf-report-view tfoot { display:table-row-group; }
+  #pdf-report-view tr { break-inside: avoid-page; page-break-inside: avoid; }
+}
+        `;
+        document.head.appendChild(style);
+      }
+
+      function buildReportContent() {
+        const rows = collectDatasetRows();
+        const reportTitle = (titleInput.value || "").trim() || "Spatial Dispersion Report";
+        const reportAuthor = (authorInput.value || "").trim() || defaultAuthor;
+        if (!rows.length) {
+          reportContainer.innerHTML = `
+            <div class="pdf-report">
+              <div class="pdf-header">
+                <div>
+                  <h1 class="pdf-title">${reportTitle}</h1>
+                </div>
+                <div class="pdf-meta">Esportato da: ${reportAuthor}</div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        const columns = getColumns(rows);
+        const xStats = axisStats(rows, "X");
+        const yStats = axisStats(rows, "Y");
+        const zStats = axisStats(rows, "Z");
+
+        const xHist = xStats ? buildHistogram(xStats.values) : null;
+        const yHist = yStats ? buildHistogram(yStats.values) : null;
+        const zHist = zStats ? buildHistogram(zStats.values) : null;
+        const aStats = axisStats(rows, "A");
+        const bStats = axisStats(rows, "B");
+        const cStats = axisStats(rows, "C");
+        const aHist = aStats ? buildHistogram(aStats.values) : null;
+        const bHist = bStats ? buildHistogram(bStats.values) : null;
+        const cHist = cStats ? buildHistogram(cStats.values) : null;
+
+        function peakLabel(hist) {
+          if (!hist) return "";
+          const from = hist.min + hist.step * hist.peakIndex;
+          const to = from + hist.step;
+          return `[${from.toFixed(3)} ; ${to.toFixed(3)}] (${hist.counts[hist.peakIndex]})`;
+        }
+
+        function axisPage(title, stats, hist, axisClass) {
+          if (!stats || !hist) return "";
+          return `
+            <section class="pdf-page">
+              <h2 class="pdf-hist-page-title">${title}</h2>
+              <p class="pdf-hist-page-subtitle">Distribuzione e concentrazione valori</p>
+              <div class="pdf-hist-layout">
+                <div class="pdf-hist-wrap">
+                  ${renderHistogramSvg(hist, axisClass, 380)}
+                </div>
+                <aside class="pdf-stats-box">
+                  <h4>Statistiche</h4>
+                  <p class="pdf-peak">Picco ${peakLabel(hist)}</p>
+                  <div class="pdf-stat-line"><span>Campioni</span><span>${stats.values.length}</span></div>
+                  <div class="pdf-stat-line"><span>Min</span><span>${formatNumber(stats.min)}</span></div>
+                  <div class="pdf-stat-line"><span>Max</span><span>${formatNumber(stats.max)}</span></div>
+                  <div class="pdf-stat-line"><span>Media</span><span>${formatNumber(stats.mean)}</span></div>
+                  <div class="pdf-stat-line"><span>Dev. Std</span><span>${formatNumber(stats.stdev)}</span></div>
+                  <div class="pdf-stat-line"><span>Bin</span><span>${hist.counts.length}</span></div>
+                </aside>
+              </div>
+            </section>
+          `;
+        }
+
+        function angleCard(title, stats, hist, axisClass) {
+          if (!stats || !hist) return "";
+          return `
+            <article class="pdf-angle-card">
+              <h3>${title}</h3>
+              <p class="pdf-peak">Picco ${peakLabel(hist)}</p>
+              <div class="pdf-stat-line"><span>Campioni</span><span>${stats.values.length}</span></div>
+              <div class="pdf-stat-line"><span>Min</span><span>${formatNumber(stats.min)}</span></div>
+              <div class="pdf-stat-line"><span>Max</span><span>${formatNumber(stats.max)}</span></div>
+              <div class="pdf-stat-line"><span>Media</span><span>${formatNumber(stats.mean)}</span></div>
+              <div class="pdf-stat-line"><span>Dev. Std</span><span>${formatNumber(stats.stdev)}</span></div>
+              <div class="pdf-hist-wrap">${renderHistogramSvg(hist, axisClass, 200)}</div>
+            </article>
+          `;
+        }
+
+        const bodyRows = rows
+          .map((row, index) => {
+            const cells = columns
+              .map((column) => `<td>${formatNumber(row[column])}</td>`)
+              .join("");
+            return `<tr><td>${index + 1}</td>${cells}</tr>`;
+          })
+          .join("");
+        const headerCells = columns.map((column) => `<th>${column}</th>`).join("");
+
+        const now = new Date();
+        const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+
+        reportContainer.innerHTML = `
+          <div class="pdf-report">
+            <header class="pdf-header pdf-page">
+              <div>
+                <h1 class="pdf-title">${reportTitle}</h1>
+                <p class="pdf-subtitle">Concentrazione e dataset completo</p>
+              </div>
+              <div class="pdf-meta">
+                <div>Esportato da: ${reportAuthor}</div>
+                <div>Campioni: ${rows.length}</div>
+                <div>${stamp}</div>
+              </div>
+            </header>
+            <section class="pdf-table-wrap pdf-page">
+              <table>
+                <thead>
+                  <tr><th>#</th>${headerCells}</tr>
+                </thead>
+                <tbody>
+                  ${bodyRows}
+                </tbody>
+              </table>
+            </section>
+            <section class="pdf-page">
+              <h2 class="pdf-hist-page-title">Analisi angoli</h2>
+              <p class="pdf-hist-page-subtitle">Distribuzione angoli A / B / C</p>
+              <div class="pdf-angle-grid">
+                ${angleCard("Angolo A", aStats, aHist, "a")}
+                ${angleCard("Angolo B", bStats, bHist, "b")}
+                ${angleCard("Angolo C", cStats, cHist, "c")}
+              </div>
+            </section>
+            ${axisPage("Asse X", xStats, xHist, "x")}
+            ${axisPage("Asse Y", yStats, yHist, "y")}
+            ${axisPage("Asse Z", zStats, zHist, "z")}
+          </div>
+        `;
+      }
+
+      function cleanupAfterPrint() {
+        document.body.classList.remove("pdf-export-mode");
+      }
+
+      window.addEventListener("afterprint", cleanupAfterPrint);
+
+      exportButton.addEventListener("click", function () {
+        buildReportContent();
+        document.body.classList.add("pdf-export-mode");
+        window.print();
+      });
+    })();
+  </script>
 </body>
 </html>
